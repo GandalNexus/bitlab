@@ -1,0 +1,15 @@
+[package]
+name = "miner"
+version = "0.1.0"
+edition = "2021"
+description = "BitLab - minimal SHA-256d solo miner engine compiled to WebAssembly (testnet4 BIP94 min-difficulty windows)"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "=0.2.100"
+
+[profile.release]
+opt-level = "s"
+lto = true
