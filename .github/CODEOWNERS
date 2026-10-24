@@ -1,0 +1,13 @@
+# Default owner for every path — pull requests require a review from the maintainer.
+*                   @GandalNexus
+
+# Critical surfaces, called out explicitly even under a single maintainer:
+# repo automation and quality gates.
+/.github/           @GandalNexus
+
+# The zero-knowledge boundary — server code must never touch key material.
+/src/app/api/       @GandalNexus
+/src/lib/bitcoin/   @GandalNexus
+
+# The Rust/WASM Lightning nodes.
+/rust/              @GandalNexus

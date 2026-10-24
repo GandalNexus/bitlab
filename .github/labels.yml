@@ -1,0 +1,88 @@
+# Canonical label set for the BitLab repository.
+# Synced automatically by .github/workflows/labels.yml — edit here, never in the UI.
+# Colors follow GitHub's conventional palette so the tracker reads like a mature project.
+labels:
+  # ── Nature of the work ────────────────────────────────────────────────
+  - name: bug
+    color: "d73a4a"
+    description: Something does not work as expected
+  - name: enhancement
+    color: "a2eeef"
+    description: New feature or request
+  - name: documentation
+    color: "0075ca"
+    description: Docs, guides, glossary or in-app copy
+  - name: performance
+    color: "fbca04"
+    description: Memory or latency improvement
+  - name: security
+    color: "ee0701"
+    description: Hardens the zero-knowledge security model — treat as high priority
+  - name: ux
+    color: "f9d0c4"
+    description: Usability, accessibility or visual polish
+  - name: question
+    color: "d876e3"
+    description: Understanding the codebase or the Lightning/Bitcoin stack
+  - name: ci
+    color: "1d76db"
+    description: GitHub Actions, build tooling, repo automation
+
+  # ── Who should pick it up ────────────────────────────────────────────
+  - name: good first issue
+    color: "7057ff"
+    description: Well-scoped newcomer task — single surface, clear acceptance criteria, pointers to files
+  - name: help wanted
+    color: "008672"
+    description: Maintainer-validated work open to any contributor
+
+  # ── Triage state ─────────────────────────────────────────────────────
+  - name: needs-triage
+    color: "ededed"
+    description: Not yet assessed by a maintainer — auto-applied by the issue forms
+  - name: needs-review
+    color: "e99695"
+    description: Pull request awaiting review
+  - name: blocked
+    color: "b60205"
+    description: Waiting on another issue, an external dependency or a decision
+  - name: stale
+    color: "ffffff"
+    description: No activity for a while — closed automatically if it stays quiet
+
+  # ── Priority ─────────────────────────────────────────────────────────
+  - name: "priority: high"
+    color: "d93f0b"
+    description: Blocking or security-related — pick up before anything else
+  - name: "priority: medium"
+    color: "fbca04"
+    description: Normal priority
+  - name: "priority: low"
+    color: "0e8a16"
+    description: Nice to have — ideal backlog
+
+  # ── Areas (one label per pull request, via the path labeler) ─────────
+  - name: "area: wallet"
+    color: "c2e0c6"
+    description: Wallet generation, import, addresses — src/lib/bitcoin/keys.ts, wallet.tsx
+  - name: "area: lightning"
+    color: "7048e8"
+    description: In-browser LDK lab — src/lib/lightning.ts, lightning.tsx, rust/, public/lnlab/
+  - name: "area: tx-builder"
+    color: "bfdadc"
+    description: Transaction builder and signing — src/lib/bitcoin/tx.ts, tx-builder.tsx
+  - name: "area: explorer"
+    color: "d4c5f9"
+    description: Mempool explorer — src/lib/mempool.ts, explorer.tsx
+  - name: "area: i18n"
+    color: "fef2c0"
+    description: French/English dictionary — src/lib/i18n.tsx, i18n-dict.ts
+  - name: "area: server"
+    color: "f3d9c4"
+    description: Server proxy — src/app/api/, next.config.ts, .env.example
+  - name: "area: wasm"
+    color: "0e7490"
+    description: Rust/WASM build of the LDK nodes — rust/lnlab, wasm-pack artifacts
+  - name: tests
+    color: "0e8a16"
+    description: Test suite changes — tests/bitcoin.test.ts

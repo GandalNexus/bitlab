@@ -1,0 +1,50 @@
+name: Stale
+
+on:
+  schedule:
+    # Daily 06:23 UTC.
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Flag inactive issues and PRs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          # Issues: stale after 30 quiet days, closed 14 days later.
+          days-before-issue-stale: 30
+          days-before-issue-close: 14
+          # Pull requests: stricter, reviewers are the bottleneck.
+          days-before-pr-stale: 21
+          days-before-pr-close: 7
+
+          stale-issue-label: stale
+          stale-pr-label: stale
+
+          stale-issue-message: |
+            This issue has been quiet for 30 days. If it is still relevant,
+            add a comment so it stays open; otherwise it will be closed in
+            14 days. Closed issues can always be reopened.
+
+            *En français : cette issue est inactive depuis 30 jours.
+            Commentez pour la garder ouverte, sinon elle sera fermée dans
+            14 jours. Une issue fermée peut toujours être rouverte.*
+          stale-pr-message: |
+            This pull request has been quiet for 21 days. Rebase, push an
+            update or comment to keep it open; otherwise it will be closed
+            in 7 days. Closed PRs can always be reopened.
+
+            *En français : cette pull request est inactive depuis 21 jours.
+            Poussez une mise à jour ou commentez pour la garder ouverte.*
+
+          # Never rot the newcomer pool or security work — the whole point
+          # of a good-first-issue pool is that it stays fresh and inviting.
+          exempt-issue-labels: pinned,security,good first issue,help wanted
+          exempt-pr-labels: security,work-in-progress
+          exempt-all-assignees: true
