@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * BitLab Docs — Guide du développeur (page externe, façon developers.stellar.org).
- * En-tête docs dédié, navigation latérale fixe avec scrollspy, bannières
- * illustrées par section, tableaux et encadrés — aucun bloc de code.
- * Traduction FR ⇄ EN via t().
+ * BitLab Docs — developer guide (external page, developers.stellar.org style).
+ * Dedicated docs header, fixed side navigation with scrollspy, illustrated
+ * section banners, tables and callouts — no code blocks.
+ * FR <-> EN translation via t().
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -114,16 +114,11 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
   );
 }
 
-/** Bannière illustrée de section. */
+/** Illustrated section banner (no header strip — the art stands alone). */
 function Banner({ children }: { children: ReactNode }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="border-b border-border/60 bg-gradient-to-r from-primary/10 via-transparent to-transparent px-5 py-3">
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-primary">
-          <Zap className="h-3 w-3" /> BitLab Docs
-        </span>
-      </div>
-      <div className="px-2 pb-2 pt-1 sm:px-4">{children}</div>
+      <div className="px-2 py-2 sm:px-4">{children}</div>
     </div>
   );
 }
@@ -419,7 +414,7 @@ export default function GuideDocsPage() {
   const { t } = useT();
   const [active, setActive] = useState('demarrer');
 
-  // Scrollspy — section visible dans le tiers supérieur de la fenêtre.
+  // Scrollspy — visible section in the top third of the window.
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entries) => {
@@ -442,7 +437,7 @@ export default function GuideDocsPage() {
 
   return (
     <div className="min-h-screen">
-      {/* En-tête docs dédié */}
+      {/* Dedicated docs header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
@@ -481,7 +476,7 @@ export default function GuideDocsPage() {
         </div>
       </div>
 
-      {/* Corps : nav latérale + contenu */}
+      {/* Body: side nav + content */}
       <div className="mx-auto flex max-w-6xl gap-10 px-4 py-10 sm:px-6">
         <nav aria-label={t('Sections du guide')} className="hidden w-56 shrink-0 lg:block">
           <div className="sticky top-20 space-y-0.5">

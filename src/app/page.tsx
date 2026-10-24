@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * BitLab — main page, sole visible route.
- * Shell like Stellar Lab: fixed sidebar left (mobile drawer),
- * full-width top bar, content area right.
+ * BitLab - main page (single visible route).
+ * Stellar-Lab-style shell: fixed left sidebar (mobile drawer), full-width
+ * top bar, content area on the right.
  * Modules: Dashboard, Wallet, Transactions, Lightning, Miner, Explorer.
  */
 import { useEffect, useState } from 'react';
@@ -45,8 +45,7 @@ export default function BitLabPage() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AnnouncementBanner />
-      <div className="pt-[52px]">
+      <div className="min-h-screen">
         <LabSidebar
           active={tab}
           onNavigate={(id) => setTab(id)}
@@ -57,26 +56,27 @@ export default function BitLabPage() {
         />
 
         <div className={cn('flex min-h-screen flex-col transition-[padding] duration-200 ease-out', sidebarCollapsed ? 'lg:pl-[68px]' : 'lg:pl-64')}>
+          <AnnouncementBanner />
           <LabHeader onOpenMobileNav={() => setMobileNavOpen(true)} />
 
           {/* Content */}
           <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
-          {tab === 'dashboard' ? <Dashboard onNavigate={(t) => setTab(t as TabId)} /> : null}
-          {tab === 'portefeuille' ? <WalletModule /> : null}
-          {tab === 'transactions' ? <TxBuilder /> : null}
-          {tab === 'lightning' ? <LightningModule /> : null}
-          {tab === 'mineur' ? <MiningModule /> : null}
-          {tab === 'explorateur' ? <ExplorerModule /> : null}
-        </main>
+            {tab === 'dashboard' ? <Dashboard onNavigate={(t) => setTab(t as TabId)} /> : null}
+            {tab === 'portefeuille' ? <WalletModule /> : null}
+            {tab === 'transactions' ? <TxBuilder /> : null}
+            {tab === 'lightning' ? <LightningModule /> : null}
+            {tab === 'mineur' ? <MiningModule /> : null}
+            {tab === 'explorateur' ? <ExplorerModule /> : null}
+          </main>
 
-        {/* Footer */}
-        <footer className="mt-auto border-t border-border/70 bg-card/40 py-3.5">
-          <div className="mx-auto flex max-w-5xl justify-center px-4 text-[11px] text-muted-foreground sm:px-6">
-            <span className={cn('text-muted-foreground/70', realFunds && 'text-amber-600 dark:text-amber-500/90')}>
-              {t('{net} · local keys', { net: netLabel })}
-            </span>
-          </div>
-        </footer>
+          {/* Discreet footer - only a reminder of the active network */}
+          <footer className="mt-auto border-t border-border/70 bg-card/40 py-3.5">
+            <div className="mx-auto flex max-w-5xl justify-center px-4 text-[11px] text-muted-foreground sm:px-6">
+              <span className={cn('text-muted-foreground/70', realFunds && 'text-amber-600 dark:text-amber-500/90')}>
+                {t('{net} · clés 100 % locales', { net: netLabel })}
+              </span>
+            </div>
+          </footer>
         </div>
       </div>
     </QueryClientProvider>

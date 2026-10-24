@@ -1,15 +1,16 @@
 'use client';
 
 /**
- * BitLab Docs — Illustrations vectorielles des sections du guide.
- * Bannières stylisées façon docs développeur (grille, dégradés, accents orange),
- * chaque composant est autonome (ids de dégradés préfixés). Textes traduits FR ⇄ EN via t().
+ * BitLab Docs - vector illustrations for the guide sections.
+ * Developer-docs-style banners (grid, gradients, orange accents); each
+ * component is self-contained (prefixed gradient ids). Texts translated
+ * FR <-> EN via t().
  */
 import { useT } from '@/lib/i18n';
 
-const A = '#f7931a'; // orange Bitcoin
-const B = '#ffb057'; // orange clair
-const DIM = '#5b6472'; // gris des traits
+const A = '#f7931a'; // Bitcoin orange
+const B = '#ffb057'; // light orange
+const DIM = '#5b6472'; // stroke gray
 const TXT = '#8b93a1';
 
 function Grid({ id }: { id: string }) {
@@ -38,13 +39,13 @@ function Card({ x, y, w, h, title }: { x: number; y: number; w: number; h: numbe
   );
 }
 
-/* ── 1. Démarrer — du navigateur au réseau ── */
+// --- 1. Getting started - from the browser to the network ---
 export function ArtIntro() {
   const { t } = useT();
   return (
     <svg viewBox="0 0 880 240" className="h-auto w-full" role="img" aria-label={t('Du navigateur au réseau Bitcoin')}>
       <Grid id="g-intro" />
-      {/* Fenêtre navigateur */}
+      {/* Browser window */}
       <Card x={70} y={48} w={190} h={126} />
       <rect x={70} y={48} width={190} height={24} rx="10" fill="rgba(148,163,184,0.12)" />
       <circle cx="88" cy="60" r="4" fill={DIM} />
@@ -55,7 +56,7 @@ export function ArtIntro() {
       <rect x="86" y="138" width="90" height="6" rx="3" fill={DIM} opacity="0.35" />
       <text x="165" y="196" textAnchor="middle" fill={TXT} fontSize="11">{t('votre navigateur')}</text>
 
-      {/* flèche */}
+      {/* arrow */}
       <path d="M 272 110 L 330 110" stroke={A} strokeWidth="2" markerEnd="url(#arrow-intro)" />
       <defs>
         <marker id="arrow-intro" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
@@ -63,7 +64,7 @@ export function ArtIntro() {
         </marker>
       </defs>
 
-      {/* Parcours : 3 tuiles */}
+      {/* Path: 3 tiles */}
       <g fontFamily="inherit">
         <Card x={344} y={58} w={140} h={104} title={t('1 · clés & adresses')} />
         <KeyGlyph cx={414} cy={104} />
@@ -79,7 +80,7 @@ export function ArtIntro() {
         </g>
       </g>
 
-      {/* blocs de chaîne décoratifs */}
+      {/* decorative chain blocks */}
       <text x="440" y="30" textAnchor="middle" fill={B} fontSize="12" fontWeight="600">{t('BitLab — le cycle complet, en vrai')}</text>
     </svg>
   );
@@ -94,20 +95,20 @@ function KeyGlyph({ cx, cy }: { cx: number; cy: number }) {
   );
 }
 
-/* ── 2. Clés & adresses — arbre de dérivation ── */
+// --- 2. Keys & addresses - derivation tree ---
 export function ArtKeys() {
   const { t } = useT();
   return (
     <svg viewBox="0 0 880 240" className="h-auto w-full" role="img" aria-label={t('Dérivation hiérarchique des clés')}>
       <Grid id="g-keys" />
-      {/* Graine */}
+      {/* Seed */}
       <Card x={60} y={70} w={150} h={100} title={t('phrase BIP39 (12/24 mots)')} />
       {Array.from({ length: 4 }).map((_, r) =>
         Array.from({ length: 3 }).map((_, c) => (
           <rect key={`${r}-${c}`} x={84 + c * 42} y={92 + r * 16} width={32} height={8} rx={4} fill={c === 0 ? A : DIM} opacity={c === 0 ? 0.85 : 0.4} />
         )),
       )}
-      {/* nœud maître */}
+      {/* master node */}
       <path d="M 210 120 L 280 120" stroke={DIM} strokeWidth="1.5" />
       <circle cx="295" cy="120" r="14" fill="none" stroke={A} strokeWidth="2" />
       <text x="295" y="152" textAnchor="middle" fill={TXT} fontSize="10">{t('graine 512 bits')}</text>
@@ -126,7 +127,7 @@ export function ArtKeys() {
           <text x="470" y={b.y + 4} fill={TXT} fontSize="11">{b.label}</text>
         </g>
       ))}
-      {/* cadenas */}
+      {/* padlock */}
       <g transform="translate(740 96)">
         <rect x="0" y="14" width="44" height="34" rx="7" fill="none" stroke={A} strokeWidth="2" />
         <path d="M 10 14 v-6 a12 12 0 0 1 24 0 v6" fill="none" stroke={A} strokeWidth="2" />
@@ -137,13 +138,13 @@ export function ArtKeys() {
   );
 }
 
-/* ── 3. Transactions — flux UTXO ── */
+// --- 3. Transactions - UTXO flow ---
 export function ArtTx() {
   const { t } = useT();
   return (
     <svg viewBox="0 0 880 240" className="h-auto w-full" role="img" aria-label={t('Modèle UTXO d’une transaction')}>
       <Grid id="g-tx" />
-      {/* entrées */}
+      {/* inputs */}
       <text x="130" y="52" textAnchor="middle" fill={TXT} fontSize="11">{t('entrées (UTXO)')}</text>
       <Card x={60} y={66} w={140} h={40} />
       <text x="130" y="90" textAnchor="middle" fill={B} fontSize="10" fontFamily="monospace">3a7f…:0 · 42 000 sats</text>
@@ -163,7 +164,7 @@ export function ArtTx() {
 
       <path d="M 540 104 L 640 84 M 540 136 L 640 156" stroke={DIM} strokeWidth="1.5" fill="none" />
 
-      {/* sorties */}
+      {/* outputs */}
       <text x="735" y="52" textAnchor="middle" fill={TXT} fontSize="11">{t('sorties')}</text>
       <Card x={640} y={66} w={190} h={40} />
       <text x="735" y="90" textAnchor="middle" fill={B} fontSize="10" fontFamily="monospace">{t('destinataire · 50 000 sats')}</text>
@@ -176,7 +177,7 @@ export function ArtTx() {
   );
 }
 
-/* ── 4. Réseaux ── */
+// --- 4. Networks ---
 export function ArtNetworks() {
   const { t } = useT();
   const nodes = [
@@ -207,25 +208,25 @@ export function ArtNetworks() {
   );
 }
 
-/* ── 5. Lightning ── */
+// --- 5. Lightning ---
 export function ArtLightning() {
   const { t } = useT();
   return (
     <svg viewBox="0 0 880 240" className="h-auto w-full" role="img" aria-label={t('Canal Lightning entre deux nœuds')}>
       <Grid id="g-ln" />
-      {/* nœud A */}
+      {/* node A */}
       <g>
         <circle cx="200" cy="120" r="46" fill="rgba(247,147,26,0.10)" stroke={A} strokeWidth="2" />
         <text x="200" y="116" textAnchor="middle" fill={A} fontSize="15" fontWeight="700">A</text>
         <text x="200" y="134" textAnchor="middle" fill={TXT} fontSize="9">BitLab-A · LDK</text>
       </g>
-      {/* nœud B */}
+      {/* node B */}
       <g>
         <circle cx="680" cy="120" r="46" fill="rgba(52,211,153,0.10)" stroke="#34d399" strokeWidth="2" />
         <text x="680" y="116" textAnchor="middle" fill="#34d399" fontSize="15" fontWeight="700">B</text>
         <text x="680" y="134" textAnchor="middle" fill={TXT} fontSize="9">BitLab-B · LDK</text>
       </g>
-      {/* canal */}
+      {/* channel */}
       <path d="M 248 120 L 632 120" stroke={B} strokeWidth="2.5" />
       <path d="M 420 96 l -18 30 h 14 l -8 26 l 26 -34 h -14 l 10 -22 z" fill={A} stroke="none" />
       <text x="440" y="86" textAnchor="middle" fill={B} fontSize="10">canal 2/2 · HTLC</text>
@@ -233,7 +234,7 @@ export function ArtLightning() {
       <path d="M 200 168 C 260 214 620 214 680 168" stroke={DIM} strokeWidth="1.5" fill="none" strokeDasharray="5 5" />
       <rect x="380" y="196" width="120" height="26" rx="7" fill="none" stroke={DIM} />
       <text x="440" y="213" textAnchor="middle" fill={TXT} fontSize="10">{t('financement on-chain 2/2')}</text>
-      {/* capacité */}
+      {/* capacity */}
       <text x="200" y="196" textAnchor="middle" fill={TXT} fontSize="10">{t('liquidité sortante')}</text>
       <text x="680" y="196" textAnchor="middle" fill={TXT} fontSize="10">{t('liquidité entrante')}</text>
       <text x="440" y="30" textAnchor="middle" fill={B} fontSize="12" fontWeight="600">{t('Paiements instantanés, routage par gossip, règlement sans écriture on-chain')}</text>
@@ -241,13 +242,13 @@ export function ArtLightning() {
   );
 }
 
-/* ── 6. API ── */
+// --- 6. API ---
 export function ArtApi() {
   const { t } = useT();
   return (
     <svg viewBox="0 0 880 240" className="h-auto w-full" role="img" aria-label={t('Architecture des API du laboratoire')}>
       <Grid id="g-api" />
-      {/* navigateur */}
+      {/* browser */}
       <Card x={70} y={88} w={150} h={64} />
       <text x="145" y="124" textAnchor="middle" fill={TXT} fontSize="12">{t('interface BitLab')}</text>
       <path d="M 220 120 L 320 120" stroke={A} strokeWidth="2" />
@@ -262,7 +263,7 @@ export function ArtApi() {
       <Card x={610} y={54} w={200} h={54} />
       <text x="710" y="77" textAnchor="middle" fill={B} fontSize="11">/api/bitcoin → Esplora</text>
       <text x="710" y="95" textAnchor="middle" fill={TXT} fontSize="10">{t('blocs · adresses · UTXO · frais · diffusion')}</text>
-      {/* module Lightning : direct navigateur, sans serveur */}
+      {/* Lightning module: browser-direct, no server */}
       <path d="M 145 152 L 145 205 L 710 205 L 710 186" stroke={DIM} strokeWidth="1.5" fill="none" strokeDasharray="4 3" />
       <text x="427" y="199" textAnchor="middle" fill={DIM} fontSize="10">Web Worker + WASM</text>
       <Card x={610} y={132} w={200} h={54} />
@@ -273,20 +274,20 @@ export function ArtApi() {
   );
 }
 
-/* ── 7. Sécurité ── */
+// --- 7. Security ---
 export function ArtSecurity() {
   const { t } = useT();
   return (
     <svg viewBox="0 0 880 240" className="h-auto w-full" role="img" aria-label={t('Les clés restent dans le navigateur')}>
       <Grid id="g-sec" />
-      {/* coffre navigateur */}
+      {/* browser vault */}
       <g transform="translate(120 70)">
         <path d="M 0 24 L 52 0 L 104 24 V 78 Q 52 104 0 78 Z" fill="rgba(247,147,26,0.10)" stroke={A} strokeWidth="2" />
         <circle cx="52" cy="48" r="13" fill="none" stroke={A} strokeWidth="2" />
         <rect x="49" y="48" width="6" height="12" rx="3" fill={A} />
         <text x="52" y="126" textAnchor="middle" fill={TXT} fontSize="11">{t('clés privées · IndexedDB locale')}</text>
       </g>
-      {/* barré serveur */}
+      {/* crossed-out server */}
       <g transform="translate(620 70)">
         <rect x="10" y="14" width="130" height="72" rx="10" fill="none" stroke={DIM} strokeDasharray="5 4" />
         <text x="75" y="46" textAnchor="middle" fill={DIM} fontSize="12">{t('serveur')}</text>

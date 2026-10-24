@@ -139,7 +139,7 @@
   letter-spacing: -0.04em;
 }
 
-/* Libellés de section de la barre latérale */
+/* Sidebar section labels */
 .nav-section-label {
   font-size: 11px;
   font-weight: 500;
@@ -147,7 +147,7 @@
   text-transform: uppercase;
 }
 
-/* ───────────────  BitLab — styles dédiés au laboratoire  ─────────────── */
+/* -------------------  BitLab - lab-specific styles  ------------------- */
 
 .scrollbar-thin {
   scrollbar-width: thin;
@@ -170,26 +170,26 @@
   line-height: 1.5;
 }
 
-/* Halos doux façon Stellar Lab derrière le hero (même teinte orange, opacité faible) */
+/* Soft halos behind the hero (same orange hue, low opacity) */
 .lab-glow {
   background-image:
     radial-gradient(600px 220px at 50% -60px, oklch(0.755 0.16 65 / 8%), transparent 70%),
     radial-gradient(420px 200px at 18% 30%, oklch(0.755 0.16 65 / 4%), transparent 70%);
 }
 
-/* Mode jour : halo légèrement plus présent pour conserver la signature du hero */
+/* Day mode: slightly stronger halo to keep the hero signature */
 html:not(.dark) .lab-glow {
   background-image:
     radial-gradient(600px 220px at 50% -60px, oklch(0.755 0.16 65 / 14%), transparent 70%),
     radial-gradient(420px 200px at 18% 30%, oklch(0.755 0.16 65 / 7%), transparent 70%);
 }
 
-/* Console JSON lisible dans les deux modes */
+/* Readable JSON console in both themes */
 html:not(.dark) pre.bg-black\/40 {
   background-color: oklch(0.24 0.015 55);
 }
 
-/* Barre de défilement discrète adaptée au thème */
+/* Discreet scrollbar matching the theme */
 html:not(.dark) .scrollbar-thin {
   scrollbar-color: oklch(0.7 0.02 60) transparent;
 }
@@ -204,4 +204,21 @@ html:not(.dark) .scrollbar-thin::-webkit-scrollbar-thumb {
 }
 .live-dot {
   animation: pulse-ring 2s infinite;
+}
+
+/* Announcement banner entrance (skipped under reduced motion) */
+@media (prefers-reduced-motion: no-preference) {
+  .banner-in {
+    animation: banner-in 240ms ease-out;
+  }
+}
+@keyframes banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

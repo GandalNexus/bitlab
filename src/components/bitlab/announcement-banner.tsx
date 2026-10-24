@@ -1,11 +1,16 @@
 'use client';
 
-
+/**
+ * BitLab - spanning announcement banner (top of the content area, above the
+ * sticky header). Dismissible: dismissal is persisted in localStorage keyed
+ * by the announcement version, so a new announcement re-shows for everyone.
+ */
 import { useCallback, useSyncExternalStore } from 'react';
 import { Megaphone, X } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
-export const ANNOUNCE_VERSION = 'v5-miner-1';
+/** Bump to re-show the banner after the announcement content changes. */
+export const ANNOUNCE_VERSION = 'v5-dev-1';
 const DISMISS_KEY = 'bitlab-announce-dismissed';
 
 const announceStore = {
@@ -21,6 +26,7 @@ const announceStore = {
     try {
       localStorage.setItem(DISMISS_KEY, ANNOUNCE_VERSION);
     } catch {
+      /* storage unavailable */
     }
     announceStore.listeners.forEach((l) => l());
   },
@@ -32,19 +38,19 @@ const announceStore = {
   },
 };
 
-export function AnnouncementBanner({ onPrimary }: { onPrimary?: () => void }) {
+export function AnnouncementBanner() {
   const { t } = useT();
   const dismissed = useSyncExternalStore(announceStore.subscribe, announceStore.get, () => false);
   const dismiss = useCallback(() => announceStore.dismiss(), []);
 
   if (dismissed) return null;
   return (
-    <div className="border-b border-amber-500/25 bg-amber-500/[0.08]">
+    <div role="region" aria-label={t('Annonce')} className="banner-in border-b border-amber-500/25 bg-amber-500/[0.08]">
       <div className="mx-auto flex max-w-5xl items-center gap-2.5 px-4 py-2 sm:px-6">
         <Megaphone className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
         <p className="min-w-0 flex-1 text-xs leading-snug text-amber-800 dark:text-amber-200/90">
-          <span className="sm:hidden">{t('Nouveau : le Mineur applique le PoW réel (Testnet4 + Regtest) dans votre navigateur.')}</span>
-          <span className="hidden sm:inline">{t('Nouveau dans le labo : le module Mineur applique le PoW réel — SHA-256d sur Testnet4 (fenêtres BIP 94) et Regtest, récompenses vers votre portefeuille.')}</span>
+          <span className="sm:hidden">{t('BitLab est toujours en développement — des bugs sont possibles.')}</span>
+          <span className="hidden sm:inline">{t('BitLab est toujours en développement actif — des bugs sont possibles et le labo évolue régulièrement. Merci de votre patience !')}</span>
         </p>
         <button
           onClick={dismiss}
