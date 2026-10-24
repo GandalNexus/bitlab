@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest an improvement for BitLab
+labels: [enhancement, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the idea. BitLab is a teaching lab: proposals are
+        judged on what they help a learner understand, not on feature count.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: Is your request related to a problem? e.g. "I'm always frustrated when […]"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What should happen, from the learner's point of view.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Project constraints
+      description: These two rules are non-negotiable — check them to confirm your proposal fits.
+      options:
+        - label: No simulated blockchain data — if a real API cannot do it, we show the real limitation.
+        - label: Private keys and mnemonics stay in the browser — the server never sees key material.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, references (BIPs, LDK docs, existing tools) or a rough sketch.

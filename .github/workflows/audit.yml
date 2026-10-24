@@ -1,0 +1,30 @@
+name: Dependency audit
+
+on:
+  schedule:
+    # Mondays 05:30 UTC — catch advisories published after the last merge.
+    - cron: "30 5 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "bun.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: bun audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Audit dependencies against the lockfile
+        run: bun audit

@@ -1,0 +1,94 @@
+name: Bug report
+description: Something in BitLab does not work as expected
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. The more precise the report, the faster the fix.
+
+        **Security vulnerability?** Do **not** open a public issue — use the
+        private disclosure process described in [SECURITY.md](../../SECURITY.md).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of what went wrong.
+    validations:
+      required: true
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      description: Which Bitcoin network were you using?
+      options:
+        - Multiple / not network-specific
+        - Testnet4
+        - Testnet3
+        - Signet
+        - Mainnet
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      options:
+        - Other
+        - Dashboard
+        - Wallet
+        - Transactions (builder / decoder)
+        - Lightning lab
+        - Explorer
+        - Guide / documentation
+    validations:
+      required: true
+  - type: input
+    id: browser-os
+    attributes:
+      label: Browser and OS
+      placeholder: e.g. Firefox 143, Ubuntu 24.04
+    validations:
+      required: true
+  - type: dropdown
+    id: private-window
+    attributes:
+      label: Does it reproduce in a private window?
+      description: Rules out stale IndexedDB state — the most common false alarm.
+      options:
+        - "Yes"
+        - "No"
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open '...'
+        2. Click '...'
+        3. See the error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Paste the exact error message shown in the UI, if any.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Screenshots and context
+      description: |
+        Blur any sensitive data — and never paste mnemonics or private keys.
+        Mention any recent action that may be relevant (network switch,
+        wallet import, Lightning lab reset…).

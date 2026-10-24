@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help
+    about: Ask the community in GitHub Discussions — ideas, Bitcoin/Lightning concepts, setup help.
+    url: https://github.com/GandalNexus/bitlab/discussions
+  - name: Security vulnerability
+    about: Private disclosure only — never open a public issue. See SECURITY.md for the process.
+    url: https://github.com/GandalNexus/bitlab/security/advisories/new

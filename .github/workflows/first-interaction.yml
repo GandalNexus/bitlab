@@ -1,0 +1,53 @@
+name: First interaction
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    name: Greet first-time contributors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            Thank you for opening your first issue on BitLab — and welcome!
+
+            A maintainer will triage it shortly (you will see the `needs-triage`
+            label disappear once it is assessed). Two things that make the
+            review much faster:
+
+            - If this is a bug: does it reproduce in a private window? That
+              rules out stale IndexedDB state — the most common false alarm.
+            - Please do not paste mnemonics, WIF keys or real addresses you
+              control. This is a teaching lab, but screenshots can leak.
+
+            *Message en français : merci pour votre première issue ! Un
+            mainteneur la qualifiera bientôt. Astuce : testez dans une fenêtre
+            privée pour écarter un état IndexedDB périmé, et ne collez jamais
+            de mnémonique ni de clé privée.*
+          pr-message: |
+            Thank you for your first pull request on BitLab — and welcome!
+
+            The CI runs four parallel gates (lint, typecheck, tests, build)
+            plus a docs-links check; all of them must be green before review.
+            The checklist in the PR description mirrors the project rules:
+            Conventional Commit title, user-facing strings through `t()`,
+            keys never leave the browser, no simulated blockchain data.
+
+            Looking for a next task? Browse the issues labeled
+            [good first issue](https://github.com/GandalNexus/bitlab/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+            — they are scoped precisely for a first contribution.
+
+            *Message en français : merci pour votre première pull request !
+            La CI doit être verte (lint, typecheck, tests, build, liens docs)
+            avant la revue. Les issues labellisées « good first issue » sont
+            là pour une prochaine contribution.*

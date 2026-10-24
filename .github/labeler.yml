@@ -1,0 +1,70 @@
+# Auto-labels pull requests by changed paths (actions/labeler v5 syntax).
+# Label names must exist in .github/labels.yml — the syncer keeps them in sync.
+
+"area: wallet":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/components/bitlab/wallet.tsx"
+          - "src/lib/bitcoin/keys.ts"
+
+"area: lightning":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/components/bitlab/lightning.tsx"
+          - "src/lib/lightning.ts"
+          - "public/lnlab/**"
+
+"area: tx-builder":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/components/bitlab/tx-builder.tsx"
+          - "src/lib/bitcoin/tx.ts"
+          - "src/lib/bitcoin/utils.ts"
+
+"area: explorer":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/components/bitlab/explorer.tsx"
+          - "src/lib/mempool.ts"
+          - "src/components/bitlab/qrcode.tsx"
+
+"area: i18n":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/lib/i18n.tsx"
+          - "src/lib/i18n-dict.ts"
+
+"area: server":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/app/api/**"
+          - "next.config.ts"
+          - ".env.example"
+
+"area: wasm":
+  - changed-files:
+      - any-glob-to-any-file: "rust/**"
+
+"area: network-registry":
+  - changed-files:
+      - any-glob-to-any-file: "src/lib/networks.ts"
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: "tests/**"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "*.md"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "package.json"
+          - "bun.lock"
