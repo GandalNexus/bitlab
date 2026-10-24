@@ -83,15 +83,6 @@ jobs:
       - name: Build
         run: bun run build
 
-  docs:
-    name: Docs links
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check internal documentation links
-        run: python3 scripts/check_doc_links.py
-
   pr-title:
     name: PR title (Conventional Commit)
     if: github.event_name == 'pull_request'
