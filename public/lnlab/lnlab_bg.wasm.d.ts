@@ -1,0 +1,37 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_lnlab_free: (a: number, b: number) => void;
+export const lnlab_best_block: (a: number) => any;
+export const lnlab_boot_fresh: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => [number, number, number];
+export const lnlab_boot_restore: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any, i: any) => [number, number, number];
+export const lnlab_chain_block: (a: number, b: number, c: number, d: number) => [number, number, number];
+export const lnlab_close_channel: (a: number, b: number, c: number, d: number) => [number, number];
+export const lnlab_connect_ab: (a: number) => [number, number];
+export const lnlab_create_channel: (a: number, b: bigint, c: bigint, d: bigint) => [number, number];
+export const lnlab_create_invoice: (a: number, b: number, c: number, d: bigint, e: number, f: number, g: number, h: number) => [number, number, number, number];
+export const lnlab_create_offer: (a: number, b: number, c: number, d: bigint, e: number, f: number) => [number, number, number, number];
+export const lnlab_decode_invoice: (a: number, b: number) => [number, number, number];
+export const lnlab_decode_offer: (a: number, b: number) => [number, number, number];
+export const lnlab_funding_transaction_generated: (a: number, b: bigint, c: number, d: number) => [number, number];
+export const lnlab_is_connected: (a: number) => number;
+export const lnlab_kv_dirty: (a: number) => any;
+export const lnlab_list_channels: (a: number, b: number) => [number, number, number];
+export const lnlab_logs: (a: number, b: number) => [number, number, number];
+export const lnlab_node_id: (a: number, b: number) => [number, number, number, number];
+export const lnlab_pay_invoice: (a: number, b: number, c: number, d: number, e: number, f: bigint) => [number, number];
+export const lnlab_pay_offer: (a: number, b: number, c: number, d: number, e: number, f: bigint, g: number, h: number) => [number, number];
+export const lnlab_set_fees: (a: number, b: number, c: number, d: number) => void;
+export const lnlab_tick: (a: number) => [number, number, number];
+export const rustsecp256k1_v0_10_0_context_create: (a: number) => number;
+export const rustsecp256k1_v0_10_0_context_destroy: (a: number) => void;
+export const rustsecp256k1_v0_10_0_default_error_callback_fn: (a: number, b: number) => void;
+export const rustsecp256k1_v0_10_0_default_illegal_callback_fn: (a: number, b: number) => void;
+export const __wbindgen_free: (a: number, b: number, c: number) => void;
+export const __wbindgen_exn_store: (a: number) => void;
+export const __externref_table_alloc: () => number;
+export const __wbindgen_export_3: WebAssembly.Table;
+export const __wbindgen_malloc: (a: number, b: number) => number;
+export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+export const __externref_table_dealloc: (a: number) => void;
+export const __wbindgen_start: () => void;
