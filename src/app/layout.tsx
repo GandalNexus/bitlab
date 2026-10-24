@@ -6,9 +6,9 @@ import { LangProvider } from "@/lib/i18n";
 import { THEME_BOOT_SCRIPT, ThemeProvider } from "@/lib/theme";
 
 /**
- * Typographie alignée sur le Stellar Design System (SDS) :
- * — Inter pour le texte (family officielle de stellar.org / Stellar Lab)
- * — Inconsolata pour le code (hex, xpub, JSON)
+ * Typography aligned with the Stellar Design System (SDS):
+ * Inter for text (stellar.org / Stellar Lab official family),
+ * Inconsolata for code (hex, xpub, JSON).
  */
 const inter = Inter({
   variable: "--font-inter",
@@ -46,7 +46,7 @@ export default function RootLayout({
       <body
         className={`${inter.className} ${inconsolata.variable} antialiased bg-background text-foreground min-h-screen flex flex-col`}
       >
-        {/* Anti-flash : applique le thème persisté avant le premier paint. */}
+        {/* Anti-flash: applies the persisted theme before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <LangProvider>
           <ThemeProvider>{children}</ThemeProvider>

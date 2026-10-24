@@ -1,6 +1,9 @@
 'use client';
 
-
+/**
+ * Stellar-Lab-style top bar: brand on the left,
+ * network selector + live status + language (FR/EN) + theme (dark/light) on the right.
+ */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Blocks, Menu, ChevronDown, Check, ShieldAlert } from 'lucide-react';
 import {
@@ -31,6 +34,7 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
   const pick = (id: NetId) => {
     if (id === net) return;
     setNetwork(id);
+    // Every query includes the network in its key — invalidate to force refresh.
     void qc.invalidateQueries();
   };
 
@@ -40,7 +44,7 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
         <button
           onClick={onOpenMobileNav}
           aria-label={t('Ouvrir la navigation')}
-          className="flex h-9 w-9 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -52,6 +56,7 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* Network selector — functional take on Stellar Lab's "● Testnet" */}
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
@@ -99,7 +104,7 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
             </DropdownMenuContent>
           </DropdownMenu>
 
-        
+          {/* Hauteur du dernier bloc */}
           <div
             className="hidden items-center gap-2 rounded-[6px] border border-border bg-card px-2.5 py-1.5 md:flex"
             title={t('Hauteur du dernier bloc {net}', { net: cfg.label })}
