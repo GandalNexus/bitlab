@@ -92,21 +92,14 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
     ],
   },
 ];
-/** Resources: guide first, then references used by lab. */
+/** Guide link only - simplified resources */
 const RESOURCE_LINKS: {
   label: string;
   href: string;
   icon: ComponentType<{ className?: string }>;
   external: boolean;
 }[] = [
-  { label: 'Developer Guide', href: '/guide', icon: BookOpen, external: false },
-  { label: 'mempool.space — explorer', href: '', icon: ScanSearch, external: true }, // href dynamic (active network)
-  { label: 'developer.bitcoin.org', href: 'https://developer.bitcoin.org/', icon: FileText, external: true },
-  { label: 'BIP Index', href: 'https://github.com/bitcoin/bips', icon: KeySquare, external: true },
-  { label: 'Lightning Dev Kit', href: 'https://lightningdevkit.org/', icon: Zap, external: true },
-  { label: 'lightning crate — docs', href: 'https://docs.rs/lightning/latest/lightning/', icon: Package, external: true },
-  { label: 'BOLT #11 — invoices', href: 'https://github.com/lightning/bolts/blob/master/11-payment-encoding.md', icon: Waypoints, external: true },
-  { label: 'mempool.space REST API', href: 'https://mempool.space/docs/api/rest', icon: FileText, external: true },
+  { label: 'Guide', href: '/guide', icon: BookOpen, external: false },
 ];
 
 /* ──────────────────────────────  Navigation  ────────────────────────────── */
@@ -195,10 +188,10 @@ export function SidebarNav({
         </div>
       ))}
 
-      {/* Ressources — guide en tête, puis liens externes de référence */}
+      {/* Guide */}
       <div className="space-y-0.5 border-t border-border/60 pt-4">
         {!collapsed ? (
-          <div className="nav-section-label px-3 pb-1.5 text-muted-foreground/70">{t('Ressources')}</div>
+          <div className="nav-section-label px-3 pb-1.5 text-muted-foreground/70">{t('Guide')}</div>
         ) : (
           <div className="mx-3 mb-2 border-t border-border/40" aria-hidden />
         )}
@@ -208,16 +201,10 @@ export function SidebarNav({
             icon={r.icon}
             label={t(r.label)}
             collapsed={collapsed}
-            href={r.external ? (r.label.startsWith('mempool.space') ? explorerBase() || r.href : r.href) : r.href}
+            href={r.href}
             external={r.external}
           />
         ))}
-        {!collapsed ? (
-          <div className="flex items-center gap-2 px-3 pt-2 text-[11px] text-muted-foreground/70">
-            <FlaskConical className="h-3.5 w-3.5 text-primary/70" />
-            GandalNexus · BitLab v1.0
-          </div>
-        ) : null}
       </div>
     </nav>
   );
@@ -251,12 +238,6 @@ export function LabSidebar({
           collapsed ? 'w-[68px]' : 'w-64',
         )}
       >
-        <div className={cn('flex h-14 items-center border-b border-border/70', collapsed ? 'justify-center px-2' : 'gap-2 px-4')}>
-          <Link href="/" aria-label="BitLab" className="flex items-center gap-2 overflow-hidden">
-            <BrandMark compact={collapsed} />
-          </Link>
-        </div>
-
         <SidebarNav active={active} onNavigate={onNavigate} collapsed={collapsed} />
 
         <div className="border-t border-border/60 p-2">
@@ -306,7 +287,7 @@ export function LabSidebar({
   );
 }
 
-/** Bloc marque : icône labo + « BitLab » + pilule « Lab » (signature Stellar). */
+/** Brand mark: lab icon + "BitLab" text. */
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2">
@@ -314,12 +295,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
         <Zap className="h-4.5 w-4.5" />
       </div>
       {!compact ? (
-        <>
-          <span className="text-[15px] font-semibold tracking-tight">BitLab</span>
-          <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary">
-            Lab
-          </span>
-        </>
+        <span className="text-[15px] font-semibold tracking-tight">BitLab</span>
       ) : null}
     </div>
   );
