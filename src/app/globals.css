@@ -1,0 +1,207 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-inconsolata);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  color-scheme: light;
+  /* Palette jour : même identité ambrée que le mode nuit — papier chaud,
+   * primaire orange Bitcoin assombri pour le contraste (AA sur blanc),
+   * bordures et accents teintés (plus aucun gris neutre). */
+  --radius: 0.625rem;
+  --background: oklch(0.984 0.007 80);
+  --foreground: oklch(0.21 0.014 60);
+  --card: oklch(0.999 0.003 85);
+  --card-foreground: oklch(0.21 0.014 60);
+  --popover: oklch(0.999 0.003 85);
+  --popover-foreground: oklch(0.21 0.014 60);
+  --primary: oklch(0.615 0.145 55);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --secondary: oklch(0.955 0.013 75);
+  --secondary-foreground: oklch(0.28 0.02 60);
+  --muted: oklch(0.955 0.013 75);
+  --muted-foreground: oklch(0.5 0.022 60);
+  --accent: oklch(0.94 0.025 75);
+  --accent-foreground: oklch(0.28 0.02 60);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.895 0.016 70);
+  --input: oklch(0.895 0.016 70);
+  --ring: oklch(0.615 0.145 55);
+  --chart-1: oklch(0.66 0.16 60);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.973 0.009 80);
+  --sidebar-foreground: oklch(0.21 0.014 60);
+  --sidebar-primary: oklch(0.615 0.145 55);
+  --sidebar-primary-foreground: oklch(0.99 0.005 85);
+  --sidebar-accent: oklch(0.93 0.024 75);
+  --sidebar-accent-foreground: oklch(0.28 0.02 60);
+  --sidebar-border: oklch(0.895 0.016 70);
+  --sidebar-ring: oklch(0.615 0.145 55);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.16 0.012 55);
+  --foreground: oklch(0.93 0.012 80);
+  --card: oklch(0.205 0.015 55);
+  --card-foreground: oklch(0.93 0.012 80);
+  --popover: oklch(0.22 0.016 55);
+  --popover-foreground: oklch(0.93 0.012 80);
+  --primary: oklch(0.755 0.16 65);
+  --primary-foreground: oklch(0.19 0.04 60);
+  --secondary: oklch(0.265 0.018 55);
+  --secondary-foreground: oklch(0.93 0.012 80);
+  --muted: oklch(0.25 0.016 55);
+  --muted-foreground: oklch(0.67 0.02 70);
+  --accent: oklch(0.30 0.035 65);
+  --accent-foreground: oklch(0.93 0.012 80);
+  --destructive: oklch(0.62 0.2 25);
+  --border: oklch(0.315 0.018 60);
+  --input: oklch(0.30 0.018 60);
+  --ring: oklch(0.755 0.16 65);
+  --chart-1: oklch(0.755 0.16 65);
+  --chart-2: oklch(0.7 0.14 160);
+  --chart-3: oklch(0.7 0.13 230);
+  --chart-4: oklch(0.78 0.15 90);
+  --chart-5: oklch(0.65 0.2 320);
+  --sidebar: oklch(0.19 0.014 55);
+  --sidebar-foreground: oklch(0.93 0.012 80);
+  --sidebar-primary: oklch(0.755 0.16 65);
+  --sidebar-primary-foreground: oklch(0.19 0.04 60);
+  --sidebar-accent: oklch(0.28 0.02 60);
+  --sidebar-accent-foreground: oklch(0.93 0.012 80);
+  --sidebar-border: oklch(0.315 0.018 60);
+  --sidebar-ring: oklch(0.755 0.16 65);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.03em;
+  }
+}
+
+/* ─────────────  Spécimen typographique Stellar Lab (SDS)  ───────────── */
+
+/* Grand titre d'intro : 40px/600, tracking −1.6px chez Stellar Lab */
+.lab-display {
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+/* Libellés de section de la barre latérale */
+.nav-section-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ───────────────  BitLab — styles dédiés au laboratoire  ─────────────── */
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.35 0.02 60) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: oklch(0.35 0.02 60);
+  border-radius: 3px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hex-wrap {
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+/* Halos doux façon Stellar Lab derrière le hero (même teinte orange, opacité faible) */
+.lab-glow {
+  background-image:
+    radial-gradient(600px 220px at 50% -60px, oklch(0.755 0.16 65 / 8%), transparent 70%),
+    radial-gradient(420px 200px at 18% 30%, oklch(0.755 0.16 65 / 4%), transparent 70%);
+}
+
+/* Mode jour : halo légèrement plus présent pour conserver la signature du hero */
+html:not(.dark) .lab-glow {
+  background-image:
+    radial-gradient(600px 220px at 50% -60px, oklch(0.755 0.16 65 / 14%), transparent 70%),
+    radial-gradient(420px 200px at 18% 30%, oklch(0.755 0.16 65 / 7%), transparent 70%);
+}
+
+/* Console JSON lisible dans les deux modes */
+html:not(.dark) pre.bg-black\/40 {
+  background-color: oklch(0.24 0.015 55);
+}
+
+/* Barre de défilement discrète adaptée au thème */
+html:not(.dark) .scrollbar-thin {
+  scrollbar-color: oklch(0.7 0.02 60) transparent;
+}
+html:not(.dark) .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0.02 60);
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 oklch(0.755 0.16 65 / 45%); }
+  70% { box-shadow: 0 0 0 7px oklch(0.755 0.16 65 / 0%); }
+  100% { box-shadow: 0 0 0 0 oklch(0.755 0.16 65 / 0%); }
+}
+.live-dot {
+  animation: pulse-ring 2s infinite;
+}
