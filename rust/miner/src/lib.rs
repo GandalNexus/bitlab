@@ -1,28 +1,29 @@
-//! BitLab — SHA-256d mining engine for WebAssembly.
+//! SHA-256d mining engine for WebAssembly.
 //!
-//! A minimal solo miner for Testnet4 minimum-difficulty windows (BIP 94):
-//! when a block arrives >20 minutes after the previous one, the next block
-//! is valid at `nBits = 0x1d00ffff` — roughly 2^32 double-SHA256 hashes,
-//! within browser reach.
+//! A minimalist solo miner for Testnet4 minimum-difficulty windows (BIP 94):
+//! as soon as a block arrives more than 20 minutes after the previous one,
+//! the next block is valid with `nBits = 0x1d00ffff` — about 2^32
+//! double-SHA256 hashes, within a browser's reach.
 //!
-//! The 80-byte header is split as:
-//!   - `header76` (76 bytes): version, previous hash, merkle root,
-//!     timestamp, nBits — invariant during nonce scanning;
-//!   - `nonce` (4 bytes): only field that changes.
+//! The 80-byte header splits as:
+//!   - `header76` (76 bytes): version, previous hash, Merkle root,
+//!     timestamp, nBits — invariant while sweeping the nonce;
+//!   - `nonce` (4 bytes): the only changing field.
 //!
-//! Midstate optimization: the first inner SHA-256 block (first 64 bytes
-//! of header) is compressed once per batch. Each nonce then costs
-//! 3 compressions instead of 6 (1 inner SHA finish + 2 outer SHA).
-//! Same trick used by native miners.
+//! Midstate optimization: the inner SHA-256 block 1 (first 64 header
+//! bytes) is compressed once per batch. Each nonce then costs 3
+//! compressions instead of 6 (1 inner-SHA close + 2 for the outer SHA) —
+//! the same trick native miners use.
 //!
-//! No hash dependency: SHA-256 is local, derivable block-by-block,
-//! and covered by self-tests (FIPS 180-4 vectors + real Testnet4 genesis).
+//! No hashing dependencies: the SHA-256 implementation is local, block-wise
+//! incremental, and covered by a self-test (FIPS 180-4 vectors + the real
+//! Testnet4 genesis header).
 
 use wasm_bindgen::prelude::*;
 
-/* ─────────────────────────── SHA-256 (local) ─────────────────────────── */
+// --- SHA-256 implementation (local, dependency-free) ---
 
-/// FIPS 180-4 K constants.
+/// K constants of the FIPS 180-4 specification.
 const K: [u32; 64] = [
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -34,10 +35,12 @@ const K: [u32; 64] = [
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ];
 
+/// SHA-256 initial state (IV).
 const IV: [u32; 8] = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 ];
 
+/// One SHA-256 compression round: state ← state ⊕ 64-byte block.
 fn compress(state: &mut [u32; 8], block: &[u8]) {
     let mut w = [0u32; 64];
     for i in 0..16 {
@@ -76,7 +79,9 @@ fn compress(state: &mut [u32; 8], block: &[u8]) {
     *state = next;
 }
 
-
+/// Final SHA-256 padding for a message of `len_total` bytes whose trailing
+/// partial blocks are already absorbed: returns the closing block(s)
+/// (0x80, zeros, bit length over 8 big-endian bytes).
 fn final_blocks(len_total: usize) -> Vec<u8> {
     let mut pad = Vec::with_capacity(128);
     pad.push(0x80);
@@ -87,6 +92,7 @@ fn final_blocks(len_total: usize) -> Vec<u8> {
     pad
 }
 
+/// SHA-256 of a full message (reference, used by the self-tests).
 fn sha256(msg: &[u8]) -> [u8; 32] {
     let mut state = IV;
     let mut chunks = msg.chunks_exact(64);
@@ -105,12 +111,12 @@ fn sha256(msg: &[u8]) -> [u8; 32] {
     out
 }
 
-/* ───────────────────────────── Helpers ───────────────────────────── */
+// --- Helpers ---
 
 fn decode_hex(s: &str) -> Result<Vec<u8>, JsValue> {
     let s = s.trim();
     if s.len() % 2 != 0 || !s.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return Err(JsValue::from_str("invalid hex"));
+        return Err(JsValue::from_str("hex illisible"));
     }
     let mut out = Vec::with_capacity(s.len() / 2);
     let bytes = s.as_bytes();
@@ -126,6 +132,7 @@ fn decode_hex(s: &str) -> Result<Vec<u8>, JsValue> {
     Ok(out)
 }
 
+/// Compare two 256-bit big-endian integers: a <= b.
 fn le256(a: &[u8; 32], b: &[u8; 32]) -> bool {
     for i in 0..32 {
         match a[i].cmp(&b[i]) {
@@ -137,24 +144,31 @@ fn le256(a: &[u8; 32], b: &[u8; 32]) -> bool {
     true
 }
 
-/* ─────────────────────────── WebAssembly API ─────────────────────────── */
+// --- WebAssembly API ---
 
+/// Self-test run once at worker startup:
+///   - FIPS 180-4 SHA-256 vectors (empty string, "abc");
+///   - real Testnet4 genesis header → double-SHA256 = official block-0 hash
+///     (network data, not an invented vector);
+///   - mine_batch must recover the genesis nonce (393743547) in 1 iteration.
 #[wasm_bindgen]
 pub fn self_test() -> Result<(), JsValue> {
     let empty = sha256(b"");
     if hex(&empty) != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
-        return Err(JsValue::from_str("self-test: invalid SHA-256(\"\")"));
+        return Err(JsValue::from_str("self-test: SHA-256(\"\") invalide"));
     }
     let abc = sha256(b"abc");
     if hex(&abc) != "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" {
-        return Err(JsValue::from_str("self-test: invalid SHA-256(\"abc\")"));
+        return Err(JsValue::from_str("self-test: SHA-256(\"abc\") invalide"));
     }
 
+    // Testnet4 genesis (height 0, nBits 0x1d00ffff, nonce 393743547):
+    // rebuilt from network data, verified against mempool.space.
     const GENESIS: &str = "0100000000000000000000000000000000000000000000000000000000000000000000004e7b2b9128fe0291db0693af2ae418b767e657cd407e80cb1434221eaea7a07a046f3566ffff001dbb0c7817";
     let header = decode_hex(GENESIS)?;
     let expected = decode_hex("00000000da84f2bafbbc53dee25a72ae507ff4914b867c565be350b0da8bf043")?;
     if !sha256d_meets(&header, expected.as_slice()) {
-        return Err(JsValue::from_str("self-test: Testnet4 genesis mismatch"));
+        return Err(JsValue::from_str("self-test: genesis Testnet4 ne colle pas"));
     }
 
     let target = target_from_bits_hex("ffff001d")?;
@@ -162,27 +176,33 @@ pub fn self_test() -> Result<(), JsValue> {
     let prefix_hex = hex(prefix);
     let found = mine_batch(&prefix_hex, &target, 393743547, 1)?;
     if found != 393743547 {
-        return Err(JsValue::from_str("self-test: genesis nonce not found"));
+        return Err(JsValue::from_str("self-test: nonce genesis non retrouvé"));
     }
     Ok(())
 }
 
-
+/// Sweeps `iters` consecutive nonces (from `start_nonce`, with modulo 2^32
+/// wrap) against a `header76_hex` header (76 bytes) and a `target_hex`
+/// target (32 bytes big-endian). Returns the winning nonce, or -1 when no
+/// candidate lands in the batch.
 #[wasm_bindgen]
 pub fn mine_batch(header76_hex: &str, target_hex: &str, start_nonce: u32, iters: u32) -> Result<i64, JsValue> {
     let prefix = decode_hex(header76_hex)?;
     if prefix.len() != 76 {
-        return Err(JsValue::from_str("header must be 76 bytes (80 - nonce)"));
+        return Err(JsValue::from_str("l'en-tête doit faire 76 octets (80 − nonce)"));
     }
     let target = decode_hex(target_hex)?;
     if target.len() != 32 {
-        return Err(JsValue::from_str("target must be 32 bytes"));
+        return Err(JsValue::from_str("la cible doit faire 32 octets"));
     }
     let target: [u8; 32] = target.try_into().unwrap();
 
+    // Midstate: compress block 1 once (first 64 header bytes, invariant).
     let mut midstate = IV;
     compress(&mut midstate, &prefix[..64]);
 
+    // Inner SHA block 2: last 12 header bytes (76 − 64) preceding the nonce
+    // + the nonce itself (bytes 12..16) + padding (80 B).
     let mut block2 = [0u8; 64];
     block2[..12].copy_from_slice(&prefix[64..76]);
     block2[12] = 0x00;
@@ -190,6 +210,7 @@ pub fn mine_batch(header76_hex: &str, target_hex: &str, start_nonce: u32, iters:
     block2[16] = 0x80;
     block2[56..64].copy_from_slice(&640u64.to_be_bytes());
 
+    // Outer SHA block 1: 32 digest bytes + padding (32 B).
     let mut outer_block = [0u8; 64];
     outer_block[32] = 0x80;
     outer_block[56..64].copy_from_slice(&256u64.to_be_bytes());
@@ -198,9 +219,11 @@ pub fn mine_batch(header76_hex: &str, target_hex: &str, start_nonce: u32, iters:
     for _ in 0..iters {
         block2[12..16].copy_from_slice(&nonce.to_le_bytes());
 
+        // Inner SHA: midstate + block 2 → intermediate digest.
         let mut inner = midstate;
         compress(&mut inner, &block2);
 
+        // Outer SHA: big-endian digest + closing block.
         let mut outer = IV;
         let mut ob = outer_block;
         for (i, word) in inner.iter().enumerate() {
@@ -208,6 +231,8 @@ pub fn mine_batch(header76_hex: &str, target_hex: &str, start_nonce: u32, iters:
         }
         compress(&mut outer, &ob);
 
+        // Numeric comparison: hash = little-endian-interpreted digest,
+        // i.e. byte-wise reversal before comparing against the target.
         let mut candidate = [0u8; 32];
         for (i, word) in outer.iter().enumerate() {
             candidate[4 * i..4 * i + 4].copy_from_slice(&word.to_be_bytes());
@@ -222,6 +247,8 @@ pub fn mine_batch(header76_hex: &str, target_hex: &str, start_nonce: u32, iters:
     Ok(-1)
 }
 
+/// Double-SHA256 of a hex message (diagnostics and cross-checks against
+/// node:crypto). Returns the final digest as hex.
 #[wasm_bindgen]
 pub fn sha256d_hex(msg_hex: &str) -> Result<String, JsValue> {
     let msg = decode_hex(msg_hex)?;
@@ -230,22 +257,28 @@ pub fn sha256d_hex(msg_hex: &str) -> Result<String, JsValue> {
     Ok(hex(&twice))
 }
 
+/// Decodes a compact nBits (Bitcoin format, e.g. 0x1d00ffff) and returns
+/// the 32-byte big-endian target as hex — computed host-side once per
+/// window, not per nonce.
 #[wasm_bindgen]
 pub fn target_from_bits_hex(bits_hex: &str) -> Result<String, JsValue> {
     let bits_le = decode_hex(bits_hex)?;
     if bits_le.len() != 4 {
-        return Err(JsValue::from_str("nBits must be 4 bytes"));
+        return Err(JsValue::from_str("nBits doit faire 4 octets"));
     }
-
+    // On the wire, nBits travels little-endian; the logical value is
+    // big-endian: e.g. LE bytes [ff ff 00 1d] -> 0x1d00ffff.
     let bits = u32::from_be_bytes([bits_le[3], bits_le[2], bits_le[1], bits_le[0]]);
     let exponent = (bits >> 24) as usize;
     let mantissa = (bits & 0x007f_ffff) as u64;
     if exponent < 3 || exponent > 32 + 3 {
-        return Err(JsValue::from_str("nBits exponent out of range"));
+        return Err(JsValue::from_str("exposant nBits hors bornes"));
     }
-    let byte_pos = (exponent - 3) as i64; 
+    // value = mantissa × 256^(exponent − 3), truncated to 32 BE bytes.
+    let byte_pos = (exponent - 3) as i64; // position (0 = least significant)
     let mut target = [0u8; 32];
-   
+    // Mantissa ≤ 0x7fffff: at most 3 bytes, written from most significant
+    // (k = 0) to least significant (k = 2), each at its position.
     for k in 0..3usize {
         let byte = ((mantissa >> (8 * (2 - k))) & 0xff) as u8;
         let pos = byte_pos + k as i64;
@@ -256,6 +289,8 @@ pub fn target_from_bits_hex(bits_hex: &str) -> Result<String, JsValue> {
     Ok(hex(&target))
 }
 
+/// Checks a message's double-SHA256 is ≤ target (big-endian).
+/// Used by the self-test; the host can cross-check results too.
 fn sha256d_meets(msg: &[u8], target: &[u8]) -> bool {
     if msg.len() != 80 || target.len() != 32 {
         return false;

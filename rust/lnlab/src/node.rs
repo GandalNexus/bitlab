@@ -79,6 +79,7 @@ pub(crate) type PmArc = Arc<
         >,
 >;
 
+/// Finds the direct channel to a counterparty (the lab's only route shape).
 fn direct_channel<'a>(
         first_hops: &'a [&'a ChannelDetails], payee: &PublicKey,
 ) -> Result<&'a ChannelDetails, &'static str> {
@@ -126,7 +127,8 @@ impl Router for DirectRouter {
                                                 return Err("introduction par scid non supportée dans le labo")
                                         },
                                 };
-                                
+                                // One-hop blinded path built by ourselves: the tail
+                                // is the payee in disguise, the channel is the same.
                                 let tail = BlindedTail {
                                         trampoline_hops: Vec::new(),
                                         hops: path.blinded_hops().to_vec(),
@@ -143,6 +145,7 @@ impl Router for DirectRouter {
                         node_features: NodeFeatures::empty(),
                         short_channel_id: channel_scid(channel)?,
                         channel_features: ChannelFeatures::empty(),
+                        // Last hop carries the full payment value.
                         fee_msat: route_params.final_value_msat,
                         cltv_expiry_delta: final_cltv.max(18),
                         maybe_announced_channel: false,
@@ -153,6 +156,8 @@ impl Router for DirectRouter {
                 })
         }
 
+        /// Builds the one-hop blinded payment path embedded in BOLT12 invoices
+        /// we issue: introduction node = us, single blinded hop = us.
         fn create_blinded_payment_paths<T: bitcoin::secp256k1::Signing + bitcoin::secp256k1::Verification>(
                 &self, recipient: PublicKey, _first_hops: Vec<ChannelDetails>,
                 tlvs: ReceiveTlvs, _amount_msats: Option<u64>,
@@ -164,8 +169,11 @@ impl Router for DirectRouter {
         }
 }
 
-
+/// Onion-message routing for the lab: the only possible destination is the
+/// connected peer. Blinded destinations resolve because our one-hop paths use
+/// the recipient's node id as introduction node.
 pub(crate) struct LabMessageRouter {
+        /// Entropy source for the blinding secrets of message paths we build.
         pub keys: KeysArc,
 }
 
@@ -190,7 +198,8 @@ impl MessageRouter for LabMessageRouter {
                 }
         }
 
-        
+        /// Builds the one-hop blinded message path offers carry: introduction
+        /// node = us, single blinded hop = us.
         fn create_blinded_paths<T: bitcoin::secp256k1::Signing + bitcoin::secp256k1::Verification>(
                 &self, recipient: PublicKey, receive_key: ReceiveAuthKey, context: MessageContext,
                 _peers: Vec<MessageForwardNode>, secp_ctx: &bitcoin::secp256k1::Secp256k1<T>,
@@ -211,6 +220,7 @@ pub(crate) struct LnNode {
         pub pm: PmArc,
 }
 
+/// Construction parameters shared by the fresh and restore paths.
 pub(crate) struct NodeParts {
         pub seed: [u8; 32],
         pub fees: FeeRates,
@@ -230,6 +240,7 @@ pub(crate) fn network_slug(network: bitcoin::Network) -> &'static str {
         }
 }
 
+/// Builds a brand-new node whose chain view starts at the current Esplora tip.
 pub(crate) fn build_fresh(parts: &NodeParts, best_block: BestBlock) -> LnNode {
         let keys = Arc::new(KeysManager::new(&parts.seed, parts.now_secs as u64, parts.now_nanos, false));
         let logger = Arc::new(JsLogger::new());
@@ -261,7 +272,7 @@ pub(crate) fn build_fresh(parts: &NodeParts, best_block: BestBlock) -> LnNode {
         let pm = build_peer_manager(&keys, &logger, &monitor, Arc::clone(&cm));
         LnNode { keys, logger, fee, kv: std::rc::Rc::clone(&parts.kv), monitor, cm, pm }
 }
-
+/// Restores a node from persisted state (manager + monitors already in `kv`).
 pub(crate) fn build_restored(parts: &NodeParts) -> Result<LnNode, String> {
         let keys = Arc::new(KeysManager::new(&parts.seed, parts.now_secs as u64, parts.now_nanos, false));
         let logger = Arc::new(JsLogger::new());
@@ -277,6 +288,7 @@ pub(crate) fn build_restored(parts: &NodeParts) -> Result<LnNode, String> {
                 keys.get_peer_storage_key(),
         ));
 
+        // Monitors are read straight from the KV store, exactly like ldk-sample.
         let monitors = read_channel_monitors(
                 std::rc::Rc::clone(&parts.kv),
                 Arc::clone(&keys),
@@ -313,7 +325,8 @@ pub(crate) fn build_restored(parts: &NodeParts) -> Result<LnNode, String> {
 
 fn build_peer_manager(keys: &KeysArc, logger: &LoggerArc, monitor: &MonitorArc, cm: CmArc) -> PmArc {
         let ephemeral = keys.get_secure_random_bytes();
-        
+        // The channel manager implements both the BOLT12 offers handler and the
+        // node id lookup the onion messenger needs — one Arc, two hats.
         let messenger = OnionMessenger::new(
                 Arc::clone(keys),
                 Arc::clone(keys),
@@ -334,7 +347,7 @@ fn build_peer_manager(keys: &KeysArc, logger: &LoggerArc, monitor: &MonitorArc, 
         };
         Arc::new(PeerManager::new(
                 message_handler,
-                0,
+                0, // current_time; pings are irrelevant on an in-memory link
                 &ephemeral,
                 Arc::clone(logger),
                 Arc::clone(keys),

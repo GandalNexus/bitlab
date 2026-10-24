@@ -17,6 +17,8 @@ use lightning::chain::chaininterface::{
 use lightning::util::logger::{Level, Logger, Record};
 use wasm_bindgen::prelude::*;
 
+/// Log sink shared with JavaScript. Keeps a bounded in-memory tail (for the UI)
+/// and mirrors everything to the browser console via an imported function.
 #[wasm_bindgen]
 extern "C" {
         #[wasm_bindgen(js_namespace = lnlabHost)]
@@ -47,6 +49,7 @@ impl Logger for JsLogger {
                 };
                 let message = record.args.to_string();
                 if message.len() > 400 {
+                        // Keep the tail bounded and readable.
                         let truncated: String = message.chars().take(400).collect();
                         self.push(level, truncated.clone());
                         hostLog(level, &truncated);
@@ -64,6 +67,7 @@ impl JsLogger {
                 tail.truncate(80);
         }
 
+        /// Snapshot of recent log lines for the UI (plain strings).
         pub(crate) fn tail_strings(&self) -> Vec<String> {
                 self.tail
                         .borrow()
@@ -81,6 +85,7 @@ fn level_tag(level: u8) -> &'static str {
         }
 }
 
+/// Fee rates pushed by JavaScript (converted from Esplora `sat/vB` to `sat/kwu`).
 #[derive(Clone, Copy)]
 pub(crate) struct FeeRates {
         pub fast: u32,
