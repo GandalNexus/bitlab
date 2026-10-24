@@ -7,7 +7,6 @@ BitLab is a teaching sandbox where you can generate real wallets, build and sign
 [![CI](https://github.com/GandalNexus/bitlab/actions/workflows/ci.yml/badge.svg)](./.github/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-![BitLab dashboard](docs/screenshot.png)
 
 ## Features
 
@@ -108,7 +107,6 @@ src/
     └── theme.tsx           # Dark/light theme (no-flash boot)
 ```
 
-![Architecture map](docs/architecture.png)
 
 Key design decisions:
 
