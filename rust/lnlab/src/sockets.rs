@@ -12,10 +12,12 @@ use std::rc::Rc;
 
 use lightning::ln::peer_handler::SocketDescriptor;
 
-
+/// One endpoint of the link. `Eq`/`Hash` are derived from the side so that the
+/// `PeerManager` internal maps treat clones of the same endpoint as one peer.
 #[derive(Clone)]
 pub(crate) struct LnSocket {
         side: u8,
+        /// The other side's inbox: `send_data` pushes there.
         peer_inbox: Rc<RefCell<VecDeque<Vec<u8>>>>,
         open: Rc<RefCell<bool>>,
 }
@@ -41,6 +43,7 @@ pub(crate) struct Link {
 }
 
 impl LnSocket {
+        /// Creates a linked pair (A endpoint, B endpoint).
         pub(crate) fn pair() -> (LnSocket, LnSocket, Link) {
                 let inbox_a = Rc::new(RefCell::new(VecDeque::new()));
                 let inbox_b = Rc::new(RefCell::new(VecDeque::new()));

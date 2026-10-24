@@ -49,6 +49,7 @@ impl JsKvStore {
                 let dropped_keys: Vec<StoreKey> = self.dropped.borrow().iter().cloned().collect();
                 self.dropped.borrow_mut().clear();
                 for key in dropped_keys {
+                        // Only report a tombstone if the key is really gone.
                         if !self.data.borrow().contains_key(&key) {
                                 out.push((key, None));
                         }
@@ -107,6 +108,7 @@ impl KVStoreSync for JsKvStore {
         }
 }
 
+/// Shared per-node store handed to LDK components as `Rc<JsKvStore>`.
 pub(crate) type SharedKv = Rc<JsKvStore>;
 
 pub(crate) fn shared_store() -> SharedKv {

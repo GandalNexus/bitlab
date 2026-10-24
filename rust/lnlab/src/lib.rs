@@ -67,8 +67,11 @@ fn network_of(slug: &str) -> Result<Network, JsValue> {
 
 fn currency_of(network: Network) -> Result<Currency, JsValue> {
         match network {
+                // BOLT11 has no distinct HRN for testnet4: both testnets share the
+                // "tb" bech32 prefix (Currency::BitcoinTestnet), like addresses do.
                 Network::Testnet | Network::Testnet4 => Ok(Currency::BitcoinTestnet),
                 Network::Signet => Ok(Currency::Signet),
+                // Regtest: lnbcrt prefix (Currency::Regtest).
                 Network::Regtest => Ok(Currency::Regtest),
                 _ => Err(JsValue::from_str("réseau non supporté pour le laboratoire Lightning")),
         }
@@ -91,10 +94,12 @@ fn js_err(message: String) -> JsValue {
         JsValue::from_str(&message)
 }
 
+/// Writes a string property on a JS object (js_sys::Object::set takes JsValues).
 fn put(obj: &Object, key: &str, value: String) {
         js_sys::Reflect::set(obj, &JsValue::from_str(key), &JsValue::from_str(&value)).expect("set property");
 }
 
+/// Options passed by the worker at boot: node selector (0 = A, 1 = B).
 fn pick(node: u8) -> Result<usize, JsValue> {
         match node {
                 0 => Ok(0),
@@ -107,12 +112,14 @@ fn pick(node: u8) -> Result<usize, JsValue> {
 pub struct LnLab {
         network: Network,
         nodes: [LnNode; 2],
+        /// Active peer link (descriptors + inboxes), rebuilt on every reconnect.
         link: Option<(LnSocket, LnSocket, Link)>,
         pending_funding: RefCell<HashMap<u64, (ChannelId, bitcoin::secp256k1::PublicKey)>>,
 }
 
 #[wasm_bindgen]
 impl LnLab {
+        /// Boots two fresh nodes whose chain view starts at the current tip.
         #[allow(clippy::too_many_arguments)]
         pub fn boot_fresh(
                 network: &str, seed_a: &[u8], seed_b: &[u8], tip_height: u32, tip_hash: &str, now_secs: u32,
@@ -147,6 +154,7 @@ impl LnLab {
                 })
         }
 
+        /// Boots two nodes from IndexedDB-backed state (KV entries + manager bytes).
         pub fn boot_restore(
                 network: &str, seed_a: &[u8], seed_b: &[u8], now_secs: u32, kv_a: Array, kv_b: Array,
         ) -> Result<LnLab, JsValue> {
@@ -180,10 +188,12 @@ impl LnLab {
                 })
         }
 
+        /// Compressed public key (node id) of the selected node, hex-encoded.
         pub fn node_id(&self, node: u8) -> Result<String, JsValue> {
                 Ok(self.nodes[pick(node)?].cm.get_our_node_id().to_string())
         }
 
+        /// Current chain position of the lab (both nodes share the feed).
         pub fn best_block(&self) -> JsValue {
                 let best = self.nodes[0].cm.current_best_block();
                 let obj = Object::new();
@@ -192,17 +202,20 @@ impl LnLab {
                 obj.into()
         }
 
+        /// Pushes fee rates (sat/kwu) converted from Esplora sat/vB by the worker.
         pub fn set_fees(&self, fast: u32, normal: u32, slow: u32) {
                 for node in &self.nodes {
                         node.fee.set_rates(FeeRates { fast, normal, slow });
                 }
         }
 
+        /// Recent LDK log lines for the selected node (bounded tail).
         pub fn logs(&self, node: u8) -> Result<Array, JsValue> {
                 let lines = self.nodes[pick(node)?].logger.tail_strings();
                 Ok(lines.into_iter().map(|s| JsValue::from_str(&s)).collect())
         }
 
+        /// Opens the in-memory P2P link A -> B (real noise handshake).
         pub fn connect_ab(&mut self) -> Result<(), JsValue> {
                 if self.is_connected() {
                         return Ok(());
@@ -216,6 +229,7 @@ impl LnLab {
                                 None,
                         )
                         .map_err(|e| js_err(format!("connexion A -> B refusée : {:?}", e)))?;
+                // Initial noise message is destined to B.
                 link.inbox_b.borrow_mut().push_back(init);
                 self.nodes[1]
                         .pm
@@ -225,14 +239,17 @@ impl LnLab {
                 self.flush_io()
         }
 
+        /// True while the in-memory P2P link is up.
         pub fn is_connected(&self) -> bool {
                 self.link.as_ref().map(|(_, _, link)| *link.open.borrow()).unwrap_or(false)
         }
 
+        /// Processes one chain block (hex) for both nodes; returns emitted events.
         pub fn chain_block(&mut self, height: u32, block_hex: &str) -> Result<Array, JsValue> {
                 let bytes = Vec::<u8>::from_hex(block_hex.trim())
                         .map_err(|_| js_err("bloc hexadécimal invalide".to_string()))?;
                 let block: Block = deserialize(&bytes).map_err(|_| js_err("bloc non décodable".to_string()))?;
+                // The `Listen` tuple impl requires owning Derefs, hence the clones.
                 let tap_a = (self.nodes[0].cm.clone(), self.nodes[0].monitor.clone());
                 tap_a.block_connected(&block, height);
                 let tap_b = (self.nodes[1].cm.clone(), self.nodes[1].monitor.clone());
@@ -240,7 +257,9 @@ impl LnLab {
                 self.tick()
         }
 
-        
+        /// Opens a channel from A to B. The funding transaction is built and signed
+        /// by the lab wallet in the main thread when `funding_generation_ready`
+        /// arrives, then handed back via `funding_transaction_generated`.
         pub fn create_channel(&mut self, value_sats: u64, push_msat: u64, user_channel_id: u64) -> Result<(), JsValue> {
                 let their_id = self.nodes[1].cm.get_our_node_id();
                 self.nodes[0]
@@ -250,6 +269,7 @@ impl LnLab {
                 Ok(())
         }
 
+        /// Feeds back the funding transaction built by the lab wallet.
         pub fn funding_transaction_generated(&mut self, user_channel_id: u64, tx_hex: &str) -> Result<(), JsValue> {
                 let (temporary_channel_id, counterparty) = self
                         .pending_funding
@@ -264,6 +284,7 @@ impl LnLab {
                 Ok(())
         }
 
+        /// Creates and signs a real BOLT11 invoice on the selected node.
         pub fn create_invoice(
                 &mut self, node: u8, amount_msat: Option<u64>, description: &str, expiry_secs: u32, now_secs: u32,
         ) -> Result<String, JsValue> {
@@ -287,7 +308,8 @@ impl LnLab {
                         builder = builder.amount_milli_satoshis(amount);
                 }
                 let raw = builder.build_raw().map_err(|e| js_err(format!("facture invalide : {:?}", e)))?;
-               
+                // `sign_invoice` hashes the raw invoice itself, so we hand it the
+                // original while `sign` consumes a clone.
                 let signed = raw
                         .clone()
                         .sign(|_| {
@@ -303,6 +325,7 @@ impl LnLab {
                 Ok(invoice.to_string())
         }
 
+        /// Pays a BOLT11 invoice over the direct channel (real HTLC, real routing).
         pub fn pay_invoice(&mut self, node: u8, invoice: &str, amount_msat_override: Option<u64>) -> Result<(), JsValue> {
                 let idx = pick(node)?;
                 let inv: Bolt11Invoice =
@@ -340,6 +363,9 @@ impl LnLab {
                 Ok(())
         }
 
+        /// Creates a real BOLT12 offer (lno1…) on the selected node. The offer
+        /// carries a one-hop blinded message path back to the issuing node, so
+        /// any peer of that node can request an invoice through onion messages.
         pub fn create_offer(&self, node: u8, amount_msat: Option<u64>, description: &str) -> Result<String, JsValue> {
                 let idx = pick(node)?;
                 let description = description.trim();
@@ -363,6 +389,9 @@ impl LnLab {
                 Ok(offer.to_string())
         }
 
+        /// Pays a BOLT12 offer from the selected node: sends an invoice request
+        /// over onion messages, then pays the returned invoice over the direct
+        /// channel. The result surfaces later as normal payment events.
         pub fn pay_offer(&mut self, node: u8, offer: &str, amount_msat: Option<u64>, payer_note: Option<String>) -> Result<(), JsValue> {
                 let idx = pick(node)?;
                 let offer: Offer = Offer::from_str(offer.trim())
@@ -388,6 +417,7 @@ impl LnLab {
                 Ok(())
         }
 
+        /// Decodes a BOLT12 offer without touching any node state (static).
         pub fn decode_offer(offer: &str) -> Result<JsValue, JsValue> {
                 let offer: Offer = Offer::from_str(offer.trim())
                         .map_err(|e| js_err(format!("offer illisible : {:?}", e)))?;
@@ -414,6 +444,7 @@ impl LnLab {
                 Ok(obj.into())
         }
 
+        /// Decodes a BOLT11 invoice without touching any node state (static).
         pub fn decode_invoice(invoice: &str) -> Result<JsValue, JsValue> {
                 let inv: Bolt11Invoice =
                         Bolt11Invoice::from_str(invoice).map_err(|e| js_err(format!("facture illisible : {}", e)))?;
@@ -431,6 +462,7 @@ impl LnLab {
                 Ok(obj.into())
         }
 
+        /// Closes a channel cooperatively from the selected node.
         pub fn close_channel(&mut self, node: u8, channel_id_hex: &str) -> Result<(), JsValue> {
                 let idx = pick(node)?;
                 let bytes = Vec::<u8>::from_hex(channel_id_hex.trim())
@@ -453,11 +485,14 @@ impl LnLab {
                 Ok(())
         }
 
+        /// Channel summary for the selected node.
         pub fn list_channels(&self, node: u8) -> Result<Array, JsValue> {
                 let idx = pick(node)?;
                 Ok(self.channels_of(idx))
         }
 
+        /// Drains pending KV writes for both nodes: entries of
+        /// [nodeLabel, primary, secondary, key, Uint8Array | null].
         pub fn kv_dirty(&self) -> Array {
                 let out = Array::new();
                 for (idx, label) in ["A", "B"].iter().enumerate() {
@@ -481,6 +516,8 @@ impl LnLab {
                 out
         }
 
+        /// Drives the protocol: message pump + pending events + persistence.
+        /// Returns the events emitted during this tick.
         pub fn tick(&mut self) -> Result<Array, JsValue> {
                 self.flush_io()?;
                 let mut collected: Vec<JsValue> = Vec::new();
@@ -493,6 +530,7 @@ impl LnLab {
                                 Ok(())
                         };
                         node.cm.process_pending_events(&handler);
+                        // Persist the channel manager after every event batch.
                         let bytes = node.cm.encode();
                         let _ = node.kv.write("", "", "manager", bytes);
                 }
@@ -565,6 +603,7 @@ impl LnLab {
         }
 }
 
+/// Rebuilds a KV store from a JS array of [primary, secondary, key, Uint8Array].
 fn restore_store(entries: &Array) -> Result<SharedKv, JsValue> {
         let kv = shared_store();
         for entry in entries.iter() {
@@ -583,11 +622,13 @@ fn restore_store(entries: &Array) -> Result<SharedKv, JsValue> {
 }
 
 fn invoice_description(inv: &Bolt11Invoice) -> String {
+        // Description or description hash, whichever the invoice carries.
         match inv.description() {
                 lightning_invoice::Bolt11InvoiceDescriptionRef::Direct(desc) => desc.to_string(),
                 lightning_invoice::Bolt11InvoiceDescriptionRef::Hash(_) => "(description hachée)".to_string(),
         }
 }
 
+/// KeysManager re-export guard: keeps `KeysManager` in scope for wasm-bindgen.
 #[allow(dead_code)]
 fn _assert_keys(_k: &KeysManager) {}
