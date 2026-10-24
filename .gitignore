@@ -42,53 +42,9 @@ server.log
 *.tsbuildinfo
 next-env.d.ts
 
-# ── BitLab local data ────────────────────────────────────────────────
-# Lightning sidecar node data — contains REAL node seeds (mnemonics)
-# Local SQLite (legacy Prisma scaffolding)
-/db/
-# Sandbox / workspace artifacts — not part of the project source
-/worklog.md
-/tool-results/
-/upload/
-/download/
-/scripts/*.png
-/tests/*.sh
-.zscripts/
-mini-services/
-Caddyfile
-.claude
-.z-ai-config
-local-*
-prompt
-test
-
-# Skills directory
-/skills/
-
 # Rust build artifacts (rebuild with the commands in README)
 /rust/lnlab/target/
 /rust/miner/target/
-
-# Local toolchain extracted for the wasm build (see scripts/lnlab-env.sh)
-/scripts/clang-root/
-/scripts/rustup-init
-/scripts/rustup-install.log
-/scripts/wbg*
-
-# Reference sources fetched for API research (static.crates.io)
-/scripts/ldk-src/
-/scripts/lightning.crate
-
-# Transient run logs and samples
-/scripts/*.log
-/scripts/bolt12-offer.txt
-
-# Local Bitcoin Core for the testnet4 lab miner (binaries + chain data)
-/scripts/bitcoin-core/
-
-# Miner build artifacts and runtime state
-/scripts/testnet4-miner/engine
-/scripts/testnet4-miner/state/
 
 # Regtest embedded engine — lab chain runtime state (BITLAB_DATA_DIR)
 /.bitlab/
