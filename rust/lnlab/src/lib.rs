@@ -1,0 +1,593 @@
+//! BitLab lnlab — two real LDK Lightning nodes compiled to WebAssembly.
+//!
+//! Exposes a single `LnLab` object to the JavaScript worker:
+//!  - node A and node B are full LDK 0.2 nodes (real keys, real protocol
+//!    messages, real HTLCs) connected through an in-memory socket pair;
+//!  - chain data comes from JavaScript (same-origin Esplora proxy), because
+//!    mempool.space sends no CORS headers;
+//!  - persistence goes through JavaScript (IndexedDB) via `KVStoreSync`;
+//!  - no wall clock is ever used (wasm32-unknown-unknown has none): every
+//!    timestamp is passed explicitly from JavaScript.
+//!
+//! The `std` feature of LDK is disabled in `Cargo.toml` so that none of its
+//! internal `SystemTime`/`Instant` calls (which trap on wasm32) are compiled.
+
+mod chainio;
+mod events;
+mod node;
+mod sockets;
+mod store;
+
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::str::FromStr;
+
+use bitcoin::block::Block;
+use bitcoin::consensus::deserialize;
+use bitcoin::hashes::sha256;
+use bitcoin::hashes::Hash as _;
+use bitcoin::hex::FromHex;
+use bitcoin::transaction::Transaction;
+use bitcoin::constants::ChainHash;
+use bitcoin::{BlockHash, Network};
+use js_sys::{Array, Object, Uint8Array};
+use lightning::chain::{BestBlock, Listen};
+use lightning::events::{Event, EventsProvider, ReplayEvent};
+use lightning::ln::channelmanager::{
+        OptionalOfferPaymentParams, PaymentId, RecipientOnionFields, Retry,
+};
+use lightning::ln::types::ChannelId;
+use lightning::offers::offer::{Amount, Offer};
+use lightning::routing::router::{PaymentParameters, RouteParameters};
+use lightning::sign::{EntropySource as _, KeysManager, NodeSigner as _, Recipient};
+use lightning::types::payment::PaymentHash;
+use lightning::util::persist::KVStoreSync as _;
+use lightning::util::ser::Writeable as _;
+use lightning_invoice::{Bolt11Invoice, Currency, InvoiceBuilder};
+use wasm_bindgen::prelude::*;
+
+use chainio::FeeRates;
+use node::LnNode;
+use sockets::{LnSocket, Link};
+use store::{SharedKv, shared_store};
+
+fn default_fees() -> FeeRates {
+        FeeRates { fast: 2500, normal: 1000, slow: 500 }
+}
+
+fn network_of(slug: &str) -> Result<Network, JsValue> {
+        match slug {
+                "testnet4" => Ok(Network::Testnet4),
+                "testnet3" => Ok(Network::Testnet),
+                "signet" => Ok(Network::Signet),
+                "regtest" => Ok(Network::Regtest),
+                other => Err(JsValue::from_str(&format!("réseau Lightning non supporté : {}", other))),
+        }
+}
+
+fn currency_of(network: Network) -> Result<Currency, JsValue> {
+        match network {
+                Network::Testnet | Network::Testnet4 => Ok(Currency::BitcoinTestnet),
+                Network::Signet => Ok(Currency::Signet),
+                Network::Regtest => Ok(Currency::Regtest),
+                _ => Err(JsValue::from_str("réseau non supporté pour le laboratoire Lightning")),
+        }
+}
+
+fn seed_of(bytes: &[u8], label: &str) -> Result<[u8; 32], JsValue> {
+        let seed: [u8; 32] = bytes
+                .try_into()
+                .map_err(|_| JsValue::from_str(&format!("graine {} invalide (32 octets attendus)", label)))?;
+        Ok(seed)
+}
+
+fn tx_from_hex(hex: &str) -> Result<Transaction, JsValue> {
+        let bytes = Vec::<u8>::from_hex(hex.trim())
+                .map_err(|_| JsValue::from_str("transaction hexadécimale invalide"))?;
+        deserialize(&bytes).map_err(|_| JsValue::from_str("transaction non décodable"))
+}
+
+fn js_err(message: String) -> JsValue {
+        JsValue::from_str(&message)
+}
+
+fn put(obj: &Object, key: &str, value: String) {
+        js_sys::Reflect::set(obj, &JsValue::from_str(key), &JsValue::from_str(&value)).expect("set property");
+}
+
+fn pick(node: u8) -> Result<usize, JsValue> {
+        match node {
+                0 => Ok(0),
+                1 => Ok(1),
+                other => Err(js_err(format!("nœud inconnu : {}", other))),
+        }
+}
+
+#[wasm_bindgen]
+pub struct LnLab {
+        network: Network,
+        nodes: [LnNode; 2],
+        link: Option<(LnSocket, LnSocket, Link)>,
+        pending_funding: RefCell<HashMap<u64, (ChannelId, bitcoin::secp256k1::PublicKey)>>,
+}
+
+#[wasm_bindgen]
+impl LnLab {
+        #[allow(clippy::too_many_arguments)]
+        pub fn boot_fresh(
+                network: &str, seed_a: &[u8], seed_b: &[u8], tip_height: u32, tip_hash: &str, now_secs: u32,
+        ) -> Result<LnLab, JsValue> {
+                console_error_panic_hook::set_once();
+                let network = network_of(network)?;
+                let hash = BlockHash::from_str(tip_hash)
+                        .map_err(|_| js_err("hash de bloc invalide".to_string()))?;
+                let parts_a = node::NodeParts {
+                        seed: seed_of(seed_a, "A")?,
+                        fees: default_fees(),
+                        network,
+                        kv: shared_store(),
+                        now_secs,
+                        now_nanos: 0,
+                };
+                let parts_b = node::NodeParts {
+                        seed: seed_of(seed_b, "B")?,
+                        fees: default_fees(),
+                        network,
+                        kv: shared_store(),
+                        now_secs,
+                        now_nanos: 0,
+                };
+                let a = node::build_fresh(&parts_a, BestBlock::new(hash, tip_height));
+                let b = node::build_fresh(&parts_b, BestBlock::new(hash, tip_height));
+                Ok(LnLab {
+                        network,
+                        nodes: [a, b],
+                        link: None,
+                        pending_funding: RefCell::new(HashMap::new()),
+                })
+        }
+
+        pub fn boot_restore(
+                network: &str, seed_a: &[u8], seed_b: &[u8], now_secs: u32, kv_a: Array, kv_b: Array,
+        ) -> Result<LnLab, JsValue> {
+                console_error_panic_hook::set_once();
+                let network = network_of(network)?;
+                let kv_a = restore_store(&kv_a)?;
+                let kv_b = restore_store(&kv_b)?;
+                let parts_a = node::NodeParts {
+                        seed: seed_of(seed_a, "A")?,
+                        fees: default_fees(),
+                        network,
+                        kv: kv_a,
+                        now_secs,
+                        now_nanos: 0,
+                };
+                let parts_b = node::NodeParts {
+                        seed: seed_of(seed_b, "B")?,
+                        fees: default_fees(),
+                        network,
+                        kv: kv_b,
+                        now_secs,
+                        now_nanos: 0,
+                };
+                let a = node::build_restored(&parts_a).map_err(js_err)?;
+                let b = node::build_restored(&parts_b).map_err(js_err)?;
+                Ok(LnLab {
+                        network,
+                        nodes: [a, b],
+                        link: None,
+                        pending_funding: RefCell::new(HashMap::new()),
+                })
+        }
+
+        pub fn node_id(&self, node: u8) -> Result<String, JsValue> {
+                Ok(self.nodes[pick(node)?].cm.get_our_node_id().to_string())
+        }
+
+        pub fn best_block(&self) -> JsValue {
+                let best = self.nodes[0].cm.current_best_block();
+                let obj = Object::new();
+                put(&obj, "height", best.height.to_string());
+                put(&obj, "hash", best.block_hash.to_string());
+                obj.into()
+        }
+
+        pub fn set_fees(&self, fast: u32, normal: u32, slow: u32) {
+                for node in &self.nodes {
+                        node.fee.set_rates(FeeRates { fast, normal, slow });
+                }
+        }
+
+        pub fn logs(&self, node: u8) -> Result<Array, JsValue> {
+                let lines = self.nodes[pick(node)?].logger.tail_strings();
+                Ok(lines.into_iter().map(|s| JsValue::from_str(&s)).collect())
+        }
+
+        pub fn connect_ab(&mut self) -> Result<(), JsValue> {
+                if self.is_connected() {
+                        return Ok(());
+                }
+                let (desc_a, desc_b, link) = LnSocket::pair();
+                let init = self.nodes[0]
+                        .pm
+                        .new_outbound_connection(
+                                self.nodes[1].cm.get_our_node_id(),
+                                desc_a.clone(),
+                                None,
+                        )
+                        .map_err(|e| js_err(format!("connexion A -> B refusée : {:?}", e)))?;
+                link.inbox_b.borrow_mut().push_back(init);
+                self.nodes[1]
+                        .pm
+                        .new_inbound_connection(desc_b.clone(), None)
+                        .map_err(|e| js_err(format!("écoute B refusée : {:?}", e)))?;
+                self.link = Some((desc_a, desc_b, link));
+                self.flush_io()
+        }
+
+        pub fn is_connected(&self) -> bool {
+                self.link.as_ref().map(|(_, _, link)| *link.open.borrow()).unwrap_or(false)
+        }
+
+        pub fn chain_block(&mut self, height: u32, block_hex: &str) -> Result<Array, JsValue> {
+                let bytes = Vec::<u8>::from_hex(block_hex.trim())
+                        .map_err(|_| js_err("bloc hexadécimal invalide".to_string()))?;
+                let block: Block = deserialize(&bytes).map_err(|_| js_err("bloc non décodable".to_string()))?;
+                let tap_a = (self.nodes[0].cm.clone(), self.nodes[0].monitor.clone());
+                tap_a.block_connected(&block, height);
+                let tap_b = (self.nodes[1].cm.clone(), self.nodes[1].monitor.clone());
+                tap_b.block_connected(&block, height);
+                self.tick()
+        }
+
+        
+        pub fn create_channel(&mut self, value_sats: u64, push_msat: u64, user_channel_id: u64) -> Result<(), JsValue> {
+                let their_id = self.nodes[1].cm.get_our_node_id();
+                self.nodes[0]
+                        .cm
+                        .create_channel(their_id, value_sats, push_msat, user_channel_id as u128, None, None)
+                        .map_err(|e| js_err(format!("création de canal refusée : {:?}", e)))?;
+                Ok(())
+        }
+
+        pub fn funding_transaction_generated(&mut self, user_channel_id: u64, tx_hex: &str) -> Result<(), JsValue> {
+                let (temporary_channel_id, counterparty) = self
+                        .pending_funding
+                        .borrow_mut()
+                        .remove(&user_channel_id)
+                        .ok_or_else(|| js_err("aucune demande de financement en attente".to_string()))?;
+                let tx = tx_from_hex(tx_hex)?;
+                self.nodes[0]
+                        .cm
+                        .funding_transaction_generated(temporary_channel_id, counterparty, tx)
+                        .map_err(|e| js_err(format!("transaction de financement refusée : {:?}", e)))?;
+                Ok(())
+        }
+
+        pub fn create_invoice(
+                &mut self, node: u8, amount_msat: Option<u64>, description: &str, expiry_secs: u32, now_secs: u32,
+        ) -> Result<String, JsValue> {
+                let idx = pick(node)?;
+                let currency = currency_of(self.network)?;
+                let node_ref = &self.nodes[idx];
+                let (hash, secret) = node_ref
+                        .cm
+                        .create_inbound_payment(amount_msat, expiry_secs, None)
+                        .map_err(|_| js_err("création du paiement entrant impossible".to_string()))?;
+                let description = if description.trim().is_empty() { "BitLab" } else { description };
+                let mut builder = InvoiceBuilder::new(currency)
+                        .description(description.trim().chars().take(120).collect())
+                        .payment_hash(sha256::Hash::from_byte_array(hash.0))
+                        .payment_secret(secret)
+                        .duration_since_epoch(std::time::Duration::from_secs(now_secs as u64))
+                        .min_final_cltv_expiry_delta(18)
+                        .expiry_time(std::time::Duration::from_secs(expiry_secs as u64))
+                        .payee_pub_key(node_ref.cm.get_our_node_id());
+                if let Some(amount) = amount_msat {
+                        builder = builder.amount_milli_satoshis(amount);
+                }
+                let raw = builder.build_raw().map_err(|e| js_err(format!("facture invalide : {:?}", e)))?;
+               
+                let signed = raw
+                        .clone()
+                        .sign(|_| {
+                                node_ref
+                                        .keys
+                                        .sign_invoice(&raw, Recipient::Node)
+                                        .map_err(|_| "échec de la clé de signature".to_string())
+                        })
+                        .map_err(|e| js_err(format!("signature de facture impossible : {}", e)))?;
+                let invoice = Bolt11Invoice::from_signed(signed)
+                        .map_err(|e| js_err(format!("facture signée invalide : {:?}", e)))?;
+                self.flush_io()?;
+                Ok(invoice.to_string())
+        }
+
+        pub fn pay_invoice(&mut self, node: u8, invoice: &str, amount_msat_override: Option<u64>) -> Result<(), JsValue> {
+                let idx = pick(node)?;
+                let inv: Bolt11Invoice =
+                        Bolt11Invoice::from_str(invoice).map_err(|e| js_err(format!("facture illisible : {}", e)))?;
+                let expected = currency_of(self.network)?;
+                if inv.currency() != expected {
+                        return Err(js_err("facture émise sur un autre réseau que le laboratoire".to_string()));
+                }
+                let payee = inv.recover_payee_pub_key();
+                let payment_hash = PaymentHash(inv.payment_hash().to_byte_array());
+                let secret = *inv.payment_secret();
+                let final_value_msat = amount_msat_override
+                        .or(inv.amount_milli_satoshis())
+                        .ok_or_else(|| js_err("montant requis (facture sans montant)".to_string()))?;
+                let route_params = RouteParameters {
+                        payment_params: PaymentParameters::from_node_id(
+                                payee,
+                                inv.min_final_cltv_expiry_delta() as u32,
+                        ),
+                        final_value_msat,
+                        max_total_routing_fee_msat: None,
+                };
+                let node_ref = &self.nodes[idx];
+                let payment_id = PaymentId(node_ref.keys.get_secure_random_bytes());
+                node_ref
+                        .cm
+                        .send_payment(
+                                payment_hash,
+                                RecipientOnionFields::secret_only(secret),
+                                payment_id,
+                                route_params,
+                                Retry::Attempts(5),
+                        )
+                        .map_err(|e| js_err(format!("envoi refusé : {:?}", e)))?;
+                Ok(())
+        }
+
+        pub fn create_offer(&self, node: u8, amount_msat: Option<u64>, description: &str) -> Result<String, JsValue> {
+                let idx = pick(node)?;
+                let description = description.trim();
+                if description.is_empty() {
+                        return Err(js_err("description requise pour une offer".to_string()));
+                }
+                let builder = self.nodes[idx]
+                        .cm
+                        .create_offer_builder()
+                        .map_err(|e| js_err(format!("création d'offer impossible : {:?}", e)))?
+                        .chain(self.network)
+                        .description(description.chars().take(120).collect());
+                let builder = match amount_msat {
+                        Some(amount) => builder.amount_msats(amount),
+                        None => builder,
+                };
+                let offer = builder
+                        .build()
+                        .map_err(|e| js_err(format!("offer invalide : {:?}", e)))?;
+                self.flush_io()?;
+                Ok(offer.to_string())
+        }
+
+        pub fn pay_offer(&mut self, node: u8, offer: &str, amount_msat: Option<u64>, payer_note: Option<String>) -> Result<(), JsValue> {
+                let idx = pick(node)?;
+                let offer: Offer = Offer::from_str(offer.trim())
+                        .map_err(|e| js_err(format!("offer illisible : {:?}", e)))?;
+                let genesis = ChainHash::using_genesis_block(self.network);
+                let chains = offer.chains();
+                if !chains.is_empty() && !chains.contains(&genesis) {
+                        return Err(js_err("offer émise sur un autre réseau que le laboratoire".to_string()));
+                }
+                let node_ref = &self.nodes[idx];
+                let payment_id = PaymentId(node_ref.keys.get_secure_random_bytes());
+                let mut params = OptionalOfferPaymentParams::default();
+                if let Some(note) = payer_note {
+                        let note = note.trim().chars().take(120).collect::<String>();
+                        if !note.is_empty() {
+                                params.payer_note = Some(note);
+                        }
+                }
+                node_ref
+                        .cm
+                        .pay_for_offer(&offer, amount_msat, payment_id, params)
+                        .map_err(|e| js_err(format!("paiement d'offer refusé : {:?}", e)))?;
+                Ok(())
+        }
+
+        pub fn decode_offer(offer: &str) -> Result<JsValue, JsValue> {
+                let offer: Offer = Offer::from_str(offer.trim())
+                        .map_err(|e| js_err(format!("offer illisible : {:?}", e)))?;
+                let obj = Object::new();
+                put(
+                        &obj,
+                        "description",
+                        offer.description().map(|d| d.to_string()).unwrap_or_default(),
+                );
+                let amount = match offer.amount() {
+                        Some(Amount::Bitcoin { amount_msats }) => amount_msats.to_string(),
+                        _ => String::new(),
+                };
+                put(&obj, "amountMsat", amount);
+                put(&obj, "issuer", offer.issuer().map(|i| i.to_string()).unwrap_or_default());
+                if let Some(expiry) = offer.absolute_expiry() {
+                        put(&obj, "absoluteExpiry", expiry.as_secs().to_string());
+                }
+                put(
+                        &obj,
+                        "signingPubkey",
+                        offer.issuer_signing_pubkey().map(|k| k.to_string()).unwrap_or_default(),
+                );
+                Ok(obj.into())
+        }
+
+        pub fn decode_invoice(invoice: &str) -> Result<JsValue, JsValue> {
+                let inv: Bolt11Invoice =
+                        Bolt11Invoice::from_str(invoice).map_err(|e| js_err(format!("facture illisible : {}", e)))?;
+                let obj = Object::new();
+                put(&obj, "currency", format!("{:?}", inv.currency()));
+                put(&obj, "payee", inv.recover_payee_pub_key().to_string());
+                put(&obj, "paymentHash", inv.payment_hash().to_string());
+                put(
+                        &obj,
+                        "amountMsat",
+                        inv.amount_milli_satoshis().map(|a| a.to_string()).unwrap_or_default(),
+                );
+                put(&obj, "minFinalCltv", inv.min_final_cltv_expiry_delta().to_string());
+                put(&obj, "description", invoice_description(&inv));
+                Ok(obj.into())
+        }
+
+        pub fn close_channel(&mut self, node: u8, channel_id_hex: &str) -> Result<(), JsValue> {
+                let idx = pick(node)?;
+                let bytes = Vec::<u8>::from_hex(channel_id_hex.trim())
+                        .map_err(|_| js_err("channel_id invalide".to_string()))?;
+                let arr: [u8; 32] = bytes
+                        .try_into()
+                        .map_err(|_| js_err("channel_id invalide".to_string()))?;
+                let channel_id = ChannelId::from_bytes(arr);
+                let counterparty = self.nodes[idx]
+                        .cm
+                        .list_channels()
+                        .iter()
+                        .find(|c| c.channel_id == channel_id)
+                        .map(|c| c.counterparty.node_id)
+                        .ok_or_else(|| js_err("canal introuvable".to_string()))?;
+                self.nodes[idx]
+                        .cm
+                        .close_channel(&channel_id, &counterparty)
+                        .map_err(|e| js_err(format!("fermeture refusée : {:?}", e)))?;
+                Ok(())
+        }
+
+        pub fn list_channels(&self, node: u8) -> Result<Array, JsValue> {
+                let idx = pick(node)?;
+                Ok(self.channels_of(idx))
+        }
+
+        pub fn kv_dirty(&self) -> Array {
+                let out = Array::new();
+                for (idx, label) in ["A", "B"].iter().enumerate() {
+                        for (key, value) in self.nodes[idx].kv.take_dirty() {
+                                let entry = Array::new();
+                                entry.push(&JsValue::from_str(label));
+                                entry.push(&JsValue::from_str(&key.0));
+                                entry.push(&JsValue::from_str(&key.1));
+                                entry.push(&JsValue::from_str(&key.2));
+                                match value {
+                                        Some(bytes) => {
+                                                entry.push(&Uint8Array::from(bytes.as_slice()));
+                                        },
+                                        None => {
+                                                entry.push(&JsValue::NULL);
+                                        },
+                                }
+                                out.push(&entry);
+                        }
+                }
+                out
+        }
+
+        pub fn tick(&mut self) -> Result<Array, JsValue> {
+                self.flush_io()?;
+                let mut collected: Vec<JsValue> = Vec::new();
+                for (idx, label) in ["A", "B"].iter().enumerate() {
+                        let node = &self.nodes[idx];
+                        let sink = RefCell::new(&mut collected);
+                        let label = *label;
+                        let handler = |event: Event| -> Result<(), ReplayEvent> {
+                                sink.borrow_mut().push(events::event_to_js(label, &event));
+                                Ok(())
+                        };
+                        node.cm.process_pending_events(&handler);
+                        let bytes = node.cm.encode();
+                        let _ = node.kv.write("", "", "manager", bytes);
+                }
+                Ok(events::events_to_array(collected))
+        }
+}
+
+impl LnLab {
+        fn flush_io(&self) -> Result<(), JsValue> {
+                let Some((desc_a, desc_b, link)) = &self.link else {
+                        return Ok(());
+                };
+                if !*link.open.borrow() {
+                        return Err(js_err("liaison P2P fermée".to_string()));
+                }
+                for _round in 0..64 {
+                        let mut activity = false;
+                        for (pm, desc, inbox) in [
+                                (&self.nodes[0].pm, desc_a, &link.inbox_a),
+                                (&self.nodes[1].pm, desc_b, &link.inbox_b),
+                        ] {
+                                loop {
+                                        let next = inbox.borrow_mut().pop_front();
+                                        let Some(data) = next else { break };
+                                        activity = true;
+                                        if pm.read_event(&mut desc.clone(), &data).is_err() {
+                                                desc.disconnect_both();
+                                                return Err(js_err("pair déconnecté (erreur de protocole)".to_string()));
+                                        }
+                                }
+                        }
+                        self.nodes[0].pm.process_events();
+                        self.nodes[1].pm.process_events();
+                        let pending = link.inbox_a.borrow().len() + link.inbox_b.borrow().len();
+                        if pending == 0 && !activity {
+                                break;
+                        }
+                }
+                Ok(())
+        }
+
+        fn channels_of(&self, idx: usize) -> Array {
+                let details = self.nodes[idx].cm.list_channels();
+                details
+                        .iter()
+                        .map(|c| -> JsValue {
+                                let obj = Object::new();
+                                put(&obj, "channelId", c.channel_id.to_string());
+                                put(&obj, "userChannelId", (c.user_channel_id as u64).to_string());
+                                put(&obj, "counterparty", c.counterparty.node_id.to_string());
+                                put(&obj, "valueSats", c.channel_value_satoshis.to_string());
+                                put(&obj, "outboundMsat", c.outbound_capacity_msat.to_string());
+                                put(&obj, "inboundMsat", c.inbound_capacity_msat.to_string());
+                                put(&obj, "isOutbound", c.is_outbound.to_string());
+                                put(&obj, "isReady", c.is_channel_ready.to_string());
+                                put(&obj, "isUsable", c.is_usable.to_string());
+                                put(&obj, "isAnnounced", c.is_announced.to_string());
+                                if let Some(funding) = &c.funding_txo {
+                                        put(&obj, "fundingTxo", funding.to_string());
+                                }
+                                if let Some(conf) = c.confirmations {
+                                        put(&obj, "confirmations", conf.to_string());
+                                }
+                                if let Some(required) = c.confirmations_required {
+                                        put(&obj, "confirmationsRequired", required.to_string());
+                                }
+                                obj.into()
+                        })
+                        .collect()
+        }
+}
+
+fn restore_store(entries: &Array) -> Result<SharedKv, JsValue> {
+        let kv = shared_store();
+        for entry in entries.iter() {
+                let arr = Array::from(&entry);
+                let primary = arr.get(0).as_string().ok_or_else(|| js_err("entrée KV invalide".to_string()))?;
+                let secondary = arr.get(1).as_string().unwrap_or_default();
+                let key = arr.get(2).as_string().ok_or_else(|| js_err("entrée KV invalide".to_string()))?;
+                let value_js = arr.get(3);
+                if value_js.is_null() || value_js.is_undefined() {
+                        continue;
+                }
+                let bytes = Uint8Array::from(value_js).to_vec();
+                kv.load(&primary, &secondary, &key, bytes);
+        }
+        Ok(kv)
+}
+
+fn invoice_description(inv: &Bolt11Invoice) -> String {
+        match inv.description() {
+                lightning_invoice::Bolt11InvoiceDescriptionRef::Direct(desc) => desc.to_string(),
+                lightning_invoice::Bolt11InvoiceDescriptionRef::Hash(_) => "(description hachée)".to_string(),
+        }
+}
+
+#[allow(dead_code)]
+fn _assert_keys(_k: &KeysManager) {}

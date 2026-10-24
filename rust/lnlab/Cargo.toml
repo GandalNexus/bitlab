@@ -1,0 +1,26 @@
+[package]
+name = "lnlab"
+version = "0.1.0"
+edition = "2021"
+description = "BitLab - two real LDK Lightning nodes compiled to WebAssembly for the browser lab"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# `std` is intentionally disabled: LDK's std paths call SystemTime/Instant,
+# which trap on wasm32-unknown-unknown. no-std paths derive time from
+# explicit parameters we pass from JavaScript.
+lightning = { version = "0.2.7", default-features = false, features = ["grind_signatures"] }
+lightning-invoice = { version = "0.34", default-features = false }
+bitcoin = "0.32"
+wasm-bindgen = "=0.2.100"
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
