@@ -96,7 +96,12 @@ function StepSelect({
   const fees = useQuery({ queryKey: ['fees', net], queryFn: api.fees, refetchInterval: 30_000, retry: 1 });
   const utxosQuery = useQuery({
     queryKey: ['utxos', net, wallet?.address],
-    queryFn: () => api.utxos(wallet!.address),
+    queryFn: () => {
+      // Garde « enabled » ci-dessous : la branche d'erreur est inatteignable,
+      // mais évite le `!` et garde la requête sûre en cas de refacto.
+      if (!wallet) throw new Error('Portefeuille actif requis pour interroger les UTXO.');
+      return api.utxos(wallet.address);
+    },
     enabled: Boolean(wallet),
     refetchInterval: 30_000,
     retry: 1,
@@ -364,7 +369,7 @@ function StepBuild({
           <div className="flex items-center justify-between">
             <Label className="text-xs">{t('Taux de frais :')} <span className="font-mono text-primary">{feeRate} sat/vB</span></Label>
             {fees.data ? (
-              <button className="text-[10px] text-muted-foreground underline hover:text-primary" onClick={() => setFeeRate(fees.data!.halfHourFee)}>
+              <button className="text-[10px] text-muted-foreground underline hover:text-primary" onClick={() => { if (fees.data) setFeeRate(fees.data.halfHourFee); }}>
                 {t('utiliser l’estimation réseau ({n})', { n: fees.data.halfHourFee })}
               </button>
             ) : null}

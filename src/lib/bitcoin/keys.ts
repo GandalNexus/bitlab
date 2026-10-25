@@ -70,6 +70,14 @@ export interface LabWallet {
   createdAt: number;
 }
 
+/** Extrait l'adresse d'un paiement @scure/btc-signer. Toujours définie pour une
+ * entrée valide (clé publique compressée + paramètres de réseau corrects) ; lève
+ * une erreur explicite sinon, au lieu d'un `!` qui propagerait un undefined. */
+export function addrOf(p: { address?: string }): string {
+  if (!p.address) throw new Error(tSync('Impossible de dériver l’adresse demandée (entrée invalide).'));
+  return p.address;
+}
+
 /** Dérive la paire adresse/clé publique pour un type et un réseau donnés depuis la clé privée. */
 export function deriveForType(
   privBytes: Uint8Array,
@@ -79,9 +87,9 @@ export function deriveForType(
   const pub = secp256k1.getPublicKey(privBytes, true); // 33 octets compressé
   const params = signerNetwork(net);
   let address: string;
-  if (type === 'legacy') address = p2pkh(pub, params).address!;
-  else if (type === 'segwit') address = p2wpkh(pub, params).address!;
-  else address = p2tr(pub.slice(1), undefined, params).address!; // Taproot : clé x-only 32 octets
+  if (type === 'legacy') address = addrOf(p2pkh(pub, params));
+  else if (type === 'segwit') address = addrOf(p2wpkh(pub, params));
+  else address = addrOf(p2tr(pub.slice(1), undefined, params)); // Taproot : clé x-only 32 octets
   return { address, publicKeyHex: hex.encode(pub) };
 }
 

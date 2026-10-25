@@ -822,7 +822,7 @@ export function LightningModule() {
         actions={<PhaseBadge phase={active && onSameNetwork ? st.phase : 'off'} />}
       />
 
-      {!supported ? (
+      {lnNet === null ? (
         <Card className="border-amber-500/40">
           <CardContent className="flex items-start gap-3 pt-4 text-sm">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
@@ -843,7 +843,7 @@ export function LightningModule() {
                 <p className="text-xs text-muted-foreground">
                   {t(
                     'Démarre deux nœuds Lightning dans ce navigateur ({net}). Désactivé, aucune ressource n’est consommée.',
-                    { net: NETWORKS[lnNet!].label },
+                    { net: NETWORKS[lnNet].label },
                   )}
                 </p>
               </div>
@@ -867,7 +867,7 @@ export function LightningModule() {
         </Card>
       )}
 
-      {supported && active && onSameNetwork ? (
+      {lnNet !== null && active && onSameNetwork ? (
         st.phase === 'ready' ? (
           <>
             <div className="grid gap-4 md:grid-cols-2">
@@ -890,7 +890,7 @@ export function LightningModule() {
                 <JournalView st={st} />
               </TabsContent>
             </Tabs>
-            <ResetCard network={lnNet!} />
+            <ResetCard network={lnNet} />
           </>
         ) : (
           <Card>

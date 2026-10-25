@@ -9,7 +9,7 @@ import { bech32, bech32m } from '@scure/base';
 import { concatBytes } from '@noble/hashes/utils.js';
 import { hex, RX, b58checkEncode, addressP2PKH, addressP2SH, addressSegWitV0, addressTaproot } from './utils';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
-import type { AddrType } from './keys';
+import { addrOf, type AddrType } from './keys';
 import { currentNet, NETWORKS, REGTEST_NETWORK, signerNetwork, type NetId } from '../networks';
 import { tSync } from '../i18n';
 
@@ -374,7 +374,7 @@ export function createMultisig(pubkeysHex: string[], m: number): MultisigResult 
   });
   const tpl = multisigTpl(m, pubs, true, true, signerNetwork()); // witness=true → P2WSH
   return {
-    address: tpl.address!,
+    address: addrOf(tpl),
     scriptHex: hex.encode(tpl.script),
     witnessScriptHex: hex.encode(tpl.witnessScript ?? tpl.script),
     m,
