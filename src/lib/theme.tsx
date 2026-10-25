@@ -14,9 +14,18 @@ export type Theme = 'dark' | 'light';
 
 export const THEME_KEY = 'bitlab-theme';
 
+/** Favicon assorti au thème — l'anneau de l'orbite suit la luminosité. */
+function applyFavicon(theme: Theme): void {
+  if (typeof document === 'undefined') return;
+  const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (!link) return;
+  link.href = theme === 'dark' ? '/icon-dark.svg' : '/icon-light.svg';
+}
+
 export function applyThemeClass(theme: Theme): void {
   if (typeof document === 'undefined') return;
   document.documentElement.classList.toggle('dark', theme === 'dark');
+  applyFavicon(theme);
 }
 
 interface ThemeState {

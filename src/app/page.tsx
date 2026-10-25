@@ -45,7 +45,7 @@ export default function BitLabPage() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <LabSidebar
           active={tab}
           onNavigate={(id) => setTab(id)}
@@ -55,10 +55,13 @@ export default function BitLabPage() {
           onToggleCollapsed={toggleSidebar}
         />
 
-        <div className={cn('flex min-h-screen flex-col transition-[padding] duration-200 ease-out', sidebarCollapsed ? 'lg:pl-[68px]' : 'lg:pl-64')}>
+        {/* Full-width top cluster — spans over the sidebar (measured by LabSidebar) */}
+        <div id="lab-top-cluster" className="sticky top-0 z-40">
           <AnnouncementBanner />
           <LabHeader onOpenMobileNav={() => setMobileNavOpen(true)} />
+        </div>
 
+        <div className={cn('flex flex-1 flex-col transition-[padding] duration-200 ease-out', sidebarCollapsed ? 'lg:pl-[68px]' : 'lg:pl-64')}>
           {/* Content */}
           <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
             {tab === 'dashboard' ? <Dashboard onNavigate={(t) => setTab(t as TabId)} /> : null}
