@@ -60,9 +60,12 @@ export function shortHex(h: string, head = 10, tail = 8): string {
   return h.length <= head + tail + 3 ? h : `${h.slice(0, head)}…${h.slice(-tail)}`;
 }
 
-/** Génère un id court unique côté client. */
+/** Génère un id court unique côté client (CSPRNG — jamais Math.random). */
 export function uid(prefix = 'id'): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+  const b = new Uint8Array(6);
+  crypto.getRandomValues(b);
+  const rand = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  return `${prefix}_${Date.now().toString(36)}_${rand}`;
 }
 
 /** Regex strictes de sanitisation (cf. protocole de sécurité du cahier des charges). */

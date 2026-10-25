@@ -190,7 +190,16 @@ async function resolvePeers(spec: NetSpec): Promise<string[]> {
   const ips = new Set<string>();
   for (const r of results) if (r.status === 'fulfilled') r.value.forEach((ip) => ips.add(ip));
   for (const ip of spec.fallbackIps) ips.add(ip);
-  return [...ips].sort(() => Math.random() - 0.5);
+  return shufflePeers([...ips]);
+}
+
+/** Mélange Fisher–Yates (CSPRNG) — uniforme, sans le biais du sort aléatoire. */
+function shufflePeers(items: string[]): string[] {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
 }
 
 /* ───────────────────────── Diffusion P2P ───────────────────────── */
