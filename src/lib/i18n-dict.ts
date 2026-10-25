@@ -23,6 +23,12 @@ export const EN: Record<string, string> = {
 
   /* ─────────────────────────── Header ─────────────────────────── */
   'Ouvrir la navigation': 'Open navigation',
+  'Annonce': 'Announcement',
+  'Fermer l’annonce': 'Close announcement',
+  'BitLab est toujours en développement — des bugs sont possibles.':
+    'BitLab is still under development — bugs are possible.',
+  'BitLab est toujours en développement actif — des bugs sont possibles et le labo évolue régulièrement. Merci de votre patience !':
+    'BitLab is still under active development — bugs are possible and the lab evolves regularly. Thank you for your patience!',
   'Changer de réseau Bitcoin': 'Switch Bitcoin network',
   'Sélecteur de réseau Bitcoin': 'Bitcoin network selector',
   'Réseau Bitcoin': 'Bitcoin network',
