@@ -11,7 +11,6 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   ChevronRight,
-  ExternalLink,
   Info,
   ShieldAlert,
   TriangleAlert,
@@ -132,32 +131,32 @@ function SectionDemarrer() {
       <Banner><ArtIntro /></Banner>
       <H2 id="demarrer">{t('Démarrer')}</H2>
       <P>
-        {t('BitLab est un laboratoire Bitcoin et Lightning où l’on apprend en manipulant les vraies primitives du protocole. La cryptographie — génération de clés, construction et signature des transactions — s’exécute intégralement dans votre navigateur, avec des bibliothèques auditées et les règles de consensus exactes du réseau. Les données publiques (blocs, soldes, frais) proviennent de nœuds Esplora publics, et deux véritables nœuds Lightning LDK compilés en WebAssembly s’exécutent dans votre navigateur. Rien n’est maquetté : ce qui s’affiche à l’écran s’est réellement produit sur un réseau Bitcoin.')}
+        {t('BitLab est un laboratoire d’apprentissage de Bitcoin et Lightning. La cryptographie — génération de clés, construction et signature de transactions — s’exécute intégralement dans le navigateur, au moyen de bibliothèques auditées appliquant les règles de consensus du réseau. Les données publiques (blocs, soldes, frais) proviennent de nœuds Esplora publics ; deux nœuds Lightning LDK, compilés en WebAssembly, s’exécutent localement. Rien n’est simulé : tout résultat affiché provient d’un réseau Bitcoin réel.')}
       </P>
       <P>
         {t('Le projet suit le principe')} <strong className="text-foreground">{t('Zero-Knowledge')}</strong>
-        {t(' : les clés privées, phrases mnémoniques et clés WIF sont générées puis conservées exclusivement dans le stockage local de votre navigateur. Le serveur n’agit que comme un proxy de données publiques — il ne détient aucun secret utilisateur, n’héberge aucun nœud Lightning, et ne peut ni lire ni déplacer vos fonds.')}
+        {t(' : les clés privées, phrases mnémoniques et clés WIF sont générées et conservées exclusivement dans le stockage local du navigateur. Le serveur agit uniquement comme mandataire de données publiques ; il ne détient aucun secret, n’héberge aucun nœud Lightning et ne peut ni lire ni déplacer les fonds.')}
       </P>
       <H3>{t('Le parcours recommandé')}</H3>
       <div className="grid gap-2.5">
         <Step n="01" title={t('Générer un portefeuille')}>
-          {t('Créez une graine BIP39 puis des adresses Legacy, SegWit ou Taproot depuis le module Portefeuille ; importez aussi une clé WIF ou une phrase existante.')}
+          {t('Créer une graine BIP39 dans le module Portefeuille, puis dériver des adresses Legacy, SegWit ou Taproot. Une clé WIF ou une phrase existante peut également être importée.')}
         </Step>
         <Step n="02" title={t('Obtenir des sats de test')}>
-          {t('Créditez votre adresse depuis un faucet externe du réseau actif — les liens vérifiés sont fournis dans le module Portefeuille.')}
+          {t('Créditer l’adresse active auprès d’un faucet du réseau actif ; les liens vérifiés sont fournis dans le module Portefeuille.')}
         </Step>
         <Step n="03" title={t('Construire une transaction')}>
-          {t('Sélectionnez vos UTXO, composez les sorties, ajustez les frais en sat/vB, signez localement (ECDSA ou Schnorr) puis diffusez sur le réseau.')}
+          {t('Sélectionner les UTXO, composer les sorties, régler les frais en sat/vB, signer localement (ECDSA ou Schnorr), puis diffuser la transaction.')}
         </Step>
         <Step n="04" title={t('Observer dans l’explorateur')}>
-          {t('Suivez les confirmations de vos transactions et décodez des transactions brutes hexadécimales pour comprendre leur anatomie.')}
+          {t('Suivre les confirmations des transactions et décoder des transactions brutes afin d’en examiner la structure.')}
         </Step>
         <Step n="05" title={t('Expérimenter Lightning')}>
-          {t('Activez le lab Lightning : les deux nœuds LDK réels démarrent dans votre navigateur ; ouvrez un canal financé on-chain, émettez et payez des factures BOLT11 ou des offers BOLT12 instantanément.')}
+          {t('Démarrer les deux nœuds LDK dans le navigateur, ouvrir un canal financé on-chain, puis émettre et payer des factures BOLT11 ou des offers BOLT12.')}
         </Step>
       </div>
       <Callout kind="info" title={t('Réseaux')}>
-        {t('Le lab démarre sur')} <strong>Testnet4</strong> {t('(sats sans valeur). Le Lightning réel supporte Testnet4, Testnet3 et Signet. Le mainnet reste accessible pour l’exploration mais y est volontairement verrouillé côté financement.')}
+        {t('Le lab démarre sur')} <strong>Testnet4</strong> {t('(sats sans valeur). Lightning prend en charge Testnet4, Testnet3 et Signet. Le mainnet reste accessible en exploration ; le financement y est désactivé par conception.')}
       </Callout>
     </article>
   );
@@ -170,7 +169,7 @@ function SectionCles() {
       <Banner><ArtKeys /></Banner>
       <H2 id="cles-adresses">{t('Clés & adresses')}</H2>
       <P>
-        {t('Chaque portefeuille naît d’une entropie locale transformée en phrase mnémonique BIP39 (12 ou 24 mots). La graine dérivée alimente une arborescence BIP32 dont chaque branche correspond à un standard d’adresse : BIP44 pour les Legacy P2PKH, BIP84 pour les SegWit P2WPKH et BIP86 pour les Taproot P2TR. BitLab s’appuie sur les bibliothèques auditées')}{' '}
+        {t('Chaque portefeuille dérive d’une entropie locale convertie en phrase mnémonique BIP39 (12 ou 24 mots). La graine résultante alimente une arborescence BIP32 dont chaque branche correspond à un standard d’adresse : BIP44 (Legacy P2PKH), BIP84 (SegWit P2WPKH) et BIP86 (Taproot P2TR). BitLab repose sur les bibliothèques auditées')}{' '}
         <span className="font-mono text-xs text-foreground">@scure/bip39</span>, <span className="font-mono text-xs text-foreground">@scure/bip32</span>{' '}
         {t('et')} <span className="font-mono text-xs text-foreground">@scure/btc-signer</span> {t('— les mêmes primitives que de nombreux portefeuilles en production.')}
       </P>
@@ -184,15 +183,15 @@ function SectionCles() {
       />
       <P>
         {t('Le')} <em>coin type</em> {t('suit le réseau :')} <span className="font-mono text-xs">0&apos;</span> {t('pour le mainnet,')}{' '}
-        <span className="font-mono text-xs">1&apos;</span> {t('pour tous les réseaux de test. Cette cloison garantit l’étanchéité des portefeuilles entre réseaux — aucun portefeuille de test ne peut être manipulé sur mainnet, et inversement. Les adresses sont encodées en base58check ou bech32/bech32m selon le format, avec le préfixe humain propre au réseau.')}
+        <span className="font-mono text-xs">1&apos;</span> {t('pour les réseaux de test. Cette séparation garantit l’étanchéité des portefeuilles entre réseaux. Selon le format, les adresses sont encodées en base58check ou en bech32/bech32m, avec le préfixe propre à chaque réseau.')}
       </P>
       <H3>{t('Importer une clé existante')}</H3>
       <P>
-        {t('Une clé privée importée en WIF (Wallet Import Format) est décodée puis re-dérivée dans les trois formats, comme si elle venait d’être générée. BitLab vérifie le préfixe réseau (0x80 pour le mainnet, 0xEF pour les testnets) et refuse toute clé appartenant à un autre réseau que le réseau actif. L’import par phrase BIP39 applique le chemin de dérivation correspondant au format choisi, affiché en clair avant validation.')}
+        {t('Une clé privée importée au format WIF (Wallet Import Format) est décodée puis re-dérivée dans les trois formats. BitLab vérifie le préfixe réseau (0x80 pour le mainnet, 0xEF pour les testnets) et refuse toute clé étrangère au réseau actif. L’import par phrase BIP39 applique le chemin de dérivation du format choisi, affiché avant validation.')}
       </P>
       <Callout kind="danger" title="Mainnet">
         {t('Sur mainnet, les adresses deviennent')} <span className="font-mono text-xs">bc1…</span> {t('et les clés WIF commencent par')}{' '}
-        <span className="font-mono text-xs">5H / 5K / L</span>{t('. Toute transaction y engage des fonds réels — le module Portefeuille affiche un avertissement permanent et le financement automatique est désactivé.')}
+        <span className="font-mono text-xs">5H / 5K / L</span>{t('. Toute transaction y engage des fonds réels : le module Portefeuille affiche un avertissement permanent et le financement automatique est désactivé.')}
       </Callout>
     </article>
   );
@@ -204,26 +203,26 @@ function SectionTransactions() {
       <Banner><ArtTx /></Banner>
       <H2 id="transactions">{t('Transactions')}</H2>
       <P>
-        {t('Bitcoin fonctionne en modèle UTXO (Unspent Transaction Outputs) : une transaction consomme des sorties non dépensées comme entrées et produit de nouvelles sorties. La différence entre le total des entrées et le total des sorties — moins ce que l’on rend à soi-même en monnaie (change) — constitue les frais perçus par le mineur. Le constructeur de BitLab expose ce modèle sans abstraction : vous choisissez précisément quels UTXO dépenser, à qui envoyer quoi, et à quel prix vous voulez que le réseau traite votre transaction.')}
+        {t('Bitcoin repose sur le modèle UTXO (Unspent Transaction Outputs) : une transaction consomme des sorties non dépensées (entrées) et produit de nouvelles sorties. La différence entre le total des entrées et celui des sorties, déduction faite du change, constitue les frais perçus par le mineur. Le constructeur de BitLab expose ce modèle sans abstraction : le choix des UTXO, des destinataires et du niveau de frais reste sous le contrôle explicite de l’utilisateur.')}
       </P>
       <H3>{t('Le flux complet en quatre étapes')}</H3>
       <div className="grid gap-2.5">
         <Step n="01" title={t('Sélectionner')}>
-          {t('Récupération des UTXO de l’adresse active via Esplora. Les sorties confirmées et en attente sont distinguées ; vous cochez celles qui financeront la transaction.')}
+          {t('Les UTXO de l’adresse active sont récupérés via Esplora ; sorties confirmées et en attente sont distinguées. L’utilisateur coche celles qui financeront la transaction.')}
         </Step>
         <Step n="02" title={t('Construire')}>
-          {t('Assemblage des entrées et sorties, ajout du change automatique lorsque le reliquat dépasse la limite de poussière (546 sats), estimation de la taille virtuelle en direct.')}
+          {t('Les entrées et sorties sont assemblées ; un change automatique est ajouté lorsque le reliquat dépasse la limite de poussière (546 sats). La taille virtuelle est estimée en direct.')}
         </Step>
         <Step n="03" title={t('Signer')}>
-          {t('Signature locale : ECDSA pour Legacy et SegWit, Schnorr et tweak Taproot (BIP86) pour P2TR. La clé privée ne quitte jamais le navigateur.')}
+          {t('La signature s’effectue localement : ECDSA pour Legacy et SegWit ; Schnorr et tweak Taproot (BIP86) pour P2TR. La clé privée ne quitte pas le navigateur.')}
         </Step>
         <Step n="04" title={t('Diffuser')}>
-          {t('Publication de l’hexadécimal signé vers le nœud du réseau actif via le proxy, puis suivi des confirmations dans l’explorateur intégré.')}
+          {t('L’hexadécimal signé est publié vers le nœud du réseau actif via le proxy ; les confirmations sont ensuite suivies dans l’explorateur intégré.')}
         </Step>
       </div>
       <H3>{t('Tailles et frais')}</H3>
       <P>
-        {t('Les frais s’expriment en')} <span className="font-mono text-xs">sat/vB</span> {t('(satoshis par octet virtuel) et les recommandations en temps réel (économie, rapide, prioritaire) proviennent de l’estimation mempool.space. Plus les entrées sont anciennes au format, plus la transaction est lourde : c’est pourquoi le choix du format d’adresse influence directement le coût d’usage.')}
+        {t('Les frais s’expriment en')} <span className="font-mono text-xs">sat/vB</span> {t('(satoshis par octet virtuel) ; les recommandations en temps réel — économie, rapide, prioritaire — proviennent de l’estimation mempool.space. Le format des entrées détermine le poids de la transaction : le choix du format d’adresse influence donc directement le coût.')}
       </P>
       <Table
         head={[t('Format d’entrée'), t('Poids approximatif'), t('Usage')]}
@@ -234,7 +233,7 @@ function SectionTransactions() {
         ]}
       />
       <Callout kind="info" title="Multisig">
-        {t('Le constructeur embarque une composition multisig m-de-n : sélectionnez plusieurs clés publiques de votre bibliothèque, BitLab dérive l’adresse P2WSH correspondante et son script témoin — la dépense exigera la signature de m participants sur n.')}
+        {t('Le constructeur prend en charge le multisig m-de-n : après sélection de plusieurs clés publiques de la bibliothèque, BitLab dérive l’adresse P2WSH et son script témoin ; la dépense exige m signatures sur n.')}
       </Callout>
     </article>
   );
@@ -247,8 +246,8 @@ function SectionReseaux() {
       <Banner><ArtNetworks /></Banner>
       <H2 id="reseaux">{t('Réseaux & connectivité')}</H2>
       <P>
-        {t('BitLab est multi-réseaux : le sélecteur en haut à droite bascule l’intégralité des modules — portefeuilles, constructeur, explorateur et Lightning. Toutes les données on-chain transitent par un proxy Edge unique')}{' '}
-        <span className="font-mono text-xs">/api/bitcoin</span> {t('qui applique une liste blanche stricte de chemins (protection anti-injection), un cache mémoire de 60 secondes par réseau, et relaie vers l’API Esplora publique correspondante. Aucune donnée utilisateur ne transite par ce canal : uniquement des informations publiques de la blockchain.')}
+        {t('BitLab est multi-réseaux : le sélecteur en haut à droite bascule l’ensemble des modules — portefeuilles, constructeur, explorateur et Lightning. Les données on-chain transitent par un proxy unique')}{' '}
+        <span className="font-mono text-xs">/api/bitcoin</span> {t('qui applique une liste blanche stricte de chemins (protection contre l’injection), maintient un cache mémoire de 60 secondes par réseau et relaie vers l’API Esplora publique correspondante. Ce canal ne transporte aucune donnée utilisateur : uniquement des informations publiques de la blockchain.')}
       </P>
       <Table
         head={[t('Réseau'), t('API Esplora'), t('Rôle au laboratoire')]}
@@ -267,7 +266,7 @@ function SectionReseaux() {
       />
       <H3>{t('S’approvisionner en sats de test')}</H3>
       <P>
-        {t('Chaque réseau de test expose ses faucets dans le module Portefeuille — avec une mention honnête de ce qu’ils exigent (aucun compte, captcha, ou connexion). Copiez votre adresse active, demandez des sats, puis observez la transaction apparaître dans votre solde — le laboratoire rafraîchit automatiquement les soldes via Esplora.')}
+        {t('Chaque réseau de test recense ses faucets dans le module Portefeuille, avec la mention de leurs exigences (compte, captcha ou connexion). Copiez l’adresse active, demandez des sats, puis observez la transaction dans le solde ; le laboratoire actualise automatiquement les soldes via Esplora.')}
       </P>
       <Callout kind="warn" title={t('Étanchéité réseau')}>
         {t('Les portefeuilles sont étiquetés par réseau à la création. Le sélecteur n’affiche que les portefeuilles du réseau actif — un import mainnet en testnet est refusé, et une signature croisée entre réseaux est structurellement impossible.')}
@@ -285,32 +284,32 @@ function SectionLightning() {
       <P>
         {t('Le module Lightning n’est')} <strong className="text-foreground">{t('pas une simulation')}</strong>
         {t(' : BitLab exécute deux nœuds')} <span className="font-mono text-xs">lightning (LDK, Rust)</span>{' '}
-        {t('— le cœur Rust du Lightning Dev Kit, compilé en WebAssembly depuis rust/lnlab et piloté par un Web Worker dans votre navigateur. Ils se synchronisent sur la chaîne via le proxy Esplora et dialoguent par le protocole Lightning authentique (poignée de main Noise, messages BOLT) sur une paire de sockets en mémoire. Chaque nœud possède sa propre graine conservée exclusivement dans votre IndexedDB, ses canaux et son historique de paiements.')}
+        {t('— le cœur Rust du Lightning Dev Kit, compilé en WebAssembly depuis rust/lnlab et piloté par un Web Worker dans le navigateur. Ils se synchronisent sur la chaîne via le proxy Esplora et échangent le protocole Lightning authentique — poignée de main Noise, messages BOLT — sur une paire de sockets mémoire. Chaque nœud possède sa propre graine, conservée exclusivement dans l’IndexedDB du site, ainsi que ses canaux et son historique de paiements.')}
       </P>
       <H3>{t('Cycle de vie d’un canal')}</H3>
       <ul className="space-y-2.5">
-        <Li><strong className="text-foreground">{t('Démarrer les nœuds')}</strong> — {t('les nœuds se reconstruisent depuis leur graine, se resynchronisent (blocs, frais) puis passent à l’état « opérationnel ».')}</Li>
-        <Li><strong className="text-foreground">{t('Financer')}</strong> — {t('l’ouverture génère une adresse de financement P2WSH ; créditez-la depuis l’un de vos portefeuilles BitLab — la transaction est construite et signée localement, puis diffusée via le proxy.')}</Li>
-        <Li><strong className="text-foreground">{t('Connecter')}</strong> — {t('A et B sont reliés par une paire de sockets en mémoire : chaque octet échangé est du vrai protocole (handshake Noise authentique), mais rien ne quitte votre machine.')}</Li>
-        <Li><strong className="text-foreground">{t('Ouvrir')}</strong> — {t('la transaction de financement 2-de-2 est signée par les deux parties et diffusée ; le canal passe « en financement » puis « prêt » après confirmations.')}</Li>
+        <Li><strong className="text-foreground">{t('Démarrer les nœuds')}</strong> — {t('les nœuds se reconstruisent depuis leur graine, se resynchronisent (blocs, frais), puis atteignent l’état opérationnel.')}</Li>
+        <Li><strong className="text-foreground">{t('Financer')}</strong> — {t('l’ouverture génère une adresse de financement P2WSH ; créditez-la depuis l’un de vos portefeuilles BitLab. La transaction est construite et signée localement, puis diffusée via le proxy.')}</Li>
+        <Li><strong className="text-foreground">{t('Connecter')}</strong> — {t('A et B sont reliés par une paire de sockets mémoire : chaque octet échangé relève du protocole réel (handshake Noise authentique) ; rien ne quitte la machine.')}</Li>
+        <Li><strong className="text-foreground">{t('Ouvrir')}</strong> — {t('la transaction de financement 2-de-2 est signée par les deux parties puis diffusée ; le canal passe en financement, puis en prêt après confirmations.')}</Li>
         <Li><strong className="text-foreground">{t('Payer')}</strong> — {t('le payeur signe un HTLC vers la facture BOLT11 émise par le bénéficiaire ; le règlement met à jour les soldes locaux sans écriture on-chain.')}</Li>
-        <Li><strong className="text-foreground">{t('Fermer')}</strong> — {t('clôture coopérative (une transaction consensuelle) ou forcée (diffusion d’un ancien état, assortie d’une pénalité).')}</Li>
+        <Li><strong className="text-foreground">{t('Fermer')}</strong> — {t('la clôture est coopérative (transaction consensuelle) ou forcée (diffusion d’un état révoqué, assortie d’une pénalité).')}</Li>
       </ul>
       <H3>{t('Factures BOLT11')}</H3>
       <P>
-        {t('Les factures émises par les nœuds sont réellement signées par leur clé Lightning et encodées au format BOLT11 : copiez le QR ou la chaîne lntb/lntbs et payez-la depuis n’importe quel portefeuille du réseau correspondant. Montant, hash de paiement, secret et expiration sont générés et vérifiés par le nœud lui-même.')}
+        {t('Les factures émises sont réellement signées par la clé Lightning du nœud et encodées au format BOLT11. Le QR ou la chaîne lntb/lntbs peut être payé depuis tout portefeuille du réseau correspondant. Montant, hash de paiement, secret et expiration sont générés et vérifiés par le nœud lui-même.')}
       </P>
       <H3>{t('Offers BOLT12')}</H3>
       <P>
-        {t('L’onglet Paiements sépare volontairement les deux protocoles pour éviter toute confusion. Une offer BOLT12 (lno1…) est un code de paiement réutilisable : A demande une facture au nœud B via messages onion chiffrés, B répond par une vraie facture BOLT12 portant un chemin de paiement aveuglé, puis le HTLC part sur le canal. Montant facultatif (paiement libre possible), note au payeur, décodeur intégré — le flux BOLT12 complet tourne réellement dans votre navigateur.')}
+        {t('L’onglet Paiements distingue les deux protocoles. Une offer BOLT12 (lno1…) est un code de paiement réutilisable : A demande une facture au nœud B par messages onion chiffrés ; B répond par une facture BOLT12 portant un chemin de paiement aveuglé, puis le HTLC emprunte le canal. Montant facultatif (paiement libre possible), note au payeur, décodeur intégré : le flux BOLT12 complet s’exécute dans le navigateur.')}
       </P>
       <H3>{t('Liquidité et honnêteté des erreurs')}</H3>
       <P>
-        {t('À l’ouverture d’un canal, le champ « poussé au pair » transfère immédiatement de la liquidité à la contrepartie : en ouvrant A vers B avec 100 000 sats de capacité dont 40 000 poussés, B dispose d’un solde Lightning réel de 40 000 sats et peut émettre des factures que A paie instantanément. Le routage est un saut direct entre A et B — correct par construction pour un lab à deux nœuds — : sans liquidité suffisante, le paiement échoue et')}{' '}
-        <strong className="text-foreground">{t('l’erreur exacte du réseau est affichée')}</strong> {t('— jamais masquée, jamais simulée. C’est précisément ce comportement qu’un développeur Lightning doit apprendre à lire.')}
+        {t('À l’ouverture d’un canal, le champ « poussé au pair » transfère immédiatement de la liquidité à la contrepartie : en ouvrant A vers B avec 100 000 sats de capacité dont 40 000 poussés, B dispose d’un solde Lightning réel de 40 000 sats et peut émettre des factures payables instantanément par A. Le routage se réduit à un saut direct entre A et B, correct par construction pour un lab à deux nœuds. Sans liquidité suffisante, le paiement échoue et')}{' '}
+        <strong className="text-foreground">{t('l’erreur exacte du réseau est affichée')}</strong> {t('— sans masquage ni simulation. C’est ce comportement que le développeur Lightning doit apprendre à interpréter.')}
       </P>
       <Callout kind="info" title={t('Pourquoi deux nœuds ?')}>
-        {t('Lightning n’a de sens qu’entre pairs. Le lab embarque A et B pour réaliser un cycle complet (canal, facture, paiement, clôture) sans aucune dépendance externe ni serveur : tout tient dans votre navigateur.')}
+        {t('Lightning n’a de sens qu’entre pairs. Le lab embarque A et B afin de réaliser un cycle complet — canal, facture, paiement, clôture — sans dépendance externe ni serveur : tout s’exécute dans le navigateur.')}
       </Callout>
     </article>
   );
@@ -322,7 +321,7 @@ function SectionApi() {
       <Banner><ArtApi /></Banner>
       <H2 id="api">{t('API du laboratoire')}</H2>
       <P>
-        {t('Un unique proxy serveur alimente l’interface. Il n’expose aucune donnée sensible, filtre strictement les chemins autorisés, ajoute un cache court par réseau et relaie aussi les blocs bruts dont le lab Lightning se nourrit. Le module Lightning lui-même ne passe plus par le serveur : il vit dans votre navigateur.')}
+        {t('Un proxy serveur unique alimente l’interface. Il n’expose aucune donnée sensible, filtre strictement les chemins autorisés, ajoute un cache court par réseau et relaie les blocs bruts consommés par le lab Lightning. Le module Lightning, lui, ne passe plus par le serveur : il s’exécute dans le navigateur.')}
       </P>
       <H3><span className="font-mono text-sm text-primary">/api/bitcoin</span>{t(' — proxy Esplora multi-réseaux')}</H3>
       <Table
@@ -340,7 +339,7 @@ function SectionApi() {
       />
       <H3><span className="font-mono text-sm text-primary">Lightning (navigateur)</span>{t(' — Web Worker + WebAssembly')}</H3>
       <P>
-        {t('Aucun endpoint HTTP : les deux nœuds tournent dans un Web Worker (public/lnlab/worker.js) qui charge le module WASM au premier démarrage. Les graines, monitors de canal et historiques restent dans l’IndexedDB du site, et seules les données publiques (blocs, frais, diffusion) transitent par /api/bitcoin. Le serveur n’héberge plus aucun nœud.')}
+        {t('Aucun endpoint HTTP : les deux nœuds s’exécutent dans un Web Worker (public/lnlab/worker.js) qui charge le module WASM au premier démarrage. Les graines, monitors de canal et historiques demeurent dans l’IndexedDB du site ; seules les données publiques — blocs, frais, diffusion — transitent par /api/bitcoin. Le serveur n’héberge aucun nœud.')}
       </P>
     </article>
   );
@@ -354,36 +353,64 @@ function SectionSecurite() {
       <H2 id="securite">{t('Bonnes pratiques')}</H2>
       <ul className="space-y-2.5">
         <Li><strong className="text-foreground">{t('Clés locales uniquement')}</strong> — {t('la signature s’exécute dans le navigateur ; aucun octet de clé privée ne transite par le réseau, ni vers BitLab ni vers un tiers.')}</Li>
-        <Li><strong className="text-foreground">{t('Stockage local')}</strong> — {t('portefeuilles et préférences vivent dans IndexedDB sur votre appareil ; effacez les données du site pour repartir de zéro.')}</Li>
+        <Li><strong className="text-foreground">{t('Stockage local')}</strong> — {t('les portefeuilles et préférences résident dans l’IndexedDB de l’appareil ; effacer les données du site réinitialise l’ensemble.')}</Li>
         <Li><strong className="text-foreground">{t('Graines Lightning locales')}</strong> — {t('les nœuds LDK détiennent leurs propres graines (IndexedDB du site, jamais transmises au serveur) : n’y financez que des montants de test.')}</Li>
         <Li><strong className="text-foreground">{t('Mainnet = danger')}</strong> — {t('sur mainnet, frais, montants et destinataires sont irrévocables ; le lab verrouille tout financement mainnet par conception.')}</Li>
-        <Li><strong className="text-foreground">{t('Vérifiez toujours')}</strong> — {t('adresse de réception complète, montant en sats, réseau actif dans le sélecteur : trois réflexes avant toute diffusion.')}</Li>
+        <Li><strong className="text-foreground">{t('Vérifiez toujours')}</strong> — {t('avant toute diffusion, vérifier trois points : adresse de réception complète, montant en sats, réseau actif dans le sélecteur.')}</Li>
         <Li><strong className="text-foreground">{t('Transparence des erreurs')}</strong> — {t('chaque écran reflète l’état réel : une erreur Lightning (route absente, pair injoignable, fonds insuffisants) est affichée telle quelle.')}</Li>
       </ul>
       <Callout kind="warn" title={t('Environnement restreint')}>
-        {t('Le lab Lightning s’exécute entièrement dans votre navigateur : aucun port sortant n’est nécessaire, et seul le proxy Esplora de l’application a besoin d’un accès Internet. Il fonctionne donc derrière les pare-feux les plus restrictifs.')}
+        {t('Le lab Lightning s’exécute entièrement dans le navigateur : aucun port sortant n’est requis, et seul le proxy Esplora de l’application a besoin d’un accès Internet. Il fonctionne donc derrière les pare-feux les plus restrictifs.')}
       </Callout>
-      <H3>{t('Références officielles')}</H3>
-      <div className="flex flex-wrap gap-2">
-        {[
-          { label: 'developer.bitcoin.org', url: 'https://developer.bitcoin.org/' },
-          { label: 'lightningdevkit.org', url: 'https://lightningdevkit.org/' },
-          { label: 'docs.rs/lightning', url: 'https://docs.rs/lightning/latest/lightning/' },
-          { label: 'mempool.space/docs/api', url: 'https://mempool.space/docs/api/rest' },
-          { label: t('Index des BIPs'), url: 'https://github.com/bitcoin/bips' },
-          { label: t('BOLT #11 (factures)'), url: 'https://github.com/lightning/bolts/blob/master/11-payment-encoding.md' },
-        ].map((l) => (
-          <a
-            key={l.url}
-            href={l.url}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-          >
-            {l.label} <ExternalLink className="h-3 w-3" />
-          </a>
+    </article>
+  );
+}
+
+/* ──────────────────────────────  Références  ────────────────────────────── */
+
+/** Bibliographie — sources normatives et documentation technique. */
+const REFS: { label: string; url: string }[] = [
+  { label: 'S. Nakamoto — « Bitcoin: A Peer-to-Peer Electronic Cash System » (2008)', url: 'https://bitcoin.org/bitcoin.pdf' },
+  { label: 'Bitcoin Core — Developer documentation', url: 'https://developer.bitcoin.org/' },
+  { label: 'Bitcoin Improvement Proposals — Index', url: 'https://github.com/bitcoin/bips' },
+  { label: 'BIP 32 — Hierarchical Deterministic Wallets', url: 'https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki' },
+  { label: 'BIP 39 — Mnemonic Code for Generating Deterministic Keys', url: 'https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki' },
+  { label: 'BIP 44 — Multi-Account Hierarchy for Deterministic Wallets', url: 'https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki' },
+  { label: 'BIP 84 — Derivation Paths for P2WPKH', url: 'https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki' },
+  { label: 'BIP 86 — Derivation Paths for P2TR', url: 'https://github.com/bitcoin/bips/blob/master/bip-0086.mediawiki' },
+  { label: 'BOLT #11 — Invoice Encoding for Lightning Payments', url: 'https://github.com/lightning/bolts/blob/master/11-payment-encoding.md' },
+  { label: 'BOLT #12 — Offer Encoding', url: 'https://github.com/lightning/bolts/blob/master/12-offer-encoding.md' },
+  { label: 'Lightning Dev Kit (LDK)', url: 'https://lightningdevkit.org/' },
+  { label: 'lightning crate — Rust documentation (LDK)', url: 'https://docs.rs/lightning/latest/lightning/' },
+  { label: 'Esplora — HTTP API', url: 'https://github.com/Blockstream/esplora/blob/master/API.md' },
+  { label: 'mempool.space — REST API', url: 'https://mempool.space/docs/api/rest' },
+  { label: 'scure — Audited cryptographic libraries (@scure/bip39, @scure/bip32, @scure/btc-signer)', url: 'https://github.com/paulmillr/scure' },
+];
+
+function SectionReferences() {
+  const { t } = useT();
+  return (
+    <article id="references" className="scroll-mt-24 space-y-6">
+      <H2 id="references">{t('Références')}</H2>
+      <P>{t('Sources normatives et documentation technique utilisées dans ce guide.')}</P>
+      <ol className="space-y-2.5">
+        {REFS.map((r, i) => (
+          <li key={r.url} className="flex gap-3 text-[13.5px] leading-relaxed">
+            <span className="shrink-0 pt-px font-mono text-xs text-primary">[{i + 1}]</span>
+            <span className="text-muted-foreground">
+              {r.label} —{' '}
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noreferrer"
+                className="break-all font-mono text-xs text-primary hover:underline"
+              >
+                {r.url.replace(/^https:\/\//, '')}
+              </a>
+            </span>
+          </li>
         ))}
-      </div>
+      </ol>
     </article>
   );
 }
@@ -398,6 +425,7 @@ const NAV = [
   { id: 'lightning', label: 'Lightning — LDK réel' },
   { id: 'api', label: 'API du laboratoire' },
   { id: 'securite', label: 'Bonnes pratiques' },
+  { id: 'references', label: 'Références' },
 ];
 
 const SECTIONS = [
@@ -408,6 +436,7 @@ const SECTIONS = [
   { id: 'lightning', render: () => <SectionLightning /> },
   { id: 'api', render: () => <SectionApi /> },
   { id: 'securite', render: () => <SectionSecurite /> },
+  { id: 'references', render: () => <SectionReferences /> },
 ];
 
 export default function GuideDocsPage() {
@@ -461,7 +490,7 @@ export default function GuideDocsPage() {
       <div className="border-b border-border/60 bg-gradient-to-b from-primary/8 via-transparent to-transparent">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <h1 className="lab-display max-w-3xl text-3xl leading-tight sm:text-[38px] sm:leading-[46px]">
-            {t('Le guide du développeur Bitcoin & Lightning')}
+            {t('Guide Bitcoin & Lightning')}
           </h1>
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
             {t('Bitcoin et Lightning, expliqués au niveau du protocole — à manipuler directement dans votre navigateur.')}
