@@ -15,7 +15,6 @@ import {
   Info,
   ShieldAlert,
   TriangleAlert,
-  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NETWORKS, NET_ORDER } from '@/lib/networks';
@@ -442,19 +441,17 @@ export default function GuideDocsPage() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/" aria-label="BitLab" className="flex items-center">
-            <BrandMark responsive />
+            <BrandMark responsive pill={false} />
           </Link>
-          <span className="hidden min-[400px]:inline-flex rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary">Docs</span>
-          <span className="hidden text-sm text-muted-foreground sm:inline">{t('Guide du développeur')}</span>
           <div className="ml-auto flex items-center gap-2">
             <LangToggle />
             <ThemeToggle />
             <Link
               href="/"
-              aria-label={t('Ouvrir le laboratoire')}
+              aria-label={t('Retour au laboratoire')}
               className="inline-flex items-center gap-1.5 rounded-[6px] border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 hover:text-foreground"
             >
-              <ArrowLeft className="h-3.5 w-3.5 shrink-0" /> <span className="hidden sm:inline">{t('Ouvrir le laboratoire')}</span>
+              <ArrowLeft className="h-3.5 w-3.5 shrink-0" /> <span className="hidden sm:inline">{t('Retour au laboratoire')}</span>
             </Link>
           </div>
         </div>
@@ -463,14 +460,11 @@ export default function GuideDocsPage() {
       {/* Hero docs */}
       <div className="border-b border-border/60 bg-gradient-to-b from-primary/8 via-transparent to-transparent">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <Zap className="h-3 w-3" /> {t('Documentation officielle du laboratoire')}
-          </span>
-          <h1 className="lab-display mt-4 max-w-3xl text-3xl leading-tight sm:text-[38px] sm:leading-[46px]">
+          <h1 className="lab-display max-w-3xl text-3xl leading-tight sm:text-[38px] sm:leading-[46px]">
             {t('Le guide du développeur Bitcoin & Lightning')}
           </h1>
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-            {t('Clés et adresses, construction de transactions, multi-réseaux, nœuds LDK réels et API du laboratoire — tout ce que BitLab exécute, expliqué au niveau du protocole.')}
+            {t('Bitcoin et Lightning, expliqués au niveau du protocole — à manipuler directement dans votre navigateur.')}
           </p>
         </div>
       </div>

@@ -12,7 +12,6 @@ export const EN: Record<string, string> = {
   'Transactions': 'Transactions',
   'Explorateur': 'Explorer',
   'Ressources': 'Resources',
-  'Guide développeur': 'Developer guide',
   'mempool.space — explorateur': 'mempool.space — explorer',
   'Index des BIPs': 'BIP index',
   'ldk-node — référence': 'ldk-node — reference',
@@ -458,14 +457,11 @@ export const EN: Record<string, string> = {
   '{net} · clés 100 % locales': '{net} · 100% local keys',
 
   /* ─────────────────────────── Guide docs ─────────────────────────── */
-  'Guide du développeur': 'Developer guide',
-  'Ouvrir le laboratoire': 'Open the lab',
-  'Documentation officielle du laboratoire': 'Official lab documentation',
   'Le guide du développeur Bitcoin & Lightning': 'The Bitcoin & Lightning developer guide',
-  'Clés et adresses, construction de transactions, multi-réseaux, nœuds LDK réels et API du laboratoire — tout ce que BitLab exécute, expliqué au niveau du protocole.':
-    'Keys and addresses, transaction building, multi-network, real LDK nodes and the lab API — everything BitLab runs, explained at the protocol level.',
+  'Bitcoin et Lightning, expliqués au niveau du protocole — à manipuler directement dans votre navigateur.':
+    'Bitcoin and Lightning explained at the protocol level — hands-on, right in your browser.',
   'Sur cette page': 'On this page',
-  'Retour au laboratoire': 'Back to the lab',
+  'Retour au laboratoire': 'Return to the lab',
   'Sections du guide': 'Guide sections',
   'Démarrer': 'Getting started',
   'Clés & adresses': 'Keys & addresses',

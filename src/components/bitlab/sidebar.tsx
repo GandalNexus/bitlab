@@ -94,7 +94,7 @@ const RESOURCE_LINKS: {
   icon: ComponentType<{ className?: string }>;
   external: boolean;
 }[] = [
-  { label: 'Guide développeur', href: '/guide', icon: BookOpen, external: false },
+  { label: 'Guide', href: '/guide', icon: BookOpen, external: false },
 ];
 
 // --- Navigation ---
@@ -308,7 +308,16 @@ export function LabSidebar({
 }
 
 /** Brand block: lab icon + "BitLab" + "Lab" pill (Stellar signature). */
-export function BrandMark({ compact = false, responsive = false }: { compact?: boolean; responsive?: boolean }) {
+export function BrandMark({
+  compact = false,
+  responsive = false,
+  pill = true,
+}: {
+  compact?: boolean;
+  responsive?: boolean;
+  /** Affiche la pastille « Lab » (masquée sur la page guide). */
+  pill?: boolean;
+}) {
   return (
     <div className="flex items-center gap-2">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-primary text-primary-foreground">
@@ -321,14 +330,16 @@ export function BrandMark({ compact = false, responsive = false }: { compact?: b
           <span className={cn('text-[15px] font-semibold tracking-tight', responsive && 'hidden min-[400px]:inline')}>
             BitLab
           </span>
-          <span
-            className={cn(
-              'rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary',
-              responsive && 'hidden min-[400px]:inline-block',
-            )}
-          >
-            Lab
-          </span>
+          {pill ? (
+            <span
+              className={cn(
+                'rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary',
+                responsive && 'hidden min-[400px]:inline-block',
+              )}
+            >
+              Lab
+            </span>
+          ) : null}
         </>
       ) : null}
     </div>
