@@ -700,6 +700,7 @@ export const EN: Record<string, string> = {
   'monnaie rendue · 9 200 sats': 'change · 9,200 sats',
   'proxy Esplora unique · cache 60 s · liste blanche': 'single Esplora proxy · 60 s cache · allow-list',
   'Canal Lightning entre deux nœuds': 'Lightning channel between two nodes',
+  'canal 2/2 · HTLC': 'channel 2/2 · HTLC',
   'financement on-chain 2/2': 'on-chain 2-of-2 funding',
   'Architecture des API du laboratoire': 'Lab API architecture',
   'interface BitLab': 'BitLab interface',
