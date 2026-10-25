@@ -180,30 +180,32 @@ export function ArtTx() {
 // --- 4. Networks ---
 export function ArtNetworks() {
   const { t } = useT();
-  const nodes = [
-    { x: 160, y: 70, label: 'Testnet4', c: '#10b981' },
-    { x: 160, y: 170, label: 'Testnet3', c: '#0ea5e9' },
-    { x: 720, y: 70, label: 'Signet', c: '#8b5cf6' },
-    { x: 720, y: 170, label: 'Mainnet', c: A },
+  const nets = [
+    { x: 128, label: 'Testnet4', c: '#10b981' },
+    { x: 284, label: 'Testnet3', c: '#0ea5e9' },
+    { x: 440, label: 'Signet', c: '#8b5cf6' },
+    { x: 596, label: 'Mainnet', c: A },
+    { x: 752, label: 'Regtest', c: '#f59e0b' },
   ];
   return (
     <svg viewBox="0 0 880 240" className="h-auto w-full" role="img" aria-label={t('Multi-réseaux via un proxy unique')}>
       <Grid id="g-net" />
-      {nodes.map((n) => (
-        <path key={n.label} d={`M ${n.x < 440 ? n.x + 60 : n.x - 60} ${n.y} L ${n.x < 440 ? 380 : 500} 120`} stroke={n.c} strokeWidth="1.5" opacity="0.55" fill="none" strokeDasharray="4 4" />
+      {/* hub BitLab */}
+      <rect x="310" y="48" width="260" height="60" rx="10" fill="rgba(247,147,26,0.12)" stroke={A} strokeWidth="1.5" />
+      <text x="440" y="74" textAnchor="middle" fill={A} fontSize="13" fontWeight="600">BitLab</text>
+      <text x="440" y="94" textAnchor="middle" fill={TXT} fontSize="9">{t('proxy Esplora unique · cache 60 s · liste blanche')}</text>
+      {/* fan-out to the five networks */}
+      {nets.map((n) => (
+        <path key={n.label} d={`M 440 108 L ${n.x} 170`} stroke={n.c} strokeWidth="1.5" opacity="0.5" fill="none" strokeDasharray="4 4" />
       ))}
-      {nodes.map((n) => (
+      {nets.map((n) => (
         <g key={n.label}>
-          <circle cx={n.x} cy={n.y} r="22" fill="none" stroke={n.c} strokeWidth="2" />
-          <circle cx={n.x} cy={n.y} r="7" fill={n.c} opacity="0.85" />
-          <text x={n.x} y={n.y + 40} textAnchor="middle" fill={TXT} fontSize="11">{n.label}</text>
+          <rect x={n.x - 70} y={170} width={140} height={34} rx={8} fill="rgba(255,255,255,0.03)" stroke={n.c} strokeWidth={1.5} />
+          <circle cx={n.x - 38} cy={187} r={4} fill={n.c} />
+          <text x={n.x + 6} y={191} textAnchor="middle" fill={TXT} fontSize="11">{n.label}</text>
         </g>
       ))}
-      {/* hub BitLab */}
-      <rect x="380" y="94" width="120" height="52" rx="10" fill="rgba(247,147,26,0.12)" stroke={A} strokeWidth="1.5" />
-      <text x="440" y="125" textAnchor="middle" fill={A} fontSize="13" fontWeight="600">BitLab</text>
-      <text x="440" y="168" textAnchor="middle" fill={TXT} fontSize="10">{t('proxy Esplora unique · cache 60 s · liste blanche')}</text>
-      <text x="440" y="30" textAnchor="middle" fill={B} fontSize="12" fontWeight="600">{t('Un sélecteur, quatre réseaux, mêmes primitives')}</text>
+      <text x="440" y="30" textAnchor="middle" fill={B} fontSize="12" fontWeight="600">{t('Un sélecteur, cinq réseaux, mêmes primitives')}</text>
     </svg>
   );
 }

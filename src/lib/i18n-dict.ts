@@ -676,7 +676,7 @@ export const EN: Record<string, string> = {
   'entrées (UTXO)': 'inputs (UTXOs)',
   'différence = frais du mineur': 'difference = miner fee',
   'Chaque satoshi suit une chaîne de propriété vérifiable': 'Every satoshi follows a verifiable chain of ownership',
-  'Un sélecteur, quatre réseaux, mêmes primitives': 'One selector, four networks, same primitives',
+  'Un sélecteur, cinq réseaux, mêmes primitives': 'One selector, five networks, same primitives',
   'liquidité sortante': 'outbound liquidity',
   'liquidité entrante': 'inbound liquidity',
   'Paiements instantanés, routage par gossip, règlement sans écriture on-chain':
