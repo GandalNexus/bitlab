@@ -452,8 +452,11 @@ function MaturationPanel({ wallets }: { wallets: LabWallet[] }) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-medium">{t('{s} sats en maturation', { s: fmtInt(total) })}</span>
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => void matureNow()} className="gap-1.5">
-          <Pickaxe className="h-3.5 w-3.5" />
+        {/* whitespace-normal + shrink : l'intitulé long (« Miner N bloc(s) pour tout
+            débloquer ») doit pouvoir se replier sur deux lignes au lieu de pousser la
+            carte hors écran — le shrink-0 par défaut du Button l'en empêche. */}
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => void matureNow()} className="gap-1.5 whitespace-normal text-left shrink">
+          <Pickaxe className="h-3.5 w-3.5 shrink-0" />
           {busy ? t('minage des blocs…') : t('Miner {k} bloc(s) pour tout débloquer', { k })}
         </Button>
       </div>

@@ -93,10 +93,10 @@ function WalletDetail({ w }: { w: LabWallet }) {
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex justify-center rounded-lg border border-border bg-muted/30 p-3">
+        <div className="flex min-w-0 justify-center rounded-lg border border-border bg-muted/30 p-3">
           <QRCode value={`bitcoin:${w.address}`} size={132} caption={w.address.slice(0, 14) + '…'} />
         </div>
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <Copyable label={t('Adresse')} value={w.address} />
           <Copyable label={t('Clé publique')} value={w.publicKeyHex} display={w.publicKeyHex.slice(0, 20) + '…' + w.publicKeyHex.slice(-8)} />
           <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
@@ -480,7 +480,7 @@ export function WalletModule() {
             </Card>
           ) : (
             <div className="grid gap-3 lg:grid-cols-2">
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 {netWallets.map((w) => (
                   <div
                     key={w.id}

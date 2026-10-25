@@ -158,7 +158,7 @@ function StepSelect({
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
-        <div className="rounded-lg border border-border bg-muted/30 p-3">
+        <div className="min-w-0 rounded-lg border border-border bg-muted/30 p-3">
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('Portefeuille sélectionné')}</div>
           <div className="mt-1 truncate font-mono text-xs">{wallet.address}</div>
           <Badge variant="outline" className="mt-1.5 border-primary/40 text-[10px] text-primary">

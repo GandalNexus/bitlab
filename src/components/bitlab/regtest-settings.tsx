@@ -224,9 +224,9 @@ function EmbeddedPanel() {
         </p>
       ) : null}
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <p className="text-[11px] leading-snug text-muted-foreground">{t('Pool faucet : {m} BTC mûrs · {i} BTC en maturation.', { m: info.data ? satsToBtc(info.data.faucet.matureSats) : '…', i: info.data ? satsToBtc(info.data.faucet.immatureSats) : '…' })}</p>
-        <Button size="sm" variant="ghost" className="gap-1.5 text-muted-foreground" disabled={busy !== null} onClick={() => void runReset()}>
+        <Button size="sm" variant="ghost" className="gap-1.5 self-start text-muted-foreground sm:self-auto" disabled={busy !== null} onClick={() => void runReset()}>
           <RotateCcw className="h-3.5 w-3.5" /> {t('Réinitialiser la chaîne')}
         </Button>
       </div>

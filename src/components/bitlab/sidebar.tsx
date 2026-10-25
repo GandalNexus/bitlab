@@ -308,7 +308,7 @@ export function LabSidebar({
 }
 
 /** Brand block: lab icon + "BitLab" + "Lab" pill (Stellar signature). */
-export function BrandMark({ compact = false }: { compact?: boolean }) {
+export function BrandMark({ compact = false, responsive = false }: { compact?: boolean; responsive?: boolean }) {
   return (
     <div className="flex items-center gap-2">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-primary text-primary-foreground">
@@ -316,8 +316,17 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
       </div>
       {!compact ? (
         <>
-          <span className="text-[15px] font-semibold tracking-tight">BitLab</span>
-          <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary">
+          {/* responsive : pastille et mot-symbole masqués sous 400 px — l'icône
+              seule suffit dans l'en-tête mobile, sinon la barre déborde. */}
+          <span className={cn('text-[15px] font-semibold tracking-tight', responsive && 'hidden min-[400px]:inline')}>
+            BitLab
+          </span>
+          <span
+            className={cn(
+              'rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary',
+              responsive && 'hidden min-[400px]:inline-block',
+            )}
+          >
             Lab
           </span>
         </>

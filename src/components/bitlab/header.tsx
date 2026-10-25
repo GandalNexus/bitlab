@@ -50,9 +50,10 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
         </button>
 
         {/* Brand shown only where the sidebar is a drawer (below lg) — the
-            desktop sidebar already carries the brand block. */}
+            desktop sidebar already carries the brand block. Responsive variant:
+            icon alone under 400 px so the bar never overflows small phones. */}
         <div className="lg:hidden">
-          <BrandMark />
+          <BrandMark responsive />
         </div>
 
         <div className="ml-auto flex items-center gap-2">

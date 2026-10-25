@@ -30,6 +30,7 @@ import {
   ArtSecurity,
   ArtTx,
 } from '@/components/bitlab/docs-art';
+import { BrandMark } from '@/components/bitlab/sidebar';
 
 /* ──────────────────────────────  Primitives  ────────────────────────────── */
 
@@ -440,22 +441,20 @@ export default function GuideDocsPage() {
       {/* Dedicated docs header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-primary text-primary-foreground">
-              <Zap className="h-4.5 w-4.5" />
-            </div>
-            <span className="text-[15px] font-semibold tracking-tight">BitLab</span>
+          <Link href="/" aria-label="BitLab" className="flex items-center">
+            <BrandMark responsive />
           </Link>
-          <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary">Docs</span>
+          <span className="hidden min-[400px]:inline-flex rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary">Docs</span>
           <span className="hidden text-sm text-muted-foreground sm:inline">{t('Guide du développeur')}</span>
           <div className="ml-auto flex items-center gap-2">
             <LangToggle />
             <ThemeToggle />
             <Link
               href="/"
+              aria-label={t('Ouvrir le laboratoire')}
               className="inline-flex items-center gap-1.5 rounded-[6px] border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60 hover:text-foreground"
             >
-              <ArrowLeft className="h-3.5 w-3.5" /> {t('Ouvrir le laboratoire')}
+              <ArrowLeft className="h-3.5 w-3.5 shrink-0" /> <span className="hidden sm:inline">{t('Ouvrir le laboratoire')}</span>
             </Link>
           </div>
         </div>
