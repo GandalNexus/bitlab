@@ -663,8 +663,6 @@ export const EN: Record<string, string> = {
   'Références': 'References',
   'Voir la référence': 'See reference',
   'Sources normatives et documentation technique utilisées dans ce guide.': 'Normative sources and technical documentation used in this guide.',
-  'BitLab — pilier du projet GandalNexus · « Vires in Numeris ». Les données publiques proviennent des nœuds mempool.space ; les nœuds Lightning tournent dans le navigateur via LDK (Lightning Dev Kit).':
-    'BitLab — cornerstone of the GandalNexus project · “Vires in Numeris”. Public data comes from mempool.space nodes; the Lightning nodes run in the browser via LDK (Lightning Dev Kit).',
 
   /* ─────────────────────────── docs-art (SVG) ─────────────────────────── */
   'Du navigateur au réseau Bitcoin': 'From the browser to the Bitcoin network',
@@ -687,7 +685,8 @@ export const EN: Record<string, string> = {
   'Un proxy strict, zéro donnée sensible exposée': 'One strict proxy, zero sensitive data exposed',
   'clés privées · IndexedDB locale': 'private keys · local IndexedDB',
   'aucun secret détenu': 'no secrets held',
-  'seules les données publiques transitent': 'only public data flows',
+  'données publiques': 'public data',
+  'clés privées — jamais transmises': 'private keys — never transmitted',
   'votre navigateur': 'your browser',
   '2 · construction & signature': '2 · building & signing',
   '3 · diffusion & confirmation': '3 · broadcast & confirmation',
@@ -709,7 +708,6 @@ export const EN: Record<string, string> = {
   'liste blanche · cache · aucun secret': 'allow-list · cache · no secrets',
   'blocs · adresses · UTXO · frais · diffusion': 'blocks · addresses · UTXOs · fees · broadcast',
   'serveur': 'server',
-  'architecture Zero-Knowledge': 'Zero-Knowledge architecture',
   'Ce que le navigateur signe, le serveur ne le saura jamais': 'What the browser signs, the server will never know',
 
   /* ─────────────────────────── Libs (erreurs) ─────────────────────────── */

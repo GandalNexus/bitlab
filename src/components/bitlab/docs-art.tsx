@@ -281,22 +281,38 @@ export function ArtSecurity() {
     <svg viewBox="0 0 880 240" className="h-auto w-full" role="img" aria-label={t('Les clés restent dans le navigateur')}>
       <Grid id="g-sec" />
       {/* browser vault */}
-      <g transform="translate(120 70)">
-        <path d="M 0 24 L 52 0 L 104 24 V 78 Q 52 104 0 78 Z" fill="rgba(247,147,26,0.10)" stroke={A} strokeWidth="2" />
-        <circle cx="52" cy="48" r="13" fill="none" stroke={A} strokeWidth="2" />
-        <rect x="49" y="48" width="6" height="12" rx="3" fill={A} />
-        <text x="52" y="126" textAnchor="middle" fill={TXT} fontSize="11">{t('clés privées · IndexedDB locale')}</text>
+      <Card x={90} y={72} w={230} h={96} />
+      <rect x="90" y="72" width="230" height="20" rx="10" fill="rgba(148,163,184,0.12)" />
+      <circle cx="108" cy="82" r="4" fill={DIM} />
+      <circle cx="122" cy="82" r="4" fill={DIM} />
+      <KeyGlyph cx={205} cy={120} />
+      <text x="205" y="155" textAnchor="middle" fill={TXT} fontSize="11">{t('clés privées · IndexedDB locale')}</text>
+      <text x="205" y="196" textAnchor="middle" fill={TXT} fontSize="11">{t('votre navigateur')}</text>
+      {/* server */}
+      <rect x="560" y="72" width="230" height="96" rx="10" fill="rgba(255,255,255,0.03)" stroke={DIM} strokeDasharray="5 4" />
+      <g fill="none" stroke={DIM} strokeWidth="1.5">
+        <rect x="660" y="100" width="30" height="10" rx="2.5" />
+        <rect x="660" y="114" width="30" height="10" rx="2.5" />
+        <rect x="660" y="128" width="30" height="10" rx="2.5" />
       </g>
-      {/* crossed-out server */}
-      <g transform="translate(620 70)">
-        <rect x="10" y="14" width="130" height="72" rx="10" fill="none" stroke={DIM} strokeDasharray="5 4" />
-        <text x="75" y="46" textAnchor="middle" fill={DIM} fontSize="12">{t('serveur')}</text>
-        <text x="75" y="64" textAnchor="middle" fill={DIM} fontSize="10">{t('aucun secret détenu')}</text>
-        <path d="M 4 92 L 146 8" stroke="#ef4444" strokeWidth="2.5" />
-        <text x="75" y="126" textAnchor="middle" fill={TXT} fontSize="11">{t('architecture Zero-Knowledge')}</text>
-      </g>
-      <path d="M 240 106 L 610 106" stroke={DIM} strokeWidth="1.5" strokeDasharray="4 4" />
-      <text x="425" y="96" textAnchor="middle" fill={B} fontSize="11">{t('seules les données publiques transitent')}</text>
+      <circle cx="666" cy="105" r="1.5" fill={DIM} />
+      <circle cx="666" cy="119" r="1.5" fill={DIM} />
+      <circle cx="666" cy="133" r="1.5" fill={DIM} />
+      <text x="675" y="155" textAnchor="middle" fill={TXT} fontSize="11">{t('aucun secret détenu')}</text>
+      <text x="675" y="196" textAnchor="middle" fill={TXT} fontSize="11">{t('serveur')}</text>
+      {/* flow 1 — public data (allowed) */}
+      <path d="M 340 104 L 536 104" stroke={A} strokeWidth="2" markerEnd="url(#arrow-sec)" />
+      <defs>
+        <marker id="arrow-sec" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill={A} />
+        </marker>
+      </defs>
+      <text x="440" y="90" textAnchor="middle" fill={B} fontSize="11">{t('données publiques')}</text>
+      {/* flow 2 — private keys (blocked) */}
+      <path d="M 340 136 L 424 136 M 456 136 L 536 136" stroke={DIM} strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
+      <circle cx="440" cy="136" r="10" fill="none" stroke="#ef4444" strokeWidth="2" />
+      <path d="M 434 130 L 446 142 M 446 130 L 434 142" stroke="#ef4444" strokeWidth="2" fill="none" />
+      <text x="440" y="164" textAnchor="middle" fill={TXT} fontSize="10">{t('clés privées — jamais transmises')}</text>
       <text x="440" y="30" textAnchor="middle" fill={B} fontSize="12" fontWeight="600">{t('Ce que le navigateur signe, le serveur ne le saura jamais')}</text>
     </svg>
   );
