@@ -45,7 +45,7 @@ export function AnnouncementBanner() {
 
   if (dismissed) return null;
   return (
-    <div role="region" aria-label={t('Annonce')} className="banner-in border-b border-amber-500/25 bg-amber-500/[0.08]">
+    <div role="region" aria-label={t('Annonce')} className="announce-bar banner-in border-b border-amber-500/25">
       {/* Full-width bar (aligned with the header controls); megaphone + text
           centered as a group, close button pinned to the right edge. The wide
           horizontal padding keeps the centered text clear of the button. */}
