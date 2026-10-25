@@ -13,7 +13,6 @@ export const EN: Record<string, string> = {
   'Explorateur': 'Explorer',
   'Ressources': 'Resources',
   'mempool.space — explorateur': 'mempool.space — explorer',
-  'Index des BIPs': 'BIP index',
   'ldk-node — référence': 'ldk-node — reference',
   'BOLT #11 — factures': 'BOLT #11 — invoices',
   'Navigation du laboratoire': 'Laboratory navigation',
@@ -457,7 +456,7 @@ export const EN: Record<string, string> = {
   '{net} · clés 100 % locales': '{net} · 100% local keys',
 
   /* ─────────────────────────── Guide docs ─────────────────────────── */
-  'Le guide du développeur Bitcoin & Lightning': 'The Bitcoin & Lightning developer guide',
+  'Guide Bitcoin & Lightning': 'Bitcoin & Lightning guide',
   'Bitcoin et Lightning, expliqués au niveau du protocole — à manipuler directement dans votre navigateur.':
     'Bitcoin and Lightning explained at the protocol level — hands-on, right in your browser.',
   'Sur cette page': 'On this page',
@@ -469,34 +468,34 @@ export const EN: Record<string, string> = {
   'Lightning — LDK réel': 'Lightning — real LDK',
   'API du laboratoire': 'Lab API',
   'Bonnes pratiques': 'Best practices',
-  'BitLab est un laboratoire Bitcoin et Lightning où l’on apprend en manipulant les vraies primitives du protocole. La cryptographie — génération de clés, construction et signature des transactions — s’exécute intégralement dans votre navigateur, avec des bibliothèques auditées et les règles de consensus exactes du réseau. Les données publiques (blocs, soldes, frais) proviennent de nœuds Esplora publics, et deux véritables nœuds Lightning LDK compilés en WebAssembly s’exécutent dans votre navigateur. Rien n’est maquetté : ce qui s’affiche à l’écran s’est réellement produit sur un réseau Bitcoin.':
-    'BitLab is a Bitcoin and Lightning laboratory where you learn by manipulating the real primitives of the protocol. Cryptography — key generation, transaction building and signing — runs entirely in your browser, with audited libraries and the exact consensus rules of the network. Public data (blocks, balances, fees) comes from public Esplora nodes, and two genuine Lightning LDK nodes compiled to WebAssembly run inside your browser. Nothing is mocked: what appears on screen actually happened on a Bitcoin network.',
+  'BitLab est un laboratoire d’apprentissage de Bitcoin et Lightning. La cryptographie — génération de clés, construction et signature de transactions — s’exécute intégralement dans le navigateur, au moyen de bibliothèques auditées appliquant les règles de consensus du réseau. Les données publiques (blocs, soldes, frais) proviennent de nœuds Esplora publics ; deux nœuds Lightning LDK, compilés en WebAssembly, s’exécutent localement. Rien n’est simulé : tout résultat affiché provient d’un réseau Bitcoin réel.':
+    'BitLab is a laboratory for learning Bitcoin and Lightning. Cryptography — key generation, transaction construction and signing — runs entirely in the browser, through audited libraries that implement the consensus rules of the network. Public data (blocks, balances, fees) comes from public Esplora nodes; two Lightning nodes based on LDK, compiled to WebAssembly, run locally. Nothing is simulated: every displayed result comes from a real Bitcoin network.',
   'Le projet suit le principe': 'The project follows the',
   'Zero-Knowledge': 'Zero-Knowledge',
-  ' : les clés privées, phrases mnémoniques et clés WIF sont générées puis conservées exclusivement dans le stockage local de votre navigateur. Le serveur n’agit que comme un proxy de données publiques — il ne détient aucun secret utilisateur, n’héberge aucun nœud Lightning, et ne peut ni lire ni déplacer vos fonds.':
-    ' principle: private keys, mnemonic phrases and WIF keys are generated then kept exclusively in your browser’s local storage. The server only acts as a public-data proxy — it holds no user secret, hosts no Lightning node, and can neither read nor move your funds.',
+  ' : les clés privées, phrases mnémoniques et clés WIF sont générées et conservées exclusivement dans le stockage local du navigateur. Le serveur agit uniquement comme mandataire de données publiques ; il ne détient aucun secret, n’héberge aucun nœud Lightning et ne peut ni lire ni déplacer les fonds.':
+    ' principle: private keys, mnemonic phrases and WIF keys are generated and stored exclusively in the browser’s local storage. The server acts solely as a proxy for public data; it holds no secrets, hosts no Lightning nodes, and can neither read nor move funds.',
   'Le parcours recommandé': 'The recommended path',
-  'Créez une graine BIP39 puis des adresses Legacy, SegWit ou Taproot depuis le module Portefeuille ; importez aussi une clé WIF ou une phrase existante.':
-    'Create a BIP39 seed then Legacy, SegWit or Taproot addresses from the Wallet module; also import a WIF key or an existing phrase.',
+  'Créer une graine BIP39 dans le module Portefeuille, puis dériver des adresses Legacy, SegWit ou Taproot. Une clé WIF ou une phrase existante peut également être importée.':
+    'Create a BIP39 seed in the Wallet module, then derive Legacy, SegWit or Taproot addresses. An existing WIF key or phrase can also be imported.',
   'Obtenir des sats de test': 'Get test sats',
-  'Créditez votre adresse depuis un faucet externe du réseau actif — les liens vérifiés sont fournis dans le module Portefeuille.':
-    'Fund your address from an external faucet of the active network — verified links are provided in the Wallet module.',
-  'Sélectionnez vos UTXO, composez les sorties, ajustez les frais en sat/vB, signez localement (ECDSA ou Schnorr) puis diffusez sur le réseau.':
-    'Select your UTXOs, compose the outputs, adjust fees in sat/vB, sign locally (ECDSA or Schnorr) then broadcast to the network.',
+  'Créditer l’adresse active auprès d’un faucet du réseau actif ; les liens vérifiés sont fournis dans le module Portefeuille.':
+    'Fund the active address from a faucet of the active network; verified links are provided in the Wallet module.',
+  'Sélectionner les UTXO, composer les sorties, régler les frais en sat/vB, signer localement (ECDSA ou Schnorr), puis diffuser la transaction.':
+    'Select the UTXOs, compose the outputs, set the fee rate in sat/vB, sign locally (ECDSA or Schnorr), then broadcast the transaction.',
   'Observer dans l’explorateur': 'Watch in the explorer',
-  'Suivez les confirmations de vos transactions et décodez des transactions brutes hexadécimales pour comprendre leur anatomie.':
-    'Follow your transactions’ confirmations and decode raw hexadecimal transactions to understand their anatomy.',
+  'Suivre les confirmations des transactions et décoder des transactions brutes afin d’en examiner la structure.':
+    'Track transaction confirmations and decode raw transactions to examine their structure.',
   'Expérimenter Lightning': 'Experiment with Lightning',
-  'Activez le lab Lightning : les deux nœuds LDK réels démarrent dans votre navigateur ; ouvrez un canal financé on-chain, émettez et payez des factures BOLT11 ou des offers BOLT12 instantanément.':
-    'Switch the Lightning lab on: the two real LDK nodes start inside your browser; open an on-chain funded channel, then issue and pay BOLT11 invoices or BOLT12 offers instantly.',
+  'Démarrer les deux nœuds LDK dans le navigateur, ouvrir un canal financé on-chain, puis émettre et payer des factures BOLT11 ou des offers BOLT12.':
+    'Start the two LDK nodes in the browser, open an on-chain funded channel, then issue and pay BOLT11 invoices or BOLT12 offers.',
   'Offers BOLT12': 'BOLT12 offers',
-  'L’onglet Paiements sépare volontairement les deux protocoles pour éviter toute confusion. Une offer BOLT12 (lno1…) est un code de paiement réutilisable : A demande une facture au nœud B via messages onion chiffrés, B répond par une vraie facture BOLT12 portant un chemin de paiement aveuglé, puis le HTLC part sur le canal. Montant facultatif (paiement libre possible), note au payeur, décodeur intégré — le flux BOLT12 complet tourne réellement dans votre navigateur.':
-    'The payments tab deliberately separates the two protocols to avoid any confusion. A BOLT12 offer (lno1…) is a reusable payment code: A requests an invoice from node B over encrypted onion messages, B answers with a real BOLT12 invoice carrying a blinded payment path, then the HTLC leaves over the channel. Optional amount (free-amount payments possible), payer note, built-in decoder — the complete BOLT12 flow genuinely runs in your browser.',
+  'L’onglet Paiements distingue les deux protocoles. Une offer BOLT12 (lno1…) est un code de paiement réutilisable : A demande une facture au nœud B par messages onion chiffrés ; B répond par une facture BOLT12 portant un chemin de paiement aveuglé, puis le HTLC emprunte le canal. Montant facultatif (paiement libre possible), note au payeur, décodeur intégré : le flux BOLT12 complet s’exécute dans le navigateur.':
+    'The Payments tab separates the two protocols. A BOLT12 offer (lno1…) is a reusable payment code: A requests an invoice from node B via encrypted onion messages; B replies with a genuine BOLT12 invoice carrying a blinded payment path, then the HTLC travels over the channel. Optional amount (free-amount payments possible), payer note, built-in decoder: the complete BOLT12 flow runs in the browser.',
   'Le lab démarre sur': 'The lab starts on',
-  '(sats sans valeur). Le Lightning réel supporte Testnet4, Testnet3 et Signet. Le mainnet reste accessible pour l’exploration mais y est volontairement verrouillé côté financement.':
-    '(valueless sats). Real Lightning supports Testnet4, Testnet3 and Signet. Mainnet remains accessible for exploration but funding is deliberately locked there.',
-  'Chaque portefeuille naît d’une entropie locale transformée en phrase mnémonique BIP39 (12 ou 24 mots). La graine dérivée alimente une arborescence BIP32 dont chaque branche correspond à un standard d’adresse : BIP44 pour les Legacy P2PKH, BIP84 pour les SegWit P2WPKH et BIP86 pour les Taproot P2TR. BitLab s’appuie sur les bibliothèques auditées':
-    'Every wallet is born from local entropy turned into a BIP39 mnemonic phrase (12 or 24 words). The derived seed feeds a BIP32 tree whose branches map to address standards: BIP44 for Legacy P2PKH, BIP84 for SegWit P2WPKH and BIP86 for Taproot P2TR. BitLab relies on the audited libraries',
+  '(sats sans valeur). Lightning prend en charge Testnet4, Testnet3 et Signet. Le mainnet reste accessible en exploration ; le financement y est désactivé par conception.':
+    '(valueless sats). Lightning supports Testnet4, Testnet3 and Signet. Mainnet remains accessible for exploration; funding is disabled by design.',
+  'Chaque portefeuille dérive d’une entropie locale convertie en phrase mnémonique BIP39 (12 ou 24 mots). La graine résultante alimente une arborescence BIP32 dont chaque branche correspond à un standard d’adresse : BIP44 (Legacy P2PKH), BIP84 (SegWit P2WPKH) et BIP86 (Taproot P2TR). BitLab repose sur les bibliothèques auditées':
+    'Each wallet derives from local entropy converted into a BIP39 mnemonic phrase (12 or 24 words). The resulting seed feeds a BIP32 tree whose branches map to address standards: BIP44 (Legacy P2PKH), BIP84 (SegWit P2WPKH) and BIP86 (Taproot P2TR). BitLab relies on the audited libraries',
   '— les mêmes primitives que de nombreux portefeuilles en production.': '— the same primitives as many production wallets.',
   'Type': 'Type',
   'Chemin de dérivation': 'Derivation path',
@@ -505,30 +504,30 @@ export const EN: Record<string, string> = {
   'Le': 'The',
   'suit le réseau :': 'follows the network:',
   'pour le mainnet,': 'for mainnet,',
-  'pour tous les réseaux de test. Cette cloison garantit l’étanchéité des portefeuilles entre réseaux — aucun portefeuille de test ne peut être manipulé sur mainnet, et inversement. Les adresses sont encodées en base58check ou bech32/bech32m selon le format, avec le préfixe humain propre au réseau.':
-    'for all test networks. This partition guarantees wallet isolation across networks — no test wallet can be used on mainnet, and vice versa. Addresses are encoded in base58check or bech32/bech32m depending on the format, with the human-readable prefix of the network.',
+  'pour les réseaux de test. Cette séparation garantit l’étanchéité des portefeuilles entre réseaux. Selon le format, les adresses sont encodées en base58check ou en bech32/bech32m, avec le préfixe propre à chaque réseau.':
+    'for test networks. This separation guarantees wallet isolation across networks. Depending on the format, addresses are encoded in base58check or bech32/bech32m, with the prefix of each network.',
   'Importer une clé existante': 'Importing an existing key',
-  'Une clé privée importée en WIF (Wallet Import Format) est décodée puis re-dérivée dans les trois formats, comme si elle venait d’être générée. BitLab vérifie le préfixe réseau (0x80 pour le mainnet, 0xEF pour les testnets) et refuse toute clé appartenant à un autre réseau que le réseau actif. L’import par phrase BIP39 applique le chemin de dérivation correspondant au format choisi, affiché en clair avant validation.':
-    'A private key imported in WIF (Wallet Import Format) is decoded then re-derived in all three formats, as if it had just been generated. BitLab checks the network prefix (0x80 for mainnet, 0xEF for testnets) and rejects any key belonging to a network other than the active one. BIP39 phrase import applies the derivation path of the chosen format, displayed in clear before validation.',
+  'Une clé privée importée au format WIF (Wallet Import Format) est décodée puis re-dérivée dans les trois formats. BitLab vérifie le préfixe réseau (0x80 pour le mainnet, 0xEF pour les testnets) et refuse toute clé étrangère au réseau actif. L’import par phrase BIP39 applique le chemin de dérivation du format choisi, affiché avant validation.':
+    'A private key imported in WIF (Wallet Import Format) is decoded and re-derived in the three formats. BitLab verifies the network prefix (0x80 for mainnet, 0xEF for testnets) and rejects any key foreign to the active network. BIP39 phrase import applies the derivation path of the chosen format, displayed before validation.',
   'Sur mainnet, les adresses deviennent': 'On mainnet, addresses become',
   'et les clés WIF commencent par': 'and WIF keys start with',
-  '. Toute transaction y engage des fonds réels — le module Portefeuille affiche un avertissement permanent et le financement automatique est désactivé.':
-    '. Every transaction there commits real funds — the Wallet module shows a permanent warning and automatic funding is disabled.',
-  'Bitcoin fonctionne en modèle UTXO (Unspent Transaction Outputs) : une transaction consomme des sorties non dépensées comme entrées et produit de nouvelles sorties. La différence entre le total des entrées et le total des sorties — moins ce que l’on rend à soi-même en monnaie (change) — constitue les frais perçus par le mineur. Le constructeur de BitLab expose ce modèle sans abstraction : vous choisissez précisément quels UTXO dépenser, à qui envoyer quoi, et à quel prix vous voulez que le réseau traite votre transaction.':
-    'Bitcoin runs on the UTXO model (Unspent Transaction Outputs): a transaction consumes unspent outputs as inputs and produces new outputs. The difference between total inputs and total outputs — minus what you return to yourself as change — is the fee collected by the miner. BitLab’s builder exposes this model without abstraction: you choose precisely which UTXOs to spend, who receives what, and at what price you want the network to process your transaction.',
+  '. Toute transaction y engage des fonds réels : le module Portefeuille affiche un avertissement permanent et le financement automatique est désactivé.':
+    '. Every transaction there commits real funds: the Wallet module displays a permanent warning and automatic funding is disabled.',
+  'Bitcoin repose sur le modèle UTXO (Unspent Transaction Outputs) : une transaction consomme des sorties non dépensées (entrées) et produit de nouvelles sorties. La différence entre le total des entrées et celui des sorties, déduction faite du change, constitue les frais perçus par le mineur. Le constructeur de BitLab expose ce modèle sans abstraction : le choix des UTXO, des destinataires et du niveau de frais reste sous le contrôle explicite de l’utilisateur.':
+    'Bitcoin relies on the UTXO model (Unspent Transaction Outputs): a transaction consumes unspent outputs (inputs) and produces new outputs. The difference between the total of the inputs and that of the outputs, excluding the change, constitutes the fee collected by the miner. BitLab’s builder exposes this model without abstraction: the choice of UTXOs, recipients and fee rate remains under the user’s explicit control.',
   'Le flux complet en quatre étapes': 'The complete flow in four steps',
-  'Récupération des UTXO de l’adresse active via Esplora. Les sorties confirmées et en attente sont distinguées ; vous cochez celles qui financeront la transaction.':
-    'The active address’s UTXOs are fetched via Esplora. Confirmed and pending outputs are distinguished; you check the ones that will fund the transaction.',
-  'Assemblage des entrées et sorties, ajout du change automatique lorsque le reliquat dépasse la limite de poussière (546 sats), estimation de la taille virtuelle en direct.':
-    'Assembly of inputs and outputs, automatic change when the remainder exceeds the dust limit (546 sats), live virtual size estimation.',
-  'Signature locale : ECDSA pour Legacy et SegWit, Schnorr et tweak Taproot (BIP86) pour P2TR. La clé privée ne quitte jamais le navigateur.':
-    'Local signing: ECDSA for Legacy and SegWit, Schnorr and Taproot tweak (BIP86) for P2TR. The private key never leaves the browser.',
-  'Publication de l’hexadécimal signé vers le nœud du réseau actif via le proxy, puis suivi des confirmations dans l’explorateur intégré.':
-    'The signed hexadecimal is published to the active network’s node via the proxy, then confirmations are tracked in the built-in explorer.',
+  'Les UTXO de l’adresse active sont récupérés via Esplora ; sorties confirmées et en attente sont distinguées. L’utilisateur coche celles qui financeront la transaction.':
+    'The active address’s UTXOs are fetched via Esplora; confirmed and pending outputs are distinguished. The user selects the ones funding the transaction.',
+  'Les entrées et sorties sont assemblées ; un change automatique est ajouté lorsque le reliquat dépasse la limite de poussière (546 sats). La taille virtuelle est estimée en direct.':
+    'Inputs and outputs are assembled; automatic change is added when the remainder exceeds the dust limit (546 sats). The virtual size is estimated live.',
+  'La signature s’effectue localement : ECDSA pour Legacy et SegWit ; Schnorr et tweak Taproot (BIP86) pour P2TR. La clé privée ne quitte pas le navigateur.':
+    'Signing takes place locally: ECDSA for Legacy and SegWit; Schnorr and the Taproot tweak (BIP86) for P2TR. The private key never leaves the browser.',
+  'L’hexadécimal signé est publié vers le nœud du réseau actif via le proxy ; les confirmations sont ensuite suivies dans l’explorateur intégré.':
+    'The signed hexadecimal is broadcast to the active network’s node via the proxy; confirmations are then tracked in the built-in explorer.',
   'Tailles et frais': 'Sizes and fees',
   'Les frais s’expriment en': 'Fees are expressed in',
-  '(satoshis par octet virtuel) et les recommandations en temps réel (économie, rapide, prioritaire) proviennent de l’estimation mempool.space. Plus les entrées sont anciennes au format, plus la transaction est lourde : c’est pourquoi le choix du format d’adresse influence directement le coût d’usage.':
-    '(satoshis per virtual byte) and real-time recommendations (economy, fast, priority) come from mempool.space estimation. The older the input format, the heavier the transaction: that is why the address format directly influences usage cost.',
+  '(satoshis par octet virtuel) ; les recommandations en temps réel — économie, rapide, prioritaire — proviennent de l’estimation mempool.space. Le format des entrées détermine le poids de la transaction : le choix du format d’adresse influence donc directement le coût.':
+    '(satoshis per virtual byte); real-time recommendations — economy, fast, priority — come from mempool.space estimation. The input format determines transaction weight; the choice of address format therefore directly affects cost.',
   'Format d’entrée': 'Input format',
   'Poids approximatif': 'Approximate weight',
   'Usage': 'Use',
@@ -538,12 +537,12 @@ export const EN: Record<string, string> = {
   'démonstrations pédagogiques': 'teaching demos',
   'standard actuel': 'current standard',
   'le plus économique': 'the most economical',
-  'Le constructeur embarque une composition multisig m-de-n : sélectionnez plusieurs clés publiques de votre bibliothèque, BitLab dérive l’adresse P2WSH correspondante et son script témoin — la dépense exigera la signature de m participants sur n.':
-    'The builder includes m-of-n multisig composition: select several public keys from your library, BitLab derives the matching P2WSH address and its witness script — spending will require m-of-n signatures.',
-  'BitLab est multi-réseaux : le sélecteur en haut à droite bascule l’intégralité des modules — portefeuilles, constructeur, explorateur et Lightning. Toutes les données on-chain transitent par un proxy Edge unique':
-    'BitLab is multi-network: the selector at the top right switches all modules — wallets, builder, explorer and Lightning. All on-chain data flows through a single Edge proxy,',
-  'qui applique une liste blanche stricte de chemins (protection anti-injection), un cache mémoire de 60 secondes par réseau, et relaie vers l’API Esplora publique correspondante. Aucune donnée utilisateur ne transite par ce canal : uniquement des informations publiques de la blockchain.':
-    'which applies a strict path allow-list (anti-injection protection), a 60-second in-memory cache per network, and relays to the corresponding public Esplora API. No user data flows through this channel: only public blockchain information.',
+  'Le constructeur prend en charge le multisig m-de-n : après sélection de plusieurs clés publiques de la bibliothèque, BitLab dérive l’adresse P2WSH et son script témoin ; la dépense exige m signatures sur n.':
+    'The builder supports m-of-n multisig: after selecting several public keys from the library, BitLab derives the corresponding P2WSH address and witness script; spending requires m signatures out of n.',
+  'BitLab est multi-réseaux : le sélecteur en haut à droite bascule l’ensemble des modules — portefeuilles, constructeur, explorateur et Lightning. Les données on-chain transitent par un proxy unique':
+    'BitLab is multi-network: the selector at the top right switches all modules — wallets, builder, explorer and Lightning. On-chain data flows through a single proxy,',
+  'qui applique une liste blanche stricte de chemins (protection contre l’injection), maintient un cache mémoire de 60 secondes par réseau et relaie vers l’API Esplora publique correspondante. Ce canal ne transporte aucune donnée utilisateur : uniquement des informations publiques de la blockchain.':
+    'which enforces a strict path allow-list (injection protection), keeps a 60-second in-memory cache per network and relays to the corresponding public Esplora API. This channel carries no user data: only public blockchain information.',
   'Réseau': 'Network',
   'API Esplora': 'Esplora API',
   'Rôle au laboratoire': 'Role in the lab',
@@ -551,8 +550,8 @@ export const EN: Record<string, string> = {
   'réseau on-chain par défaut du lab': 'the lab’s default on-chain network',
   'on-chain + Lightning LDK réel': 'on-chain + real Lightning LDK',
   'S’approvisionner en sats de test': 'Getting test sats',
-  'Chaque réseau de test expose ses faucets dans le module Portefeuille — avec une mention honnête de ce qu’ils exigent (aucun compte, captcha, ou connexion). Copiez votre adresse active, demandez des sats, puis observez la transaction apparaître dans votre solde — le laboratoire rafraîchit automatiquement les soldes via Esplora.':
-    'Each test network lists its faucets in the Wallet module — with an honest note of what they require (no account, captcha, or login). Copy your active address, request sats, then watch the transaction appear in your balance — the lab refreshes balances automatically via Esplora.',
+  'Chaque réseau de test recense ses faucets dans le module Portefeuille, avec la mention de leurs exigences (compte, captcha ou connexion). Copiez l’adresse active, demandez des sats, puis observez la transaction dans le solde ; le laboratoire actualise automatiquement les soldes via Esplora.':
+    'Each test network lists its faucets in the Wallet module, stating their requirements (account, captcha or sign-in). Copy the active address, request sats, then watch the transaction appear in the balance; the lab refreshes balances automatically via Esplora.',
   'Étanchéité réseau': 'Network isolation',
   'Les portefeuilles sont étiquetés par réseau à la création. Le sélecteur n’affiche que les portefeuilles du réseau actif — un import mainnet en testnet est refusé, et une signature croisée entre réseaux est structurellement impossible.':
     'Wallets are labeled per network at creation. The selector only shows wallets of the active network — a mainnet import on testnet is rejected, and cross-network signing is structurally impossible.',
@@ -560,34 +559,34 @@ export const EN: Record<string, string> = {
   'pas une simulation': 'not a simulation',
   ' : BitLab exécute deux nœuds':
     ': BitLab runs two',
-  '— le cœur Rust du Lightning Dev Kit, compilé en WebAssembly depuis rust/lnlab et piloté par un Web Worker dans votre navigateur. Ils se synchronisent sur la chaîne via le proxy Esplora et dialoguent par le protocole Lightning authentique (poignée de main Noise, messages BOLT) sur une paire de sockets en mémoire. Chaque nœud possède sa propre graine conservée exclusivement dans votre IndexedDB, ses canaux et son historique de paiements.':
-    '— the Rust core of the Lightning Dev Kit, compiled to WebAssembly from rust/lnlab and driven by a Web Worker inside your browser. They sync to the chain through the Esplora proxy and speak the authentic Lightning protocol (Noise handshake, BOLT messages) over an in-memory socket pair. Each node owns a seed kept exclusively in your IndexedDB, its channels and its payment history.',
+  '— le cœur Rust du Lightning Dev Kit, compilé en WebAssembly depuis rust/lnlab et piloté par un Web Worker dans le navigateur. Ils se synchronisent sur la chaîne via le proxy Esplora et échangent le protocole Lightning authentique — poignée de main Noise, messages BOLT — sur une paire de sockets mémoire. Chaque nœud possède sa propre graine, conservée exclusivement dans l’IndexedDB du site, ainsi que ses canaux et son historique de paiements.':
+    '— the Rust core of the Lightning Dev Kit, compiled to WebAssembly from rust/lnlab and driven by a Web Worker in the browser. They sync to the chain through the Esplora proxy and exchange the authentic Lightning protocol — Noise handshake, BOLT messages — over a pair of in-memory sockets. Each node holds its own seed, stored exclusively in the site’s IndexedDB, together with its channels and payment history.',
   'Cycle de vie d’un canal': 'Channel lifecycle',
-  'les nœuds se reconstruisent depuis leur graine, se resynchronisent (blocs, frais) puis passent à l’état « opérationnel ».':
-    'the nodes rebuild from their seed, re-sync (blocks, fees) then reach the “ready” state.',
-  'l’ouverture génère une adresse de financement P2WSH ; créditez-la depuis l’un de vos portefeuilles BitLab — la transaction est construite et signée localement, puis diffusée via le proxy.':
-    'opening generates a P2WSH funding address; fund it from any of your BitLab wallets — the transaction is built and signed locally, then broadcast through the proxy.',
-  'A et B sont reliés par une paire de sockets en mémoire : chaque octet échangé est du vrai protocole (handshake Noise authentique), mais rien ne quitte votre machine.':
-    'A and B are linked by an in-memory socket pair: every exchanged byte is real protocol data (authentic Noise handshake), but nothing leaves your machine.',
-  'la transaction de financement 2-de-2 est signée par les deux parties et diffusée ; le canal passe « en financement » puis « prêt » après confirmations.':
-    'the 2-of-2 funding transaction is signed by both parties and broadcast; the channel goes “funding” then “ready” after confirmations.',
+  'les nœuds se reconstruisent depuis leur graine, se resynchronisent (blocs, frais), puis atteignent l’état opérationnel.':
+    'the nodes rebuild from their seed, resync (blocks, fees), then reach the operational state.',
+  'l’ouverture génère une adresse de financement P2WSH ; créditez-la depuis l’un de vos portefeuilles BitLab. La transaction est construite et signée localement, puis diffusée via le proxy.':
+    'opening generates a P2WSH funding address; fund it from one of your BitLab wallets. The transaction is built and signed locally, then broadcast through the proxy.',
+  'A et B sont reliés par une paire de sockets mémoire : chaque octet échangé relève du protocole réel (handshake Noise authentique) ; rien ne quitte la machine.':
+    'A and B are linked by a pair of in-memory sockets: every exchanged byte is real protocol (authenticated Noise handshake); nothing leaves the machine.',
+  'la transaction de financement 2-de-2 est signée par les deux parties puis diffusée ; le canal passe en financement, puis en prêt après confirmations.':
+    'the 2-of-2 funding transaction is signed by both parties and broadcast; the channel moves to funding, then to ready after confirmations.',
   'le payeur signe un HTLC vers la facture BOLT11 émise par le bénéficiaire ; le règlement met à jour les soldes locaux sans écriture on-chain.':
     'the payer signs an HTLC towards the BOLT11 invoice issued by the payee; settlement updates local balances with no on-chain write.',
-  'clôture coopérative (une transaction consensuelle) ou forcée (diffusion d’un ancien état, assortie d’une pénalité).':
-    'cooperative close (a consensual transaction) or force close (broadcast of a revoked state, with a penalty).',
-  'Les factures émises par les nœuds sont réellement signées par leur clé Lightning et encodées au format BOLT11 : copiez le QR ou la chaîne lntb/lntbs et payez-la depuis n’importe quel portefeuille du réseau correspondant. Montant, hash de paiement, secret et expiration sont générés et vérifiés par le nœud lui-même.':
-    'Invoices issued by the nodes are genuinely signed by their Lightning key and encoded in BOLT11: copy the QR or the lntb/lntbs string and pay it from any wallet of the corresponding network. Amount, payment hash, secret and expiry are generated and verified by the node itself.',
+  'la clôture est coopérative (transaction consensuelle) ou forcée (diffusion d’un état révoqué, assortie d’une pénalité).':
+    'closing is cooperative (consensual transaction) or forced (broadcast of a revoked state, with a penalty).',
+  'Les factures émises sont réellement signées par la clé Lightning du nœud et encodées au format BOLT11. Le QR ou la chaîne lntb/lntbs peut être payé depuis tout portefeuille du réseau correspondant. Montant, hash de paiement, secret et expiration sont générés et vérifiés par le nœud lui-même.':
+    'Issued invoices are genuinely signed by the node’s Lightning key and encoded in BOLT11 format. The QR code or the lntb/lntbs string can be paid from any wallet on the corresponding network. Amount, payment hash, secret and expiry are generated and verified by the node itself.',
   'Liquidité et honnêteté des erreurs': 'Liquidity and error honesty',
-  'À l’ouverture d’un canal, le champ « poussé au pair » transfère immédiatement de la liquidité à la contrepartie : en ouvrant A vers B avec 100 000 sats de capacité dont 40 000 poussés, B dispose d’un solde Lightning réel de 40 000 sats et peut émettre des factures que A paie instantanément. Le routage est un saut direct entre A et B — correct par construction pour un lab à deux nœuds — : sans liquidité suffisante, le paiement échoue et':
-    'When opening a channel, the “pushed to peer” field immediately transfers liquidity to the counterparty: opening A to B with 100,000 sats of capacity of which 40,000 pushed gives B a real Lightning balance of 40,000 sats, able to issue invoices that A pays instantly. Routing is a direct hop between A and B — correct by construction for a two-node lab —: with insufficient liquidity, the payment fails and',
+  'À l’ouverture d’un canal, le champ « poussé au pair » transfère immédiatement de la liquidité à la contrepartie : en ouvrant A vers B avec 100 000 sats de capacité dont 40 000 poussés, B dispose d’un solde Lightning réel de 40 000 sats et peut émettre des factures payables instantanément par A. Le routage se réduit à un saut direct entre A et B, correct par construction pour un lab à deux nœuds. Sans liquidité suffisante, le paiement échoue et':
+    'When opening a channel, the “pushed to peer” field immediately transfers liquidity to the counterparty: opening A to B with 100,000 sats of capacity, of which 40,000 pushed, gives B a real Lightning balance of 40,000 sats and the ability to issue invoices payable instantly by A. Routing reduces to a single direct hop between A and B, correct by construction for a two-node lab. Without sufficient liquidity, the payment fails and',
   'l’erreur exacte du réseau est affichée': 'the exact network error is shown',
-  '— jamais masquée, jamais simulée. C’est précisément ce comportement qu’un développeur Lightning doit apprendre à lire.':
-    '— never hidden, never simulated. This is precisely the behavior a Lightning developer must learn to read.',
+  '— sans masquage ni simulation. C’est ce comportement que le développeur Lightning doit apprendre à interpréter.':
+    '— never masked, never simulated. This is the behavior a Lightning developer must learn to interpret.',
   'Pourquoi deux nœuds ?': 'Why two nodes?',
-  'Lightning n’a de sens qu’entre pairs. Le lab embarque A et B pour réaliser un cycle complet (canal, facture, paiement, clôture) sans aucune dépendance externe ni serveur : tout tient dans votre navigateur.':
-    'Lightning only makes sense between peers. The lab ships A and B to complete a full cycle (channel, invoice, payment, close) with no external dependency and no server: everything lives in your browser.',
-  'Un unique proxy serveur alimente l’interface. Il n’expose aucune donnée sensible, filtre strictement les chemins autorisés, ajoute un cache court par réseau et relaie aussi les blocs bruts dont le lab Lightning se nourrit. Le module Lightning lui-même ne passe plus par le serveur : il vit dans votre navigateur.':
-    'A single server proxy powers the interface. It exposes no sensitive data, strictly filters allowed paths, adds a short per-network cache and also relays the raw blocks the Lightning lab feeds on. The Lightning module itself no longer goes through the server: it lives in your browser.',
+  'Lightning n’a de sens qu’entre pairs. Le lab embarque A et B afin de réaliser un cycle complet — canal, facture, paiement, clôture — sans dépendance externe ni serveur : tout s’exécute dans le navigateur.':
+    'Lightning only makes sense between peers. The lab ships A and B to complete a full cycle — channel, invoice, payment, close — with no external dependency and no server: everything runs in the browser.',
+  'Un proxy serveur unique alimente l’interface. Il n’expose aucune donnée sensible, filtre strictement les chemins autorisés, ajoute un cache court par réseau et relaie les blocs bruts consommés par le lab Lightning. Le module Lightning, lui, ne passe plus par le serveur : il s’exécute dans le navigateur.':
+    'A single server proxy feeds the interface. It exposes no sensitive data, strictly filters allowed paths, adds a short per-network cache and relays the raw blocks consumed by the Lightning lab. The Lightning module itself no longer goes through the server: it runs in the browser.',
   ' — proxy Esplora multi-réseaux': ' — multi-network Esplora proxy',
   'Endpoint': 'Endpoint',
   'Description': 'Description',
@@ -598,16 +597,16 @@ export const EN: Record<string, string> = {
   'statistiques mondiales Lightning (mainnet)': 'global Lightning statistics (mainnet)',
   'diffusion d’une transaction signée (hexadécimal)': 'broadcast of a signed transaction (hex)',
   ' — Web Worker + WebAssembly': ' — Web Worker + WebAssembly',
-  'Aucun endpoint HTTP : les deux nœuds tournent dans un Web Worker (public/lnlab/worker.js) qui charge le module WASM au premier démarrage. Les graines, monitors de canal et historiques restent dans l’IndexedDB du site, et seules les données publiques (blocs, frais, diffusion) transitent par /api/bitcoin. Le serveur n’héberge plus aucun nœud.':
-    'No HTTP endpoint: the two nodes run in a Web Worker (public/lnlab/worker.js) that loads the WASM module on first start. Seeds, channel monitors and history stay in the site’s IndexedDB, and only public data (blocks, fees, broadcast) flows through /api/bitcoin. The server no longer hosts any node.',
+  'Aucun endpoint HTTP : les deux nœuds s’exécutent dans un Web Worker (public/lnlab/worker.js) qui charge le module WASM au premier démarrage. Les graines, monitors de canal et historiques demeurent dans l’IndexedDB du site ; seules les données publiques — blocs, frais, diffusion — transitent par /api/bitcoin. Le serveur n’héberge aucun nœud.':
+    'No HTTP endpoint: the two nodes run in a Web Worker (public/lnlab/worker.js) that loads the WASM module at first start. Seeds, channel monitors and histories remain in the site’s IndexedDB; only public data — blocks, fees, broadcast — flows through /api/bitcoin. The server hosts no nodes.',
   'hauteur du bloc n (flux du lab Lightning)': 'height of block n (Lightning lab feed)',
   'bloc brut binaire (flux du lab Lightning)': 'raw binary block (Lightning lab feed)',
   'Clés locales uniquement': 'Local keys only',
   'la signature s’exécute dans le navigateur ; aucun octet de clé privée ne transite par le réseau, ni vers BitLab ni vers un tiers.':
     'signing runs in the browser; not a single byte of private key travels the network, neither to BitLab nor to any third party.',
   'Stockage local': 'Local storage',
-  'portefeuilles et préférences vivent dans IndexedDB sur votre appareil ; effacez les données du site pour repartir de zéro.':
-    'wallets and preferences live in IndexedDB on your device; clear the site’s data to start from scratch.',
+  'les portefeuilles et préférences résident dans l’IndexedDB de l’appareil ; effacer les données du site réinitialise l’ensemble.':
+    'wallets and preferences live in the device’s IndexedDB; clearing site data resets everything.',
   'Graines Lightning locales': 'Local Lightning seeds',
   'les nœuds LDK détiennent leurs propres graines (IndexedDB du site, jamais transmises au serveur) : n’y financez que des montants de test.':
     'the LDK nodes hold their own seeds (site IndexedDB, never transmitted to the server): only fund them with test amounts.',
@@ -615,16 +614,16 @@ export const EN: Record<string, string> = {
   'sur mainnet, frais, montants et destinataires sont irrévocables ; le lab verrouille tout financement mainnet par conception.':
     'on mainnet, fees, amounts and recipients are irrevocable; the lab locks all mainnet funding by design.',
   'Vérifiez toujours': 'Always verify',
-  'adresse de réception complète, montant en sats, réseau actif dans le sélecteur : trois réflexes avant toute diffusion.':
-    'full recipient address, amount in sats, active network in the selector: three reflexes before any broadcast.',
+  'avant toute diffusion, vérifier trois points : adresse de réception complète, montant en sats, réseau actif dans le sélecteur.':
+    'before every broadcast, verify three things: the full receiving address, the amount in sats, the active network in the selector.',
   'Transparence des erreurs': 'Error transparency',
   'chaque écran reflète l’état réel : une erreur Lightning (route absente, pair injoignable, fonds insuffisants) est affichée telle quelle.':
     'every screen reflects the real state: a Lightning error (missing route, unreachable peer, insufficient funds) is shown as-is.',
   'Environnement restreint': 'Restricted environment',
-  'Le lab Lightning s’exécute entièrement dans votre navigateur : aucun port sortant n’est nécessaire, et seul le proxy Esplora de l’application a besoin d’un accès Internet. Il fonctionne donc derrière les pare-feux les plus restrictifs.':
-    'The Lightning lab runs entirely in your browser: no outgoing ports are required, and only the application’s Esplora proxy needs Internet access. It therefore works behind the most restrictive firewalls.',
-  'Références officielles': 'Official references',
-  'BOLT #11 (factures)': 'BOLT #11 (invoices)',
+  'Le lab Lightning s’exécute entièrement dans le navigateur : aucun port sortant n’est requis, et seul le proxy Esplora de l’application a besoin d’un accès Internet. Il fonctionne donc derrière les pare-feux les plus restrictifs.':
+    'The Lightning lab runs entirely in the browser: no outbound ports are required, and only the application’s Esplora proxy needs Internet access. It therefore works behind the most restrictive firewalls.',
+  'Références': 'References',
+  'Sources normatives et documentation technique utilisées dans ce guide.': 'Normative sources and technical documentation used in this guide.',
   'BitLab — pilier du projet GandalNexus · « Vires in Numeris ». Les données publiques proviennent des nœuds mempool.space ; les nœuds Lightning tournent dans le navigateur via LDK (Lightning Dev Kit).':
     'BitLab — cornerstone of the GandalNexus project · “Vires in Numeris”. Public data comes from mempool.space nodes; the Lightning nodes run in the browser via LDK (Lightning Dev Kit).',
 

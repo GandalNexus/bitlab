@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'BitLab — Guide du développeur',
+  title: 'BitLab — Guide',
   description:
     'Documentation BitLab : clés et adresses, transactions, multi-réseaux, Lightning LDK réel et API du laboratoire.',
 };
