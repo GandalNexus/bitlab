@@ -117,7 +117,7 @@ export function ActivityLog() {
                     {detail.length > 0 ? (
                       <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-muted-foreground">
                         {detail.slice(0, 12).map(([k, v]) => (
-                          <span key={k} className="max-w-80 truncate" title={`${k} = ${String(v)}`}>
+                          <span key={k} className="max-w-full min-w-0 truncate sm:max-w-80" title={`${k} = ${String(v)}`}>
                             {k}=<span className="text-foreground/70">{String(v)}</span>
                           </span>
                         ))}
