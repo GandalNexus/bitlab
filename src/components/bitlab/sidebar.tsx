@@ -247,7 +247,8 @@ export function LabSidebar({
 
   return (
     <>
-      {/* Desktop: fixed column below the full-width header cluster, collapsible to an icon rail */}
+      {/* Desktop: fixed column below the full-width header cluster, collapsible to an icon rail.
+          No brand row — the logo lives in the header above. */}
       <aside
         style={{ top: clusterTop }}
         className={cn(
@@ -255,12 +256,6 @@ export function LabSidebar({
           collapsed ? 'w-[68px]' : 'w-64',
         )}
       >
-        <div className={cn('flex h-14 shrink-0 items-center border-b border-border/70', collapsed ? 'justify-center px-2' : 'gap-2 px-4')}>
-          <Link href="/" aria-label="BitLab" className="flex items-center gap-2 overflow-hidden">
-            <BrandMark compact={collapsed} wordmark={false} />
-          </Link>
-        </div>
-
         <SidebarNav active={active} onNavigate={onNavigate} collapsed={collapsed} />
 
         <div className="border-t border-border/60 p-2">
@@ -297,9 +292,9 @@ export function LabSidebar({
             mobileOpen ? 'translate-x-0' : '-translate-x-full',
           )}
         >
-          {/* Drawer header - brand + explicit close (the backdrop also closes) */}
-          <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/70 px-4">
-            <BrandMark />
+          {/* Drawer header - explicit close only (the backdrop also closes);
+              the brand stays in the page header behind the drawer */}
+          <div className="flex h-14 shrink-0 items-center justify-end border-b border-border/70 px-4">
             <button
               onClick={onCloseMobile}
               aria-label={t('Fermer la navigation')}
@@ -341,43 +336,29 @@ export function OrbitMark({ className }: { className?: string }) {
   );
 }
 
-/** Brand block: lab icon + "BitLab" + "Lab" pill (Stellar signature). */
+/** Brand block: lab logo + « Lab » pill (Stellar signature). */
 export function BrandMark({
-  compact = false,
   responsive = false,
   pill = true,
-  wordmark = true,
 }: {
-  compact?: boolean;
   responsive?: boolean;
-  /** Affiche la pastille « Lab » (masquée sur la page guide). */
+  /** Pastille « Lab ». */
   pill?: boolean;
-  /** Mot-symbole « BitLab » (retiré quand la coque étend l'en-tête au-dessus de la barre). */
-  wordmark?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2">
       <OrbitMark className="h-8 w-8 shrink-0 text-foreground" />
-      {!compact ? (
-        <>
-          {/* responsive : pastille et mot-symbole masqués sous 400 px — l'icône
-              seule suffit dans l'en-tête mobile, sinon la barre déborde. */}
-          {wordmark ? (
-            <span className={cn('text-[15px] font-semibold tracking-tight', responsive && 'hidden min-[400px]:inline')}>
-              BitLab
-            </span>
-          ) : null}
-          {pill ? (
-            <span
-              className={cn(
-                'rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary',
-                responsive && 'hidden min-[400px]:inline-block',
-              )}
-            >
-              Lab
-            </span>
-          ) : null}
-        </>
+      {pill ? (
+        /* responsive : pastille masquée sous 400 px — l'icône seule suffit
+            dans l'en-tête mobile, sinon la barre déborde. */
+        <span
+          className={cn(
+            'rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary',
+            responsive && 'hidden min-[400px]:inline-block',
+          )}
+        >
+          Lab
+        </span>
       ) : null}
     </div>
   );

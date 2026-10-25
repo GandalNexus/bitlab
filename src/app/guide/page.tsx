@@ -520,7 +520,7 @@ export default function GuideDocsPage() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/" aria-label="BitLab" className="flex items-center">
-            <BrandMark responsive pill={false} />
+            <BrandMark responsive />
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <LangToggle />
