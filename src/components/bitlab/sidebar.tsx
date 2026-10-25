@@ -7,7 +7,7 @@
  * no section label). Desktop: collapse button (icon rail) persisted in
  * localStorage. Sliding drawer on mobile.
  */
-import { useCallback, useEffect, useSyncExternalStore, type ComponentType } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ComponentType } from 'react';
 import Link from 'next/link';
 import {
   Blocks,
@@ -202,7 +202,10 @@ export function SidebarNav({
 
 // --- Shell ---
 
-/** Desktop side panel (fixed, collapsible) + mobile drawer (overlay). */
+/** Desktop side panel (fixed, collapsible) + mobile drawer (overlay).
+ *  The full-width header cluster (banner + header) sits above the panel; its
+ *  exact height is measured with a ResizeObserver so the panel always starts
+ *  right below it — banner visible, dismissed or wrapped alike. */
 export function LabSidebar({
   active,
   onNavigate,
@@ -220,6 +223,18 @@ export function LabSidebar({
 }) {
   const { t } = useT();
 
+  // Keep the fixed panel flush under the sticky top cluster.
+  const [clusterTop, setClusterTop] = useState(56);
+  useEffect(() => {
+    const cluster = document.getElementById('lab-top-cluster');
+    if (!cluster) return;
+    const update = () => setClusterTop(cluster.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(cluster);
+    return () => ro.disconnect();
+  }, []);
+
   // Escape closes the mobile drawer while it is open.
   useEffect(() => {
     if (!mobileOpen) return;
@@ -232,16 +247,17 @@ export function LabSidebar({
 
   return (
     <>
-      {/* Desktop: fixed column, collapsible to an icon rail */}
+      {/* Desktop: fixed column below the full-width header cluster, collapsible to an icon rail */}
       <aside
+        style={{ top: clusterTop }}
         className={cn(
-          'fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-background transition-[width] duration-200 ease-out lg:flex',
+          'fixed bottom-0 left-0 z-30 hidden flex-col border-r border-border bg-background transition-[top,width] duration-200 ease-out lg:flex',
           collapsed ? 'w-[68px]' : 'w-64',
         )}
       >
-        <div className={cn('flex h-14 items-center border-b border-border/70', collapsed ? 'justify-center px-2' : 'gap-2 px-4')}>
+        <div className={cn('flex h-14 shrink-0 items-center border-b border-border/70', collapsed ? 'justify-center px-2' : 'gap-2 px-4')}>
           <Link href="/" aria-label="BitLab" className="flex items-center gap-2 overflow-hidden">
-            <BrandMark compact={collapsed} />
+            <BrandMark compact={collapsed} wordmark={false} />
           </Link>
         </div>
 
@@ -330,11 +346,14 @@ export function BrandMark({
   compact = false,
   responsive = false,
   pill = true,
+  wordmark = true,
 }: {
   compact?: boolean;
   responsive?: boolean;
   /** Affiche la pastille « Lab » (masquée sur la page guide). */
   pill?: boolean;
+  /** Mot-symbole « BitLab » (retiré quand la coque étend l'en-tête au-dessus de la barre). */
+  wordmark?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -343,9 +362,11 @@ export function BrandMark({
         <>
           {/* responsive : pastille et mot-symbole masqués sous 400 px — l'icône
               seule suffit dans l'en-tête mobile, sinon la barre déborde. */}
-          <span className={cn('text-[15px] font-semibold tracking-tight', responsive && 'hidden min-[400px]:inline')}>
-            BitLab
-          </span>
+          {wordmark ? (
+            <span className={cn('text-[15px] font-semibold tracking-tight', responsive && 'hidden min-[400px]:inline')}>
+              BitLab
+            </span>
+          ) : null}
           {pill ? (
             <span
               className={cn(
