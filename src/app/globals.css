@@ -222,3 +222,19 @@ html:not(.dark) .scrollbar-thin::-webkit-scrollbar-thumb {
     transform: translateY(0);
   }
 }
+
+/* Citation target flash — clicking an in-text [n] highlights its bibliography entry */
+@media (prefers-reduced-motion: no-preference) {
+  .ref-flash {
+    animation: ref-flash 1.8s ease-out;
+  }
+}
+@keyframes ref-flash {
+  0%,
+  30% {
+    background-color: oklch(0.755 0.16 65 / 18%);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
