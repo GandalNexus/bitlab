@@ -215,28 +215,31 @@ export function ArtLightning() {
     <svg viewBox="0 0 880 240" className="h-auto w-full" role="img" aria-label={t('Canal Lightning entre deux nœuds')}>
       <Grid id="g-ln" />
       {/* node A */}
-      <g>
-        <circle cx="200" cy="120" r="46" fill="rgba(247,147,26,0.10)" stroke={A} strokeWidth="2" />
-        <text x="200" y="116" textAnchor="middle" fill={A} fontSize="15" fontWeight="700">A</text>
-        <text x="200" y="134" textAnchor="middle" fill={TXT} fontSize="9">BitLab-A · LDK</text>
-      </g>
+      <Card x={90} y={72} w={230} h={96} />
+      <rect x="90" y="72" width="230" height="20" rx="10" fill="rgba(148,163,184,0.12)" />
+      <circle cx="108" cy="82" r="4" fill={DIM} />
+      <circle cx="122" cy="82" r="4" fill={DIM} />
+      <circle cx="205" cy="110" r="13" fill="none" stroke={A} strokeWidth="2" />
+      <circle cx="205" cy="110" r="4.5" fill={A} />
+      <text x="205" y="140" textAnchor="middle" fill={A} fontSize="11">BitLab-A · LDK</text>
+      <text x="205" y="157" textAnchor="middle" fill={TXT} fontSize="10">{t('liquidité sortante')}</text>
       {/* node B */}
-      <g>
-        <circle cx="680" cy="120" r="46" fill="rgba(52,211,153,0.10)" stroke="#34d399" strokeWidth="2" />
-        <text x="680" y="116" textAnchor="middle" fill="#34d399" fontSize="15" fontWeight="700">B</text>
-        <text x="680" y="134" textAnchor="middle" fill={TXT} fontSize="9">BitLab-B · LDK</text>
-      </g>
+      <Card x={560} y={72} w={230} h={96} />
+      <rect x="560" y="72" width="230" height="20" rx="10" fill="rgba(148,163,184,0.12)" />
+      <circle cx="578" cy="82" r="4" fill={DIM} />
+      <circle cx="592" cy="82" r="4" fill={DIM} />
+      <circle cx="675" cy="110" r="13" fill="none" stroke="#34d399" strokeWidth="2" />
+      <circle cx="675" cy="110" r="4.5" fill="#34d399" />
+      <text x="675" y="140" textAnchor="middle" fill="#34d399" fontSize="11">BitLab-B · LDK</text>
+      <text x="675" y="157" textAnchor="middle" fill={TXT} fontSize="10">{t('liquidité entrante')}</text>
       {/* channel */}
-      <path d="M 248 120 L 632 120" stroke={B} strokeWidth="2.5" />
-      <path d="M 420 96 l -18 30 h 14 l -8 26 l 26 -34 h -14 l 10 -22 z" fill={A} stroke="none" />
-      <text x="440" y="86" textAnchor="middle" fill={B} fontSize="10">canal 2/2 · HTLC</text>
+      <path d="M 336 116 L 544 116" stroke={B} strokeWidth="2.5" />
+      <path d="M 445 99 L 427 123 L 438 123 L 435 133 L 453 109 L 442 109 Z" fill={A} stroke="none" />
+      <text x="440" y="92" textAnchor="middle" fill={B} fontSize="10">{t('canal 2/2 · HTLC')}</text>
       {/* on-chain funding */}
-      <path d="M 200 168 C 260 214 620 214 680 168" stroke={DIM} strokeWidth="1.5" fill="none" strokeDasharray="5 5" />
-      <rect x="380" y="196" width="120" height="26" rx="7" fill="none" stroke={DIM} />
-      <text x="440" y="213" textAnchor="middle" fill={TXT} fontSize="10">{t('financement on-chain 2/2')}</text>
-      {/* capacity */}
-      <text x="200" y="196" textAnchor="middle" fill={TXT} fontSize="10">{t('liquidité sortante')}</text>
-      <text x="680" y="196" textAnchor="middle" fill={TXT} fontSize="10">{t('liquidité entrante')}</text>
+      <path d="M 205 172 Q 280 210 365 210 M 515 210 Q 600 210 675 172" stroke={DIM} strokeWidth="1.5" fill="none" strokeDasharray="5 5" />
+      <rect x="365" y="197" width="150" height="26" rx="7" fill="none" stroke={DIM} />
+      <text x="440" y="214" textAnchor="middle" fill={TXT} fontSize="10">{t('financement on-chain 2/2')}</text>
       <text x="440" y="30" textAnchor="middle" fill={B} fontSize="12" fontWeight="600">{t('Paiements instantanés, routage par gossip, règlement sans écriture on-chain')}</text>
     </svg>
   );
