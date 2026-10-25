@@ -49,12 +49,10 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Brand shown only where the sidebar is a drawer (below lg) — the
-            desktop sidebar already carries the brand block. Responsive variant:
-            icon alone under 400 px so the bar never overflows small phones. */}
-        <div className="lg:hidden">
-          <BrandMark responsive />
-        </div>
+        {/* Brand now lives in the header on every breakpoint (logo + Lab pill):
+            the sidebar carries navigation only. Icon + pill hidden under 400 px
+            so the bar never overflows small phones. */}
+        <BrandMark responsive />
 
         <div className="ml-auto flex items-center gap-2">
           {/* Network selector — functional take on Stellar Lab's "● Testnet" */}
