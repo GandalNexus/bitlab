@@ -223,6 +223,15 @@ html:not(.dark) .scrollbar-thin::-webkit-scrollbar-thumb {
   }
 }
 
+/* Announcement bar sits inside the sticky top cluster, so page content scrolls
+   directly beneath it — the tint must be OPAQUE or that content bleeds through
+   and the bar reads as "not sticking". Mixing 8% amber into the theme-aware
+   background keeps the exact resting look (light + dark) while blocking
+   bleed-through; the same trick the header does with bg-background/90 + blur. */
+.announce-bar {
+  background-color: color-mix(in oklab, var(--color-amber-500) 8%, var(--background));
+}
+
 /* Citation target flash — clicking an in-text [n] highlights its bibliography entry */
 @media (prefers-reduced-motion: no-preference) {
   .ref-flash {
