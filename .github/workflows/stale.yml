@@ -15,7 +15,7 @@ jobs:
     name: Flag inactive issues and PRs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@v11
         with:
           # Issues: stale after 30 quiet days, closed 14 days later.
           days-before-issue-stale: 30
