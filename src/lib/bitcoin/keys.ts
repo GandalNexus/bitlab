@@ -11,7 +11,7 @@ import { generateMnemonic, mnemonicToSeedSync, validateMnemonic } from '@scure/b
 import { wordlist } from '@scure/bip39/wordlists/english.js';
 import { p2pkh, p2wpkh, p2tr, WIF } from '@scure/btc-signer';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
-import { hex } from './utils';
+import { hex, uid } from './utils';
 import { currentNet, pathForNetwork, signerNetwork, type NetId } from '../networks';
 import { tSync } from '../i18n';
 
@@ -122,7 +122,7 @@ export function walletFromMnemonic(
   const priv = hd.privateKey;
   const { address, publicKeyHex } = deriveForType(priv, type, net);
   return {
-    id: `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: uid('w'),
     label: label || `${TYPE_INFO[type].label} ${address.slice(0, 8)}…`,
     type,
     source,
@@ -148,7 +148,7 @@ export function walletFromWif(wif: string, type: AddrType, label?: string, net: 
   }
   const { address, publicKeyHex } = deriveForType(priv, type, net);
   return {
-    id: `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: uid('w'),
     label: label || `${TYPE_INFO[type].label} ${address.slice(0, 8)}…`,
     type,
     source: 'wif',
