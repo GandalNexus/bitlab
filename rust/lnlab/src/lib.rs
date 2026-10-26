@@ -146,12 +146,16 @@ impl LnLab {
                 };
                 let a = node::build_fresh(&parts_a, BestBlock::new(hash, tip_height));
                 let b = node::build_fresh(&parts_b, BestBlock::new(hash, tip_height));
-                Ok(LnLab {
+                let mut lab = LnLab {
                         network,
                         nodes: [a, b],
                         link: None,
                         pending_funding: RefCell::new(HashMap::new()),
-                })
+                };
+                // Peers connect on activation — no extra click needed. Failure
+                // is non-fatal: tick() self-heals on the next pass.
+                let _ = lab.connect_ab();
+                Ok(lab)
         }
 
         /// Boots two nodes from IndexedDB-backed state (KV entries + manager bytes).
@@ -180,12 +184,16 @@ impl LnLab {
                 };
                 let a = node::build_restored(&parts_a).map_err(js_err)?;
                 let b = node::build_restored(&parts_b).map_err(js_err)?;
-                Ok(LnLab {
+                let mut lab = LnLab {
                         network,
                         nodes: [a, b],
                         link: None,
                         pending_funding: RefCell::new(HashMap::new()),
-                })
+                };
+                // A restored session re-handshakes immediately; LDK then rebuilds
+                // the persisted channels over the fresh link.
+                let _ = lab.connect_ab();
+                Ok(lab)
         }
 
         /// Compressed public key (node id) of the selected node, hex-encoded.
@@ -216,10 +224,16 @@ impl LnLab {
         }
 
         /// Opens the in-memory P2P link A -> B (real noise handshake).
+        ///
+        /// Idempotent and self-repairing: any previous link is torn down first
+        /// (`socket_disconnected` on both PeerManagers), so stale entries can
+        /// never make `new_*_connection` reject with `Entry::Occupied` — that
+        /// was the root cause of the dead "reconnect" button.
         pub fn connect_ab(&mut self) -> Result<(), JsValue> {
                 if self.is_connected() {
                         return Ok(());
                 }
+                self.teardown_link();
                 let (desc_a, desc_b, link) = LnSocket::pair();
                 let init = self.nodes[0]
                         .pm
@@ -228,15 +242,34 @@ impl LnLab {
                                 desc_a.clone(),
                                 None,
                         )
-                        .map_err(|e| js_err(format!("connexion A -> B refusée : {:?}", e)))?;
+                        .map_err(|e| {
+                                // Half-registered handshake: clear both entries
+                                // so the next attempt (tick self-heal) is clean.
+                                self.teardown_link();
+                                js_err(format!("connexion A -> B refusée : {:?}", e))
+                        })?;
                 // Initial noise message is destined to B.
                 link.inbox_b.borrow_mut().push_back(init);
-                self.nodes[1]
-                        .pm
-                        .new_inbound_connection(desc_b.clone(), None)
-                        .map_err(|e| js_err(format!("écoute B refusée : {:?}", e)))?;
+                if let Err(e) = self.nodes[1].pm.new_inbound_connection(desc_b.clone(), None) {
+                        self.teardown_link();
+                        return Err(js_err(format!("écoute B refusée : {:?}", e)));
+                }
                 self.link = Some((desc_a, desc_b, link));
                 self.flush_io()
+        }
+
+        /// Tears down the current link: closes the socket pair and tells both
+        /// PeerManagers the peer is gone. Descriptors are side-keyed (side 0 / 1),
+        /// so `socket_disconnected` also clears entries left behind by a failed
+        /// handshake even when `self.link` is already `None`; it is a documented
+        /// no-op for unknown descriptors.
+        fn teardown_link(&mut self) {
+                if let Some((_, _, link)) = self.link.take() {
+                        *link.open.borrow_mut() = false;
+                }
+                let (desc_a, desc_b, _) = LnSocket::pair();
+                self.nodes[0].pm.socket_disconnected(&desc_a);
+                self.nodes[1].pm.socket_disconnected(&desc_b);
         }
 
         /// True while the in-memory P2P link is up.
@@ -519,13 +552,39 @@ impl LnLab {
         /// Drives the protocol: message pump + pending events + persistence.
         /// Returns the events emitted during this tick.
         pub fn tick(&mut self) -> Result<Array, JsValue> {
+                // Self-healing: rebuild the peer link whenever it is down, so a
+                // dropped handshake never wedges the lab (idempotent no-op while
+                // the link is healthy).
+                if !self.is_connected() {
+                        self.connect_ab()?;
+                }
                 self.flush_io()?;
                 let mut collected: Vec<JsValue> = Vec::new();
+                let pending = &self.pending_funding;
                 for (idx, label) in ["A", "B"].iter().enumerate() {
                         let node = &self.nodes[idx];
                         let sink = RefCell::new(&mut collected);
                         let label = *label;
                         let handler = |event: Event| -> Result<(), ReplayEvent> {
+                                // Record the funding request so the main thread can
+                                // hand the signed transaction back via
+                                // `funding_transaction_generated` — keyed by the
+                                // user_channel_id chosen at create_channel. Without
+                                // this, that call rejects with « aucune demande de
+                                // financement en attente » and no channel ever
+                                // confirms.
+                                if let Event::FundingGenerationReady {
+                                        temporary_channel_id,
+                                        counterparty_node_id,
+                                        user_channel_id,
+                                        ..
+                                } = &event
+                                {
+                                        pending.borrow_mut().insert(
+                                                *user_channel_id as u64,
+                                                (*temporary_channel_id, *counterparty_node_id),
+                                        );
+                                }
                                 sink.borrow_mut().push(events::event_to_js(label, &event));
                                 Ok(())
                         };

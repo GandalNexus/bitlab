@@ -73,7 +73,9 @@ export function handleEsploraPath(chain: RegtestChain, path: string): EsploraRes
   // 5) Blocs.
   const rawMatch = path.match(/^block\/([0-9a-f]{64})\/raw$/i);
   if (rawMatch) {
-    const raw = chain.rawBlockByHash(rawMatch[1]);
+    // Format consensus (compteur + marqueur SegWit au niveau du bloc) :
+    // les clients réels (LDK du labo, parseurs) rejettent la forme interne.
+    const raw = chain.consensusBlockByHash(rawMatch[1]);
     return raw ? { status: 200, type: 'bin', body: hex.decode(raw) } : notFound('bloc hors rétention');
   }
   const headerMatch = path.match(/^block\/([0-9a-f]{64})\/header$/i);

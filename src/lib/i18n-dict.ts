@@ -759,6 +759,8 @@ export const EN: Record<string, string> = {
   'Deux nœuds LDK réels compilés en WebAssembly tournent dans votre navigateur : canaux financés on-chain, factures BOLT11 signées, paiements HTLC authentiques. Vos clés et vos données restent dans votre navigateur.':
     'Two real LDK nodes compiled to WebAssembly run in your browser: on-chain funded channels, signed BOLT11 invoices, authentic HTLC payments. Your keys and data stay in your browser.',
   'désactivé': 'off',
+  'Fermer la navigation': 'Close navigation',
+  'Impossible de dériver l’adresse demandée (entrée invalide).': 'Cannot derive the requested address (invalid input).',
   'arrêt…': 'stopping…',
   'Nœud {n}': 'Node {n}',
   'Capacité sortante': 'Outbound capacity',
@@ -768,13 +770,22 @@ export const EN: Record<string, string> = {
     'Boots two Lightning nodes inside this browser ({net}). When off, no resource is consumed.',
   'A connecté à B': 'A connected to B',
   'pairs déconnectés': 'peers disconnected',
-  'Reconnecter': 'Reconnect',
+  'laboratoire inactif': 'lab is not active',
+  'aucune réponse du module — vérifiez votre connexion puis réactivez le laboratoire':
+    'no response from the module — check your connection then toggle the lab again',
+  'script du worker non chargé — rechargez la page et réessayez':
+    'worker script failed to load — reload the page and try again',
+  'message illisible du module': 'unreadable message from the module',
   'Chargement du module WASM et synchronisation initiale…': 'Loading the WASM module and performing initial sync…',
   'Ouvrir un canal A → B': 'Open a channel A → B',
   'Le canal est financé on-chain : A construit la transaction de financement, B l’accepte, puis 6 confirmations verrouillent le canal.':
     'The channel is funded on-chain: A builds the funding transaction, B accepts it, then 6 confirmations lock the channel in.',
   'Push vers B (msat)': 'Push to B (msat)',
   'Demander l’ouverture': 'Request opening',
+  'Demande d’ouverture envoyée': 'Opening request sent',
+  'Le nœud B négocie le canal — l’adresse de financement va apparaître.':
+    'Node B is negotiating the channel — the funding address will appear shortly.',
+  'délai de la demande d’ouverture dépassé': 'opening request timed out',
   'Capacité invalide': 'Invalid capacity',
   '1000 sats minimum.': '1000 sats minimum.',
   'Montant poussé trop élevé': 'Push amount too high',
@@ -787,15 +798,14 @@ export const EN: Record<string, string> = {
   'Capacité': 'Capacity',
   'Sortant': 'Outbound',
   'Entrant': 'Inbound',
-  'Financer le canal (on-chain)': 'Fund the channel (on-chain)',
-  'Le nœud A attend une transaction de {sats} sats vers l’adresse de financement P2WSH ci-dessous. Payez depuis l’un de vos portefeuilles : la transaction est signée localement, la clé ne quitte jamais le navigateur.':
-    'Node A is waiting for a {sats} sats transaction to the P2WSH funding address below. Pay from one of your wallets: the transaction is signed locally, the key never leaves the browser.',
+  'Financer le canal': 'Fund the channel',
+  'Payez {sats} sats vers l’adresse P2WSH ci-dessous depuis un portefeuille test : signé localement, la clé ne quitte jamais le navigateur.':
+    'Pay {sats} sats to the P2WSH address below from a test wallet: signed locally, the key never leaves the browser.',
   'Script de financement illisible.': 'Unreadable funding script.',
   'Adresse de financement': 'Funding address',
   'Portefeuille source': 'Source wallet',
-  'Construire, signer et diffuser': 'Build, sign and broadcast',
-  'Créez et alimentez d’abord un portefeuille (module Bitcoin, robinet testnet).':
-    'Create and fund a wallet first (Bitcoin module, testnet faucet).',
+  'Créez et alimentez d’abord un portefeuille sur ce réseau (module Bitcoin, robinet).':
+    'Create and fund a wallet on this network first (Bitcoin module, faucet).',
   'Financement diffusé': 'Funding broadcast',
   'La transaction de financement est sur la chaîne — attendez les confirmations.':
     'The funding transaction is on-chain — wait for confirmations.',
@@ -956,7 +966,7 @@ export const EN: Record<string, string> = {
   'Le regtest est votre chaîne personnelle : difficulté 1, chaque bloc se trouve en quelques hachages et la récompense de 50 BTC de test est payée à votre adresse. Chaque bloc est remis à la chaîne regtest embarquée de BitLab (ou à votre nœud externe si configuré) — la récompense mûrit après 100 blocs.':
     'Regtest is your personal chain: difficulty 1, each block takes a few hashes and the 50 test-BTC reward pays your address. Every block is submitted to BitLab’s embedded regtest chain (or your external node if configured) — the reward matures after 100 blocks.',
   'Minez des blocs depuis l’onglet Mineur pour confirmer.': 'Mine blocks from the Miner tab to confirm.',
-  '6 blocs minés automatiquement.': '6 blocks mined automatically.',
+  'Blocs de confirmation minés automatiquement.': 'Confirmation blocks mined automatically.',
 
   /* ───────────────── Module Mineur (page dédiée, PoW réel) ───────────────── */
   'Mineur': 'Miner',

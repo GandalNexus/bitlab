@@ -52,7 +52,7 @@ export function addressToScript(address: string, net: NetId = currentNet()): Uin
  */
 const IN_VSIZE: Record<string, number> = { legacy: 149, segwit: 68.75, taproot: 58 };
 /** Tailles virtuelles moyennes par type de sortie (vB). */
-const OUT_VSIZE: Record<string, number> = { legacy: 34, p2sh: 32, segwit: 31, taproot: 43, op_return: 43 };
+const OUT_VSIZE: Record<string, number> = { legacy: 34, p2sh: 32, segwit: 31, p2wsh: 43, taproot: 43, op_return: 43 };
 const TX_HEADER_VSIZE = 10.5;
 
 export function inVsizeOf(type: AddrType): number {
@@ -61,7 +61,15 @@ export function inVsizeOf(type: AddrType): number {
 
 export function outVsizeOf(address: string): number {
   try {
-    const t = detectScriptType(addressToScript(address));
+    const script = addressToScript(address);
+    const t = detectScriptType(script);
+    if (t === 'segwit') {
+      // SegWit v0 : le script = version (1 o) + push (1 o) + programme.
+      // P2WPKH (programme de 20 o → script de 22 o) = 31 vB, mais P2WSH
+      // (programme de 32 o → script de 34 o — ex. adresse de financement
+      // Lightning) = 43 vB. Les confondre sous-estime les frais sous min-relay.
+      return script.length === 22 ? OUT_VSIZE.segwit : OUT_VSIZE.p2wsh;
+    }
     return OUT_VSIZE[t] ?? 34;
   } catch {
     // Adresse illisible pour le réseau actif : estimation générique — la
