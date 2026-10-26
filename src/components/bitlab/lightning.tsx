@@ -39,8 +39,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Copyable, PageIntro } from './bits';
 import { QRCode } from './qrcode';
 import { useLabStore } from '@/lib/store';
-import { NETWORKS } from '@/lib/networks';
-import { api, mpBroadcast } from '@/lib/mempool';
+import { NETWORKS, DEFAULT_NET } from '@/lib/networks';
+import { api, mpBroadcast, type AddressUtxo } from '@/lib/mempool';
 import { buildSignedTx } from '@/lib/bitcoin/tx';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import { regtestMode } from '@/lib/regtest';
@@ -180,7 +180,11 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
   const [walletId, setWalletId] = useState<string>('');
   const [busy, setBusy] = useState(false);
 
-  const wallet = wallets.find((w) => w.id === walletId) ?? wallets[0] ?? null;
+  // Sandbox : seuls les portefeuilles dérivés pour le réseau actif du labo
+  // peuvent financer le canal — des pièces réelles sont hors de portée par
+  // construction (le labo lui-même n'existe que sur réseaux de test).
+  const usable = wallets.filter((w) => (w.network ?? DEFAULT_NET) === net);
+  const wallet = usable.find((w) => w.id === walletId) ?? usable[0] ?? null;
 
   const buildAndSubmit = async () => {
     if (!wallet) return;
@@ -188,8 +192,24 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
     try {
       if (!pending.address) throw new Error(t('Script de financement illisible.'));
       const valueSats = Number(pending.valueSats);
-      const [utxos, fees] = await Promise.all([api.utxos(wallet.address), api.fees()]);
+      const [allUtxos, fees] = await Promise.all([api.utxos(wallet.address), api.fees()]);
       const feeRate = Math.max(1, Number(fees.hourFee) || 1);
+      // Sélection minimale « dépensabilité d'abord » : couvrir la cible avec le
+      // moins d'UTXO possible — les sorties normales d'abord, puis les
+      // coinbases les plus anciennes (déjà mûres). Sans cela, financer
+      // 0.001 BTC dépenserait d'un bloc toutes les coinbases du robinet et
+      // se heurterait à la règle de maturité des 100 blocs.
+      const rank = (u: AddressUtxo) => (u.isCoinbase ? (u.status.block_height ?? Number.MAX_SAFE_INTEGER) : -1);
+      const ordered = [...allUtxos].sort((a, b) => rank(a) - rank(b));
+      const target = valueSats + 5000; // capacité + marge de frais
+      let covered = 0;
+      const selected: AddressUtxo[] = [];
+      for (const u of ordered) {
+        selected.push(u);
+        covered += u.value;
+        if (covered >= target) break;
+      }
+      const utxos = covered >= target ? selected : allUtxos;
       const res = buildSignedTx({
         utxos,
         outputs: [{ address: pending.address, amountSats: valueSats }],
@@ -199,20 +219,40 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
         inputAddress: wallet.address,
         inputType: wallet.type,
       });
-      await mpBroadcast(res.hex);
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          await mpBroadcast(res.hex);
+          break;
+        } catch (first) {
+          // Sandbox regtest embarquée : la chaîne indique combien de blocs de
+          // maturité manquent — on les mine puis on retente (3 essais max).
+          // Jamais appliqué aux réseaux réels : l'erreur remonte telle quelle.
+          const detail = first instanceof Error ? first.message : String(first);
+          const need = net === 'regtest' && regtestMode() === 'embedded' ? /encore (\d+) bloc/.exec(detail) : null;
+          if (!need || attempt >= 2) throw first;
+          const mineRes = await fetch('/api/regtest/mine', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ blocks: Math.min(Number(need[1]) + 2, 120) }),
+          });
+          if (!mineRes.ok) throw first;
+        }
+      }
       onSubmit(res.hex, pending.userChannelId);
       // Regtest embarqué : le serveur mine aussitôt les blocs de confirmation
-      // (seuil de confirmation du canal) — la chaîne embarquée est locale.
+      // (seuil du canal : 6, + 2 blocs de marge — LDK compte les
+      // confirmations à partir du bloc suivant le financement). La chaîne
+      // embarquée est locale : le minage est instantané.
       let minedNote = '';
       if (net === 'regtest' && regtestMode() === 'embedded') {
         try {
           const mineRes = await fetch('/api/regtest/mine', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ blocks: 6 }),
+            body: JSON.stringify({ blocks: 8 }),
           });
           const mineBody = (await mineRes.json().catch(() => ({}))) as { ok?: boolean };
-          minedNote = mineBody.ok ? ' ' + t('6 blocs minés automatiquement.') : '';
+          minedNote = mineBody.ok ? ' ' + t('Blocs de confirmation minés automatiquement.') : '';
         } catch {
           minedNote = ' ' + t('Minez des blocs depuis l’onglet Mineur pour confirmer.');
         }
@@ -232,11 +272,11 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
     <Card className="border-amber-500/40">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm">
-          <WalletIcon className="h-4 w-4 text-amber-400" /> {t('Financer le canal (on-chain)')}
+          <WalletIcon className="h-4 w-4 text-amber-400" /> {t('Financer le canal')}
         </CardTitle>
         <CardDescription>
           {t(
-            'Le nœud A attend une transaction de {sats} sats vers l’adresse de financement P2WSH ci-dessous. Payez depuis l’un de vos portefeuilles : la transaction est signée localement, la clé ne quitte jamais le navigateur.',
+            'Payez {sats} sats vers l’adresse P2WSH ci-dessous depuis un portefeuille test : signé localement, la clé ne quitte jamais le navigateur.',
             { sats: fmtInt(Number(pending.valueSats)) },
           )}
         </CardDescription>
@@ -253,7 +293,7 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
                 <SelectValue placeholder={t('Choisir un portefeuille')} />
               </SelectTrigger>
               <SelectContent>
-                {wallets.map((w) => (
+                {usable.map((w) => (
                   <SelectItem key={w.id} value={w.id} className="text-xs">
                     {w.label || w.id.slice(0, 8)} — {w.type}
                   </SelectItem>
@@ -263,11 +303,11 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
           </div>
           <Button size="sm" className="gap-1" disabled={busy || !wallet} onClick={buildAndSubmit}>
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-            {t('Construire, signer et diffuser')}
+            {t('Financer le canal')}
           </Button>
         </div>
-        {wallets.length === 0 ? (
-          <p className="text-xs text-amber-400">{t('Créez et alimentez d’abord un portefeuille (module Bitcoin, robinet testnet).')}</p>
+        {usable.length === 0 ? (
+          <p className="text-xs text-amber-400">{t('Créez et alimentez d’abord un portefeuille sur ce réseau (module Bitcoin, robinet).')}</p>
         ) : null}
       </CardContent>
     </Card>
@@ -281,9 +321,10 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
   const { toast } = useToast();
   const [capacity, setCapacity] = useState('100000');
   const [push, setPush] = useState('40000');
+  const [opening, setOpening] = useState(false);
   const channels = st.channelsA;
 
-  const open = () => {
+  const open = async () => {
     const cap = parseInt(capacity, 10);
     const pushMs = parseInt(push, 10) || 0;
     if (!Number.isInteger(cap) || cap < 1000) {
@@ -294,7 +335,18 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
       toast({ title: t('Montant poussé trop élevé'), description: t('Le push ne peut pas dépasser la capacité.'), variant: 'destructive' });
       return;
     }
-    lnLab.openChannel(cap, pushMs);
+    setOpening(true);
+    try {
+      await lnLab.openChannel(cap, pushMs);
+      toast({
+        title: t('Demande d’ouverture envoyée'),
+        description: t('Le nœud B négocie le canal — l’adresse de financement va apparaître.'),
+      });
+    } catch (e) {
+      toast({ title: t('Ouverture impossible'), description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+    } finally {
+      setOpening(false);
+    }
   };
 
   const close = async (ch: LnChannelView) => {
@@ -328,7 +380,8 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
             </Label>
             <Input id="push" value={push} onChange={(e) => setPush(e.target.value)} className="h-8 font-mono text-xs" />
           </div>
-          <Button size="sm" onClick={open} disabled={!st.connected}>
+          <Button size="sm" onClick={open} disabled={!st.connected || opening}>
+            {opening ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             {t('Demander l’ouverture')}
           </Button>
         </CardContent>
@@ -850,17 +903,10 @@ export function LightningModule() {
             </div>
             <div className="flex items-center gap-2">
               {st.phase === 'ready' && onSameNetwork ? (
-                <>
-                  <Badge variant="outline" className={cn('gap-1 text-[9px]', st.connected ? 'border-emerald-500/40 text-emerald-400' : 'border-amber-500/40 text-amber-400')}>
-                    {st.connected ? <Link2 className="h-2.5 w-2.5" /> : <Unplug className="h-2.5 w-2.5" />}
-                    {st.connected ? t('A connecté à B') : t('pairs déconnectés')}
-                  </Badge>
-                  {!st.connected ? (
-                    <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => lnLab.connectPeers()}>
-                      {t('Reconnecter')}
-                    </Button>
-                  ) : null}
-                </>
+                <Badge variant="outline" className={cn('gap-1 text-[9px]', st.connected ? 'border-emerald-500/40 text-emerald-400' : 'border-amber-500/40 text-amber-400')}>
+                  {st.connected ? <Link2 className="h-2.5 w-2.5" /> : <Unplug className="h-2.5 w-2.5" />}
+                  {st.connected ? t('A connecté à B') : t('pairs déconnectés')}
+                </Badge>
               ) : null}
             </div>
           </CardContent>

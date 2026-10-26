@@ -236,6 +236,9 @@ const handlers = {
     try {
       lab.create_channel(BigInt(msg.valueSats), BigInt(msg.pushMsat), BigInt(msg.userChannelId));
       runTick();
+      // Explicit ack so the main thread can resolve its request — LDK errors
+      // below surface as a rejected promise instead of a silent no-op.
+      post({ type: 'channelRequested', userChannelId: msg.userChannelId });
     } catch (err) {
       post({ type: 'error', message: `canal: ${err.message || err}` });
     }

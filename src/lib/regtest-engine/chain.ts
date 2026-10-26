@@ -276,6 +276,27 @@ export class RegtestChain {
     return this.blocks.get(hash.toLowerCase())?.raw ?? null;
   }
 
+  /** Bloc au format attendu par les parseurs consensus Rust (bitcoin crate /
+   * LDK) : en-tête + compteur de transactions, chaque tx gardant sa forme
+   * autonome (le marqueur/drapeau SegWit suit sa version — le décodeur la
+   * détecte par un compteur d'entrées nul). Le stockage interne omet le
+   * compteur : sans lui, LDK refuse le bloc (« bloc non décodable ») et
+   * aucun canal ne confirme jamais. */
+  consensusBlockByHash(hash: string): string | null {
+    const rec = this.blocks.get(hash.toLowerCase());
+    if (!rec || rec.raw === null) return null;
+    const bytes = hex.decode(rec.raw);
+    if (bytes.length < 80) return null;
+    let count = 0;
+    let off = 80;
+    while (off < bytes.length) {
+      const { end } = parseTxSlice(bytes, off);
+      count += 1;
+      off = end;
+    }
+    return hex.encode(concatBytes(bytes.slice(0, 80), new Uint8Array(writeVarint(count)), bytes.slice(80)));
+  }
+
   /** Résumés des `n` derniers blocs (plus récent d'abord — forme Esplora). */
   recentBlocks(n = 10): { id: string; height: number; timestamp: number; tx_count: number; size: number }[] {
     const out: { id: string; height: number; timestamp: number; tx_count: number; size: number }[] = [];

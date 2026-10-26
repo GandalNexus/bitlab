@@ -10,8 +10,9 @@
 
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { hex } from '@scure/base';
-import { scriptToAddress } from './bitcoin/tx';
+import { scriptToAddressOn } from './bitcoin/tx';
 import { regtestHeaderValue, regtestMode } from './regtest';
+import { tSync } from './i18n';
 
 export type LnNetId = 'testnet4' | 'testnet3' | 'signet' | 'regtest';
 export type NodeKey = 'A' | 'B';
@@ -138,11 +139,15 @@ class LnLabController {
     let pendingFunding = this.status.pendingFunding;
     if (pending) {
       const scriptBytes = hex.decode(pending.outputScript ?? '');
+      const net = this.network;
       pendingFunding = {
         userChannelId: pending.userChannelId ?? '',
         valueSats: pending.valueSats ?? '0',
         outputScript: pending.outputScript ?? '',
-        address: scriptToAddress(scriptBytes) ?? null,
+        // Adresse encodée pour le RÉSEAU du labo (bcrt1… sur regtest) —
+        // l'encodage testnet générique produisait une tb1… que le
+        // constructeur de transaction refuse sur la chaîne locale.
+        address: net ? (scriptToAddressOn(scriptBytes, net) ?? null) : null,
       };
     }
     if (events.some((e) => e.type === 'channel_ready' || e.type === 'channel_closed')) {
@@ -165,8 +170,41 @@ class LnLabController {
 
       const worker = new Worker('/lnlab/worker.js', { type: 'module' });
       this.worker = worker;
-      worker.onmessage = (event) => this.onWorkerMessage(event.data);
-      worker.onerror = (event) => this.patch({ error: `worker: ${event.message}` });
+      // Watchdog : un worker sans réponse (script non chargé, WASM bloqué) ne
+      // doit pas laisser le labo coincé en « démarrage… » pour toujours. Toute
+      // entrée du worker prouve qu'il vit et réarme le compteur.
+      let watchdog: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+        watchdog = null;
+        if (this.worker === worker) {
+          this.patch({
+            phase: 'off',
+            error: `worker: ${tSync('aucune réponse du module — vérifiez votre connexion puis réactivez le laboratoire')}`,
+          });
+          worker.terminate();
+          this.worker = null;
+        }
+      }, 60000);
+      const clearWatchdog = () => {
+        if (watchdog) {
+          clearTimeout(watchdog);
+          watchdog = null;
+        }
+      };
+      worker.onmessage = (event) => {
+        clearWatchdog();
+        this.onWorkerMessage(event.data);
+      };
+      worker.onerror = (event) => {
+        // Les échecs de chargement du script arrivent sans message : afficher
+        // « worker: undefined » n'apprend rien — décrire la panne à la place.
+        this.patch({
+          phase: 'off',
+          error: `worker: ${event.message || tSync('script du worker non chargé — rechargez la page et réessayez')}`,
+        });
+      };
+      worker.onmessageerror = () => {
+        this.patch({ phase: 'off', error: `worker: ${tSync('message illisible du module')}` });
+      };
       worker.postMessage({
         type: 'boot',
         network,
@@ -324,13 +362,31 @@ class LnLabController {
     this.worker.postMessage(payload);
   }
 
-  connectPeers(): void {
-    this.send({ type: 'connect' });
-  }
-
-  openChannel(valueSats: number, pushMsat: number): void {
-    const userChannelId = Date.now();
-    this.send({ type: 'openChannel', valueSats, pushMsat, userChannelId });
+  /** Demande l'ouverture d'un canal A → B. Résout une fois LDK a accepté la
+   * négociation ; rejette avec le vrai message d'erreur sinon — plus jamais
+   * d'échec silencieux au clic. */
+  openChannel(valueSats: number, pushMsat: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const userChannelId = Date.now();
+      const worker = this.worker;
+      if (!worker) return reject(new Error('laboratoire inactif'));
+      const onMessage = (event: MessageEvent) => {
+        const data = event.data;
+        if (data?.type === 'channelRequested' && Number(data.userChannelId) === userChannelId) {
+          worker.removeEventListener('message', onMessage);
+          resolve();
+        } else if (data?.type === 'error' && (data.message as string)?.startsWith('canal:')) {
+          worker.removeEventListener('message', onMessage);
+          reject(new Error(String(data.message).replace(/^canal:\s*/, '')));
+        }
+      };
+      worker.addEventListener('message', onMessage);
+      this.send({ type: 'openChannel', valueSats, pushMsat, userChannelId });
+      setTimeout(() => {
+        worker.removeEventListener('message', onMessage);
+        reject(new Error('délai de la demande d’ouverture dépassé'));
+      }, 15000);
+    });
   }
 
   submitFundingTx(hexTx: string, userChannelId: string): void {

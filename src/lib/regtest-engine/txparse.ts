@@ -260,7 +260,7 @@ export function serializeTx(tx: ParsedTx): Uint8Array {
   }
   const chunks: number[] = [];
   chunks.push(...u32leBytes(tx.version >>> 0));
-  chunks.push(0x00, 0x01); // marqueur + drapeau
+  chunks.push(0x00, 0x01); // marqueur + drapeau (détectés par le compteur d'entrées nul)
   chunks.push(...writeVarint(tx.inputs.length));
   for (const inp of tx.inputs) {
     for (const b of hex.decode(inp.txid).reverse()) chunks.push(b);
