@@ -820,8 +820,8 @@ export const EN: Record<string, string> = {
   'Le HTLC circule sur le canal A → B.': 'The HTLC is travelling over the A → B channel.',
   'Une facture neuve à chaque paiement : montant verrouillé, expiration d’une heure.':
     'A fresh invoice for every payment: locked amount, one-hour expiry.',
-  'Collez une facture lntb…/lntbs… : le montant est déjà inscrit dedans.':
-    'Paste an lntb…/lntbs… invoice: the amount is already encoded in it.',
+  'Collez une facture Lightning (lntb…, lntbs…, lnbcrt…) : le montant est déjà inscrit dedans.':
+    'Paste a Lightning invoice (lntb…, lntbs…, lnbcrt…): the amount is already encoded in it.',
   'Facture à usage unique': 'Single-use invoice',
   'Un montant fixe, une expiration, un seul paiement — comme un ticket de caisse.':
     'A fixed amount, an expiry, a single payment — like a cashier’s receipt.',

@@ -39,8 +39,9 @@ const sha256d = (buf: Uint8Array) =>
 describe('compactBitsToTarget', () => {
   it('décode la difficulté minimale 0x1d00ffff', () => {
     const target = compactBitsToTarget(MIN_DIFF_BITS);
-    // 0xffff × 256^26 → 6 premiers octets 00 00 00 FF FF 00.
-    expect([...target.subarray(0, 6)]).toEqual([0x00, 0x00, 0x00, 0xff, 0xff, 0x00]);
+    // 0xffff × 256^26 → 28 octets significatifs : 4 octets nuls puis FF FF
+    // (le hash genesis 000000000019d6… est bien < cette cible).
+    expect([...target.subarray(0, 6)]).toEqual([0x00, 0x00, 0x00, 0x00, 0xff, 0xff]);
     expect(target.subarray(6).every((b) => b === 0)).toBe(true);
   });
 

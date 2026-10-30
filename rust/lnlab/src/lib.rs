@@ -18,7 +18,7 @@ mod node;
 mod sockets;
 mod store;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -41,6 +41,7 @@ use lightning::offers::offer::{Amount, Offer};
 use lightning::routing::router::{PaymentParameters, RouteParameters};
 use lightning::sign::{EntropySource as _, KeysManager, NodeSigner as _, Recipient};
 use lightning::types::payment::PaymentHash;
+use lightning::events::PaymentPurpose;
 use lightning::util::persist::KVStoreSync as _;
 use lightning::util::ser::Writeable as _;
 use lightning_invoice::{Bolt11Invoice, Currency, InvoiceBuilder};
@@ -99,6 +100,13 @@ fn put(obj: &Object, key: &str, value: String) {
         js_sys::Reflect::set(obj, &JsValue::from_str(key), &JsValue::from_str(&value)).expect("set property");
 }
 
+/// Writes a native boolean property. Channel flags used to be stringified
+/// ("true"/"false"), which JS treats as always-truthy — the UI then showed
+/// « prêt » on channels that were still awaiting confirmations.
+fn put_bool(obj: &Object, key: &str, value: bool) {
+        js_sys::Reflect::set(obj, &JsValue::from_str(key), &JsValue::from_bool(value)).expect("set property");
+}
+
 /// Options passed by the worker at boot: node selector (0 = A, 1 = B).
 fn pick(node: u8) -> Result<usize, JsValue> {
         match node {
@@ -115,6 +123,8 @@ pub struct LnLab {
         /// Active peer link (descriptors + inboxes), rebuilt on every reconnect.
         link: Option<(LnSocket, LnSocket, Link)>,
         pending_funding: RefCell<HashMap<u64, (ChannelId, bitcoin::secp256k1::PublicKey)>>,
+        /// Ticks since the last `timer_tick_occurred` (one per LDK minute).
+        timer_ticks: Cell<u32>,
 }
 
 #[wasm_bindgen]
@@ -151,6 +161,7 @@ impl LnLab {
                         nodes: [a, b],
                         link: None,
                         pending_funding: RefCell::new(HashMap::new()),
+                        timer_ticks: Cell::new(0),
                 };
                 // Peers connect on activation — no extra click needed. Failure
                 // is non-fatal: tick() self-heals on the next pass.
@@ -189,6 +200,7 @@ impl LnLab {
                         nodes: [a, b],
                         link: None,
                         pending_funding: RefCell::new(HashMap::new()),
+                        timer_ticks: Cell::new(0),
                 };
                 // A restored session re-handshakes immediately; LDK then rebuilds
                 // the persisted channels over the fresh link.
@@ -255,7 +267,7 @@ impl LnLab {
                         return Err(js_err(format!("écoute B refusée : {:?}", e)));
                 }
                 self.link = Some((desc_a, desc_b, link));
-                self.flush_io()
+                self.flush_io().map(|_| ())
         }
 
         /// Tears down the current link: closes the socket pair and tells both
@@ -558,7 +570,7 @@ impl LnLab {
                 if !self.is_connected() {
                         self.connect_ab()?;
                 }
-                self.flush_io()?;
+                let activity = self.flush_io()?;
                 let mut collected: Vec<JsValue> = Vec::new();
                 let pending = &self.pending_funding;
                 for (idx, label) in ["A", "B"].iter().enumerate() {
@@ -585,26 +597,74 @@ impl LnLab {
                                                 (*temporary_channel_id, *counterparty_node_id),
                                         );
                                 }
+                                // Auto-claim : réclame immédiatement tout paiement entrant
+                                // dont le preimage est connu (factures BOLT11 créées ici,
+                                // BOLT12 via invoice_request, paiements spontanés). Sans
+                                // cela l'event `payment_claimable` restait sans réponse —
+                                // aucun code ne rappelait `claim_funds` — et les HTLCs ne
+                                // se réglaient jamais : le paiement côté émetteur restait
+                                // bloqué sans `payment_sent`.
+                                if let Event::PaymentClaimable { purpose, .. } = &event {
+                                        let preimage = match purpose {
+                                                PaymentPurpose::Bolt11InvoicePayment { payment_preimage: Some(pre), .. } => Some(*pre),
+                                                PaymentPurpose::Bolt12OfferPayment { payment_preimage: Some(pre), .. } => Some(*pre),
+                                                PaymentPurpose::Bolt12RefundPayment { payment_preimage: Some(pre), .. } => Some(*pre),
+                                                PaymentPurpose::SpontaneousPayment(pre) => Some(*pre),
+                                                _ => None,
+                                        };
+                                        if let Some(preimage) = preimage {
+                                                node.cm.claim_funds(preimage);
+                                        }
+                                }
                                 sink.borrow_mut().push(events::event_to_js(label, &event));
                                 Ok(())
                         };
+                        // Random forward delay : LDK pousse les HTLCs entrants dans
+                        // une file traitée par son background processor via
+                        // `process_pending_htlc_forwards` — aucun n'appelait cette
+                        // fonction, donc `payment_claimable` n'était jamais émis et
+                        // aucun paiement ne se réglait. Le labo la lance à chaque
+                        // tick : le règlement est immédiat, comme un nœud sain.
+                        node.cm.process_pending_htlc_forwards();
                         node.cm.process_pending_events(&handler);
-                        // Persist the channel manager after every event batch.
-                        let bytes = node.cm.encode();
-                        let _ = node.kv.write("", "", "manager", bytes);
+                }
+                // LDK recommande `timer_tick_occurred` environ une fois par
+                // minute : expiration des MPP incomplets, retraits des paiements
+                // en échec, etc. Tick du worker = 1 s, donc une fois toutes les
+                // 60 itérations.
+                self.timer_ticks.set(self.timer_ticks.get() + 1);
+                if self.timer_ticks.get() >= 60 {
+                        self.timer_ticks.set(0);
+                        for node in &self.nodes {
+                                node.cm.timer_tick_occurred();
+                        }
+                }
+                // Persist both channel managers only when something happened this
+                // tick (protocol traffic or emitted events): re-encoding two full
+                // managers every second flooded the KV drain with one write per
+                // second per node even while the lab sat idle.
+                if activity > 0 || !collected.is_empty() {
+                        for node in &self.nodes {
+                                let bytes = node.cm.encode();
+                                let _ = node.kv.write("", "", "manager", bytes);
+                        }
                 }
                 Ok(events::events_to_array(collected))
         }
 }
 
 impl LnLab {
-        fn flush_io(&self) -> Result<(), JsValue> {
+        /// Pumps the socket pair until it goes quiet. Returns the number of
+        /// protocol bytes processed — the caller uses it to decide whether the
+        /// channel managers are worth persisting this tick.
+        fn flush_io(&self) -> Result<usize, JsValue> {
                 let Some((desc_a, desc_b, link)) = &self.link else {
-                        return Ok(());
+                        return Ok(0);
                 };
                 if !*link.open.borrow() {
                         return Err(js_err("liaison P2P fermée".to_string()));
                 }
+                let mut total = 0usize;
                 for _round in 0..64 {
                         let mut activity = false;
                         for (pm, desc, inbox) in [
@@ -615,6 +675,7 @@ impl LnLab {
                                         let next = inbox.borrow_mut().pop_front();
                                         let Some(data) = next else { break };
                                         activity = true;
+                                        total += data.len();
                                         if pm.read_event(&mut desc.clone(), &data).is_err() {
                                                 desc.disconnect_both();
                                                 return Err(js_err("pair déconnecté (erreur de protocole)".to_string()));
@@ -628,7 +689,7 @@ impl LnLab {
                                 break;
                         }
                 }
-                Ok(())
+                Ok(total)
         }
 
         fn channels_of(&self, idx: usize) -> Array {
@@ -643,10 +704,10 @@ impl LnLab {
                                 put(&obj, "valueSats", c.channel_value_satoshis.to_string());
                                 put(&obj, "outboundMsat", c.outbound_capacity_msat.to_string());
                                 put(&obj, "inboundMsat", c.inbound_capacity_msat.to_string());
-                                put(&obj, "isOutbound", c.is_outbound.to_string());
-                                put(&obj, "isReady", c.is_channel_ready.to_string());
-                                put(&obj, "isUsable", c.is_usable.to_string());
-                                put(&obj, "isAnnounced", c.is_announced.to_string());
+                                put_bool(&obj, "isOutbound", c.is_outbound);
+                                put_bool(&obj, "isReady", c.is_channel_ready);
+                                put_bool(&obj, "isUsable", c.is_usable);
+                                put_bool(&obj, "isAnnounced", c.is_announced);
                                 if let Some(funding) = &c.funding_txo {
                                         put(&obj, "fundingTxo", funding.to_string());
                                 }

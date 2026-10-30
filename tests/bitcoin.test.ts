@@ -1,6 +1,6 @@
 /**
  * BitLab — tests hors-ligne du cœur Bitcoin (Vitest).
- * Portage de scripts/validate-bitcoin.ts : génération de clés (3 types),
+ * Suite de validation Bitcoin (ex-tooling hors suite) : génération de clés (3 types),
  * WIF, mnémonique BIP39, construction/signature Legacy/SegWit/Taproot,
  * décodage raw, multisig P2WSH, estimation des frais.
  * Aucune connexion réseau requise.

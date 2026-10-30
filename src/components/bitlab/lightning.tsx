@@ -517,7 +517,7 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
           <CardTitle className="flex items-center gap-2 text-sm">
             <ArrowUpRight className="h-4 w-4 text-amber-400" /> {t('Payer une facture (nœud A)')}
           </CardTitle>
-          <CardDescription>{t('Collez une facture lntb…/lntbs… : le montant est déjà inscrit dedans.')}</CardDescription>
+          <CardDescription>{t('Collez une facture Lightning (lntb…, lntbs…, lnbcrt…) : le montant est déjà inscrit dedans.')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="min-w-64 flex-1 space-y-1">
@@ -528,7 +528,7 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
               id="b11"
               value={payInput}
               onChange={(e) => setPayInput(e.target.value)}
-              placeholder="lntb… / lntbs…"
+              placeholder="lntb… / lntbs… / lnbcrt…"
               className="h-8 font-mono text-xs"
             />
           </div>

@@ -45,7 +45,7 @@ export function addressToScript(address: string, net: NetId = currentNet()): Uin
 
 /**
  * Average vsize per input type (vB) — calibrated against actual transactions
- * produced by btc-signer (see scripts/debug-tx-sizes.ts). Estimate is used
+ * produced by btc-signer (calibrated against the tx-spend suite). Estimate is used
  * for change calculation; underestimation could drop tx below min-relay (1 sat/vB).
  * SegWit: maximal ECDSA witness (DER 72 + 1); Taproot: fixed Schnorr witness (64 + 1);
  * Legacy: full scriptSig.

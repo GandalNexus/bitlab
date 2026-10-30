@@ -114,6 +114,9 @@ class LnLabController {
   private listeners = new Set<() => void>();
   private worker: Worker | null = null;
   private network: LnNetId | null = null;
+  /** Chaîne des écritures IndexedDB : deux drains concurrents pouvaient
+   * s'écraser mutuellement et perdre des moniteurs de canaux. */
+  private kvQueue: Promise<void> = Promise.resolve();
 
   getStatus = (): LnLabStatus => this.status;
 
@@ -172,29 +175,41 @@ class LnLabController {
       this.worker = worker;
       // Watchdog : un worker sans réponse (script non chargé, WASM bloqué) ne
       // doit pas laisser le labo coincé en « démarrage… » pour toujours. Toute
-      // entrée du worker prouve qu'il vit et réarme le compteur.
-      let watchdog: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-        watchdog = null;
-        if (this.worker === worker) {
-          this.patch({
-            phase: 'off',
-            error: `worker: ${tSync('aucune réponse du module — vérifiez votre connexion puis réactivez le laboratoire')}`,
-          });
-          worker.terminate();
-          this.worker = null;
-        }
-      }, 60000);
-      const clearWatchdog = () => {
+      // entrée du worker prouve qu'il vit et RÉARME le compteur — sinon le
+      // premier log « chargement du module… » (émis avant le fetch du WASM de
+      // 14 Mo) désarmait le watchdog définitivement et un fetch qui pendait
+      // laissait un spinner infini.
+      let watchdog: ReturnType<typeof setTimeout> | null = null;
+      const armWatchdog = () => {
+        if (watchdog) clearTimeout(watchdog);
+        watchdog = setTimeout(() => {
+          watchdog = null;
+          if (this.worker === worker && this.status.phase === 'booting') {
+            this.patch({
+              phase: 'off',
+              error: `worker: ${tSync('aucune réponse du module — vérifiez votre connexion puis réactivez le laboratoire')}`,
+            });
+            worker.terminate();
+            this.worker = null;
+          }
+        }, 60000);
+      };
+      const disarmWatchdog = () => {
         if (watchdog) {
           clearTimeout(watchdog);
           watchdog = null;
         }
       };
+      armWatchdog();
       worker.onmessage = (event) => {
-        clearWatchdog();
+        // Le labo prêt a des timers internes qui prouvent sa vie ; le
+        // watchdog ne protège que la phase de démarrage.
+        if (this.status.phase === 'booting') armWatchdog();
+        else disarmWatchdog();
         this.onWorkerMessage(event.data);
       };
       worker.onerror = (event) => {
+        disarmWatchdog();
         // Les échecs de chargement du script arrivent sans message : afficher
         // « worker: undefined » n'apprend rien — décrire la panne à la place.
         this.patch({
@@ -203,6 +218,7 @@ class LnLabController {
         });
       };
       worker.onmessageerror = () => {
+        disarmWatchdog();
         this.patch({ phase: 'off', error: `worker: ${tSync('message illisible du module')}` });
       };
       worker.postMessage({
@@ -318,9 +334,15 @@ class LnLabController {
         this.pushLog(msg.node as string, msg.line as string);
         break;
       case 'kv': {
-        if (!this.network) break;
+        const network = this.network;
+        if (!network) break;
         const entries = (msg.entries ?? []) as [string, string, string, string, Uint8Array | null][];
-        this.flushKv(this.network, entries).catch((err) => this.pushLog('sys', `kv: ${(err as Error).message}`));
+        // Sérialise les écritures : deux drains concurrents rechargeaient
+        // chacun l'état IndexedDB, le mutaient et réécrivaient — le dernier
+        // gagnant pouvait effacer les moniteurs écrits par le premier.
+        this.kvQueue = this.kvQueue
+          .then(() => this.flushKv(network, entries))
+          .catch((err) => this.pushLog('sys', `kv: ${(err as Error).message}`));
         break;
       }
       case 'broadcast': {
@@ -328,9 +350,27 @@ class LnLabController {
         this.patch({ broadcasts });
         break;
       }
-      case 'error':
-        this.pushLog('sys', String(msg.message ?? 'erreur inconnue'));
+      case 'fundingSubmitted':
+        // Ack du worker après `funding_transaction_generated` : la carte de
+        // financement peut disparaître — un refus LDK aurait émis une erreur
+        // avant cet ack et la carte reste alors réessayable.
+        if (this.status.pendingFunding && String(msg.userChannelId ?? '') === this.status.pendingFunding.userChannelId) {
+          this.patch({ pendingFunding: null });
+        }
         break;
+      case 'error': {
+        const message = String(msg.message ?? 'erreur inconnue');
+        // Un échec pendant le démarrage (WASM indisponible, restauration
+        // impossible…) laissait la phase « booting » et le spinner à l'écran —
+        // l'erreur n'étant visible que dans un journal rendu seulement en
+        // phase « ready ». On remonte l'état de la phase pour que l'UI
+        // affiche la panne et propose de relancer.
+        if (this.status.phase === 'booting') {
+          this.patch({ phase: 'off', error: message });
+        }
+        this.pushLog('sys', message);
+        break;
+      }
       case 'stopped':
         this.finishStop();
         break;
@@ -362,60 +402,80 @@ class LnLabController {
     this.worker.postMessage(payload);
   }
 
-  /** Demande l'ouverture d'un canal A → B. Résout une fois LDK a accepté la
-   * négociation ; rejette avec le vrai message d'erreur sinon — plus jamais
-   * d'échec silencieux au clic. */
-  openChannel(valueSats: number, pushMsat: number): Promise<void> {
+  /** Envoie une requête au worker et résout sur la réponse portant le même
+   * `id` — les erreurs du worker portent désormais `requestId`, donc deux
+   * requêtes concurrentes de même famille (ex. createOffer + decodeOffer)
+   * ne se rejettent plus mutuellement sur la première erreur. Le filet de
+   * 15 s est annulé dès la réponse (les timers orphelins rejetaient des
+   * promesses déjà résolues et fuyaient des listeners). */
+  private request<T>(
+    payload: Record<string, unknown>,
+    matchReply: (data: { type: string; [field: string]: unknown }) => T | undefined,
+    timeoutLabel: string,
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
-      const userChannelId = Date.now();
+      const id = payload.id;
       const worker = this.worker;
-      if (!worker) return reject(new Error('laboratoire inactif'));
+      if (!worker || this.status.phase !== 'ready') {
+        return reject(new Error(tSync('laboratoire inactif')));
+      }
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      const cleanup = () => {
+        if (timer) clearTimeout(timer);
+        worker.removeEventListener('message', onMessage);
+      };
       const onMessage = (event: MessageEvent) => {
-        const data = event.data;
-        if (data?.type === 'channelRequested' && Number(data.userChannelId) === userChannelId) {
-          worker.removeEventListener('message', onMessage);
-          resolve();
-        } else if (data?.type === 'error' && (data.message as string)?.startsWith('canal:')) {
-          worker.removeEventListener('message', onMessage);
-          reject(new Error(String(data.message).replace(/^canal:\s*/, '')));
+        const data = event.data as { type: string; requestId?: unknown; [field: string]: unknown };
+        if (data?.type === 'error') {
+          // Ne rejette que la requête à qui appartient l'erreur : les
+          // erreurs globales (tick, liaison) restent au journal.
+          if (data.requestId !== undefined && data.requestId !== id) return;
+          cleanup();
+          reject(new Error(String(data.message)));
+          return;
+        }
+        const reply = matchReply(data);
+        if (reply !== undefined) {
+          cleanup();
+          resolve(reply);
         }
       };
       worker.addEventListener('message', onMessage);
-      this.send({ type: 'openChannel', valueSats, pushMsat, userChannelId });
-      setTimeout(() => {
-        worker.removeEventListener('message', onMessage);
-        reject(new Error('délai de la demande d’ouverture dépassé'));
+      timer = setTimeout(() => {
+        cleanup();
+        reject(new Error(tSync(timeoutLabel)));
       }, 15000);
+      this.send(payload);
     });
+  }
+
+  /** Demande l'ouverture d'un canal A → B. Résout une fois LDK a accepté la
+   * négociation ; rejette avec le vrai message d'erreur sinon. */
+  openChannel(valueSats: number, pushMsat: number): Promise<void> {
+    const userChannelId = Date.now();
+    return this.request<void>(
+      { type: 'openChannel', valueSats, pushMsat, userChannelId },
+      (data) => (data.type === 'channelRequested' && Number(data.userChannelId) === userChannelId ? true : undefined) as void,
+      'délai de la demande d’ouverture dépassé',
+    );
   }
 
   submitFundingTx(hexTx: string, userChannelId: string): void {
     this.send({ type: 'fundingTx', hex: hexTx, userChannelId });
-    this.patch({ pendingFunding: null });
+    // pendingFunding reste affiché jusqu'à l'accusé du worker
+    // (`fundingSubmitted`) : si LDK refuse la transaction (« aucune demande
+    // de financement en attente », output script différent…), la carte de
+    // financement reste utilisable pour réessayer au lieu de disparaître
+    // sans retour.
   }
 
   createInvoice(node: NodeKey, amountMsat: number | null, description: string, expirySecs: number): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const id = `inv-${Date.now()}`;
-      const worker = this.worker;
-      if (!worker) return reject(new Error('laboratoire inactif'));
-      const onMessage = (event: MessageEvent) => {
-        const data = event.data;
-        if (data?.type === 'invoice' && data.id === id) {
-          worker.removeEventListener('message', onMessage);
-          resolve(data.bolt11 as string);
-        } else if (data?.type === 'error' && (data.message as string)?.startsWith('facture:')) {
-          worker.removeEventListener('message', onMessage);
-          reject(new Error(String(data.message).replace(/^facture:\s*/, '')));
-        }
-      };
-      worker.addEventListener('message', onMessage);
-      this.send({ type: 'createInvoice', id, node: node === 'A' ? 0 : 1, amountMsat, description, expirySecs });
-      setTimeout(() => {
-        worker.removeEventListener('message', onMessage);
-        reject(new Error('délai de création de facture dépassé'));
-      }, 15000);
-    });
+    const id = `inv-${Date.now()}`;
+    return this.request<string>(
+      { type: 'createInvoice', id, node: node === 'A' ? 0 : 1, amountMsat, description, expirySecs },
+      (data) => (data.type === 'invoice' && data.id === id ? (data.bolt11 as string) : undefined),
+      'délai de création de facture dépassé',
+    );
   }
 
   payInvoice(node: NodeKey, invoice: string, amountMsat: number | null): void {
@@ -424,27 +484,12 @@ class LnLabController {
 
   /** Crée une offer BOLT12 (lno1…) signée par le nœud choisi. */
   createOffer(node: NodeKey, amountMsat: number | null, description: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const id = `offer-${Date.now()}`;
-      const worker = this.worker;
-      if (!worker) return reject(new Error('laboratoire inactif'));
-      const onMessage = (event: MessageEvent) => {
-        const data = event.data;
-        if (data?.type === 'offer' && data.id === id) {
-          worker.removeEventListener('message', onMessage);
-          resolve(data.offer as string);
-        } else if (data?.type === 'error' && (data.message as string)?.startsWith('offer:')) {
-          worker.removeEventListener('message', onMessage);
-          reject(new Error(String(data.message).replace(/^offer:\s*/, '')));
-        }
-      };
-      worker.addEventListener('message', onMessage);
-      this.send({ type: 'createOffer', id, node: node === 'A' ? 0 : 1, amountMsat, description });
-      setTimeout(() => {
-        worker.removeEventListener('message', onMessage);
-        reject(new Error('délai de création d’offer dépassé'));
-      }, 15000);
-    });
+    const id = `offer-${Date.now()}`;
+    return this.request<string>(
+      { type: 'createOffer', id, node: node === 'A' ? 0 : 1, amountMsat, description },
+      (data) => (data.type === 'offer' && data.id === id ? (data.offer as string) : undefined),
+      'délai de création d’offer dépassé',
+    );
   }
 
   /** Paie une offer BOLT12 : demande de facture via onion messages puis HTLC. */
@@ -454,27 +499,12 @@ class LnLabController {
 
   /** Décode une offer BOLT12 sans toucher à l'état des nœuds. */
   decodeOffer(offer: string): Promise<LnOfferView> {
-    return new Promise((resolve, reject) => {
-      const id = `decode-${Date.now()}`;
-      const worker = this.worker;
-      if (!worker) return reject(new Error('laboratoire inactif'));
-      const onMessage = (event: MessageEvent) => {
-        const data = event.data;
-        if (data?.type === 'offerInfo' && data.id === id) {
-          worker.removeEventListener('message', onMessage);
-          resolve(data.info as LnOfferView);
-        } else if (data?.type === 'error' && (data.message as string)?.startsWith('offer:')) {
-          worker.removeEventListener('message', onMessage);
-          reject(new Error(String(data.message).replace(/^offer:\s*/, '')));
-        }
-      };
-      worker.addEventListener('message', onMessage);
-      this.send({ type: 'decodeOffer', id, offer });
-      setTimeout(() => {
-        worker.removeEventListener('message', onMessage);
-        reject(new Error('délai de décodage dépassé'));
-      }, 15000);
-    });
+    const id = `decode-${Date.now()}`;
+    return this.request<LnOfferView>(
+      { type: 'decodeOffer', id, offer },
+      (data) => (data.type === 'offerInfo' && data.id === id ? (data.info as LnOfferView) : undefined),
+      'délai de décodage dépassé',
+    );
   }
 
   closeChannel(node: NodeKey, channelId: string): void {
@@ -489,9 +519,4 @@ export function msatToSats(msat: string | number | null | undefined): number {
   const value = typeof msat === 'string' ? Number(msat) : msat;
   if (!Number.isFinite(value)) return 0;
   return Math.floor((value ?? 0) / 1000);
-}
-
-/** Libellé i18n-ready d'un événement de labo. */
-export function eventKindKey(type: string): string {
-  return `labo.event.${type}`;
 }

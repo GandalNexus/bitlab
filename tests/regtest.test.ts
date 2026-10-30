@@ -263,7 +263,10 @@ describe('config du nœud local (garde anti-SSRF)', () => {
 describe('minage regtest : difficulté 1, gabarits continus', () => {
   it('REGTEST_MIN_BITS (0x207fffff) décode vers une cible quasi libre', () => {
     const target = compactBitsToTarget(REGTEST_MIN_BITS);
-    expect([...target.subarray(0, 3)]).toEqual([0xff, 0xff, 0x7f]);
+    // Mantisse 0x7fffff × 256^29 : cible big-endian standard « 7fffff » suivi
+    // de 29 octets nuls (la formule inversée produisait « ffff7f » + un
+    // décalage d'un octet dès que le MSB de la mantisse est nul).
+    expect([...target.subarray(0, 3)]).toEqual([0x7f, 0xff, 0xff]);
     expect(target.subarray(3).every((b) => b === 0)).toBe(true);
   });
 

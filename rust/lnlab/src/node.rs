@@ -98,6 +98,15 @@ fn channel_scid(channel: &ChannelDetails) -> Result<u64, &'static str> {
                 .ok_or("identifiant de canal indisponible")
 }
 
+/// CLTV minimum du dernier hop.
+///
+/// Les factures demandent souvent 18 blocs, mais un receveur LDK refuse tout
+/// HTLC dont l'expiration est plus proche que `HTLC_FAIL_BACK_BUFFER` (39
+/// blocs : marge de diffusion on-chain incluse — erreur « final CLTV expiry
+/// is too soon », code 0x400f). Le routeur aligne donc le CLTV envoyé sur la
+/// marge du receveur plus un coussin, quel que soit le delta annoncé.
+const FINAL_CLTV_MIN: u32 = lightning::chain::channelmonitor::HTLC_FAIL_BACK_BUFFER + 21;
+
 /// Routes every payment over the direct channel to the payee (single hop).
 ///
 /// Correct by construction for the lab: the only channel that can exist is
@@ -145,9 +154,17 @@ impl Router for DirectRouter {
                         node_features: NodeFeatures::empty(),
                         short_channel_id: channel_scid(channel)?,
                         channel_features: ChannelFeatures::empty(),
-                        // Last hop carries the full payment value.
-                        fee_msat: route_params.final_value_msat,
-                        cltv_expiry_delta: final_cltv.max(18),
+                        // Clear route: the last hop carries the full payment
+                        // value (its "fee" is the amount delivered). Blinded
+                        // route: the tail already carries the final value, so
+                        // any fee here would be added on top and double the
+                        // HTLC (15 000 msat offered were paid 30 000 msat).
+                        fee_msat: if blinded_tail.is_some() {
+                                0
+                        } else {
+                                route_params.final_value_msat
+                        },
+                        cltv_expiry_delta: final_cltv.max(FINAL_CLTV_MIN),
                         maybe_announced_channel: false,
                 };
                 Ok(Route {
