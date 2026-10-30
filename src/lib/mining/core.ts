@@ -51,10 +51,15 @@ export function compactBitsToTarget(bits: number): Uint8Array {
   const mantissa = bits & 0x007f_ffff;
   if (exponent < 3 || exponent > 35) throw new Error(`exposant nBits hors bornes : 0x${bits.toString(16)}`);
   const target = new Uint8Array(32);
-  const bytePos = exponent - 3; // position (0 = poids faible)
+  const bytePos = exponent - 3; // décalage (0 = poids faible) du LSB de la mantisse
+  // Mantisse (3 octets, MSB éventuellement nul — ex. 0x00ffff) × 256^bytePos :
+  // l'octet MSB de la mantisse se place à `bytePos + 2`, le LSB à `bytePos`.
+  // L'ancienne formule (`bytePos + k`) inversait l'ordre des 3 octets et
+  // décalait la cible d'un octet dès que le MSB est nul — les blocs minés
+  // contre 0x1d00ffff (BIP 94) auraient été invalides ~1 fois sur 256.
   for (let k = 0; k < 3; k++) {
     const byte = (mantissa >> (8 * (2 - k))) & 0xff;
-    const pos = bytePos + k;
+    const pos = bytePos + (2 - k);
     if (pos >= 0 && pos < 32) target[31 - pos] = byte;
   }
   return target;

@@ -275,13 +275,16 @@ pub fn target_from_bits_hex(bits_hex: &str) -> Result<String, JsValue> {
         return Err(JsValue::from_str("exposant nBits hors bornes"));
     }
     // value = mantissa × 256^(exponent − 3), truncated to 32 BE bytes.
-    let byte_pos = (exponent - 3) as i64; // position (0 = least significant)
+    let byte_pos = (exponent - 3) as i64; // shift (0 = least significant) of the mantissa LSB
     let mut target = [0u8; 32];
-    // Mantissa ≤ 0x7fffff: at most 3 bytes, written from most significant
-    // (k = 0) to least significant (k = 2), each at its position.
+    // Mantissa ≤ 0x7fffff: at most 3 bytes — the MSB (possibly zero, e.g.
+    // 0x00ffff) sits at `byte_pos + 2`, the LSB at `byte_pos`. The previous
+    // formula (`byte_pos + k`) reversed the 3 mantissa bytes and shifted the
+    // whole target by one byte whenever the MSB is zero: blocks mined
+    // against 0x1d00ffff (BIP 94) would have been invalid ~1/256 of the time.
     for k in 0..3usize {
         let byte = ((mantissa >> (8 * (2 - k))) & 0xff) as u8;
-        let pos = byte_pos + k as i64;
+        let pos = byte_pos + (2 - k) as i64;
         if pos >= 0 && pos < 32 {
             target[(31 - pos) as usize] = byte;
         }

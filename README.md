@@ -89,8 +89,7 @@ What you get on Regtest:
 ```
 src/
 ├── app/                    # Next.js App Router
-│   ├── api/bitcoin/        # Proxy Esplora — regex allow-list, 60 s cache
-│   ├── api/bitcoin/        # Esplora proxy (whitelist + tx broadcast + raw blocks)
+│   ├── api/bitcoin/        # Proxy Esplora (whitelist + tx broadcast + raw blocks)
 │   ├── guide/              # Developer documentation (/guide)
 │   └── page.tsx            # Lab shell (sidebar + header + modules)
 ├── components/

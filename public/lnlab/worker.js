@@ -214,12 +214,19 @@ async function boot(msg) {
 
 /* ────────────────────────── Message handlers ────────────────────────── */
 
+/** Poste une erreur en la rattachant à sa requête (requestId) quand elle en
+ * provient : le contrôleur n'apparie plus les erreurs par préfixe de
+ * message, donc deux requêtes concurrentes ne se volent plus leur rejet. */
+function fail(requestId, message) {
+  post({ type: 'error', message, ...(requestId !== undefined ? { requestId } : {}) });
+}
+
 const handlers = {
   async boot(msg) {
     try {
       await boot(msg);
     } catch (err) {
-      post({ type: 'error', message: `démarrage: ${err.message || err}` });
+      fail(undefined, `démarrage: ${err.message || err}`);
     }
   },
 
@@ -228,7 +235,7 @@ const handlers = {
       lab.connect_ab();
       runTick();
     } catch (err) {
-      post({ type: 'error', message: `liaison A-B: ${err.message || err}` });
+      fail(undefined, `liaison A-B: ${err.message || err}`);
     }
   },
 
@@ -240,7 +247,7 @@ const handlers = {
       // below surface as a rejected promise instead of a silent no-op.
       post({ type: 'channelRequested', userChannelId: msg.userChannelId });
     } catch (err) {
-      post({ type: 'error', message: `canal: ${err.message || err}` });
+      fail(msg.userChannelId, `canal: ${err.message || err}`);
     }
   },
 
@@ -248,8 +255,11 @@ const handlers = {
     try {
       lab.funding_transaction_generated(BigInt(msg.userChannelId), msg.hex);
       runTick();
+      // Ack : le contrôleur efface la carte de financement — un refus LDK
+      // émet une erreur avant cet ack et laisse la carte réessayable.
+      post({ type: 'fundingSubmitted', userChannelId: msg.userChannelId });
     } catch (err) {
-      post({ type: 'error', message: `financement: ${err.message || err}` });
+      fail(msg.userChannelId, `financement: ${err.message || err}`);
     }
   },
 
@@ -262,7 +272,7 @@ const handlers = {
       );
       post({ type: 'invoice', id: msg.id, bolt11 });
     } catch (err) {
-      post({ type: 'error', message: `facture: ${err.message || err}` });
+      fail(msg.id, `facture: ${err.message || err}`);
     }
   },
 
@@ -283,7 +293,7 @@ const handlers = {
       );
       post({ type: 'offer', id: msg.id, offer });
     } catch (err) {
-      post({ type: 'error', message: `offer: ${err.message || err}` });
+      fail(msg.id, `offer: ${err.message || err}`);
     }
   },
 
@@ -304,7 +314,7 @@ const handlers = {
       // decode_offer is a static wasm-bindgen method — call it on the class.
       post({ type: 'offerInfo', id: msg.id, info: LnLab.decode_offer(msg.offer) });
     } catch (err) {
-      post({ type: 'error', message: `offer: ${err.message || err}` });
+      fail(msg.id, `offer: ${err.message || err}`);
     }
   },
 
@@ -313,7 +323,7 @@ const handlers = {
       lab.close_channel(msg.node, msg.channelId);
       runTick();
     } catch (err) {
-      post({ type: 'error', message: `fermeture: ${err.message || err}` });
+      fail(undefined, `fermeture: ${err.message || err}`);
     }
   },
 

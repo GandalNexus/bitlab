@@ -100,9 +100,8 @@ interface:
 jobs:
   lint:       # ESLint — bun run lint
   typecheck:  # tsc --noEmit — bun run typecheck
-  test:       # Vitest — bun run test
+  test:       # Vitest — bun run test (100 % hors-ligne, WASM Lightning inclus)
   build:      # Next.js production build — bun run build
-  docs:       # internal doc links — python3 scripts/check_doc_links.py
   pr-title:   # Conventional Commits check on the pull request title
 ```
 
