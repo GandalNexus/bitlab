@@ -1,13 +1,3 @@
-/**
- * BitLab — Moteur regtest embarqué : routeur Esplora (fonctions pures).
- *
- * Traduit un chemin Esplora vers les projections de `RegtestChain`, sous la
- * forme exacte attendue par le client (mempool.ts) et le worker Lightning.
- * Aucun effet de bord : testable hors-ligne (cf. tests/regtest-engine.test.ts).
- *
- * Formes renvoyées : { status, type: 'json' | 'text' | 'bin', body } —
- * le proxy (/api/bitcoin) les convertit en NextResponse.
- */
 import { hex } from '@scure/base';
 import type { RegtestChain } from './chain';
 
@@ -19,20 +9,16 @@ export interface EsploraResult {
 
 const TXID_RX = /^[0-9a-f]{64}$/i;
 const HASH_RX = /^[0-9a-f]{64}$/i;
-const ADDR_RX = /^[a-zA-Z0-9]{6,90}$/; // bech32 max 90 — bcrt P2TR fait 64
+const ADDR_RX = /^[a-zA-Z0-9]{6,90}$/;
 
-/** Frais regtest : pas de marché de frais sur une chaîne privée (1 sat/vB). */
 const REGTEST_FEES = { fastestFee: 1, halfHourFee: 1, hourFee: 1, economyFee: 1, minimumFee: 1 };
 
 export function handleEsploraPath(chain: RegtestChain, path: string): EsploraResult {
-  // 1) Frais (statique).
   if (path === 'v1/fees/recommended') return json(200, REGTEST_FEES);
 
-  // 2) Tip.
   if (path === 'blocks/tip/height') return text(200, String(chain.tipHeight()));
   if (path === 'blocks/tip/hash') return text(200, chain.tipHash());
 
-  // 3) Adresses : solde, UTXO, historique — tous réels (index du moteur).
   const utxoMatch = path.match(/^address\/([a-zA-Z0-9]{6,90})\/utxo$/i);
   if (utxoMatch) {
     try {
@@ -58,7 +44,6 @@ export function handleEsploraPath(chain: RegtestChain, path: string): EsploraRes
     }
   }
 
-  // 4) Transactions.
   const txHexMatch = path.match(/^tx\/([0-9a-f]{64})\/hex$/i);
   if (txHexMatch) {
     const h = chain.txHex(txHexMatch[1]);
@@ -70,11 +55,8 @@ export function handleEsploraPath(chain: RegtestChain, path: string): EsploraRes
     return info ? json(200, info) : notFound('transaction inconnue');
   }
 
-  // 5) Blocs.
   const rawMatch = path.match(/^block\/([0-9a-f]{64})\/raw$/i);
   if (rawMatch) {
-    // Format consensus (compteur + marqueur SegWit au niveau du bloc) :
-    // les clients réels (LDK du labo, parseurs) rejettent la forme interne.
     const raw = chain.consensusBlockByHash(rawMatch[1]);
     return raw ? { status: 200, type: 'bin', body: hex.decode(raw) } : notFound('bloc hors rétention');
   }
@@ -95,13 +77,11 @@ export function handleEsploraPath(chain: RegtestChain, path: string): EsploraRes
     return hash ? text(200, hash) : notFound('aucun bloc à cette hauteur');
   }
 
-  // 6) Listes de blocs (résumés des n derniers).
   if (path === 'v1/blocks' || /^v1\/blocks\/\d{1,2}$/.test(path)) {
     const wanted = Number(path.split('/')[2] ?? 10) || 10;
     return json(200, chain.recentBlocks(Math.min(10, wanted)));
   }
 
-  // 7) Mempool.
   if (path === 'mempool') {
     const s = chain.mempoolStats();
     return json(200, { ...s, fee_histogram: [] });
@@ -111,7 +91,6 @@ export function handleEsploraPath(chain: RegtestChain, path: string): EsploraRes
   return json(400, { erreur: 'Chemin API non autorisé.' });
 }
 
-/** Détail d'un bloc (forme Esplora /block/{hash}, sous-ensemble utile). */
 function blockDetail(chain: RegtestChain, hash: string): Record<string, unknown> {
   const rec = chain.blockByHash(hash);
   const header = chain.headerHexByHash(hash);
@@ -152,7 +131,6 @@ function badAddress(err: unknown): EsploraResult {
   return json(400, { erreur: `adresse regtest invalide : ${(err as Error).message}` });
 }
 
-/** Garde réutilisée par les routes POST (txid/hex stricts). */
 export function isValidTxid(v: string): boolean {
   return TXID_RX.test(v);
 }

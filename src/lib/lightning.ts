@@ -1,13 +1,3 @@
-/**
- * BitLab — Lightning lab controller (browser-side LDK via WebAssembly).
- *
- * Replaces the former Python sidecar: the two LDK nodes run inside a Web
- * Worker (`/lnlab/worker.js`) backed by the `lnlab` WASM module compiled from
- * `rust/lnlab`. The main thread owns persistence (IndexedDB, zero-knowledge:
- * seeds and node state never leave the browser) and bridges funding events to
- * the user's wallets.
- */
-
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { hex } from '@scure/base';
 import { scriptToAddressOn } from './bitcoin/tx';
@@ -53,7 +43,6 @@ export interface LnPendingFunding {
   address: string | null;
 }
 
-/** Champs décodés d'une offer BOLT12 (lno1…), renvoyés par le WASM. */
 export interface LnOfferView {
   description: string;
   amountMsat: string;
@@ -114,8 +103,6 @@ class LnLabController {
   private listeners = new Set<() => void>();
   private worker: Worker | null = null;
   private network: LnNetId | null = null;
-  /** Chaîne des écritures IndexedDB : deux drains concurrents pouvaient
-   * s'écraser mutuellement et perdre des moniteurs de canaux. */
   private kvQueue: Promise<void> = Promise.resolve();
 
   getStatus = (): LnLabStatus => this.status;
@@ -147,9 +134,6 @@ class LnLabController {
         userChannelId: pending.userChannelId ?? '',
         valueSats: pending.valueSats ?? '0',
         outputScript: pending.outputScript ?? '',
-        // Adresse encodée pour le RÉSEAU du labo (bcrt1… sur regtest) —
-        // l'encodage testnet générique produisait une tb1… que le
-        // constructeur de transaction refuse sur la chaîne locale.
         address: net ? (scriptToAddressOn(scriptBytes, net) ?? null) : null,
       };
     }
@@ -158,8 +142,6 @@ class LnLabController {
     }
     this.patch({ events: merged, pendingFunding });
   }
-
-  /* ─────────────────── Cycle de vie ─────────────────── */
 
   async activate(network: LnNetId): Promise<void> {
     if (this.status.phase === 'booting' || this.status.phase === 'ready') return;
@@ -173,12 +155,6 @@ class LnLabController {
 
       const worker = new Worker('/lnlab/worker.js', { type: 'module' });
       this.worker = worker;
-      // Watchdog : un worker sans réponse (script non chargé, WASM bloqué) ne
-      // doit pas laisser le labo coincé en « démarrage… » pour toujours. Toute
-      // entrée du worker prouve qu'il vit et RÉARME le compteur — sinon le
-      // premier log « chargement du module… » (émis avant le fetch du WASM de
-      // 14 Mo) désarmait le watchdog définitivement et un fetch qui pendait
-      // laissait un spinner infini.
       let watchdog: ReturnType<typeof setTimeout> | null = null;
       const armWatchdog = () => {
         if (watchdog) clearTimeout(watchdog);
@@ -202,16 +178,12 @@ class LnLabController {
       };
       armWatchdog();
       worker.onmessage = (event) => {
-        // Le labo prêt a des timers internes qui prouvent sa vie ; le
-        // watchdog ne protège que la phase de démarrage.
         if (this.status.phase === 'booting') armWatchdog();
         else disarmWatchdog();
         this.onWorkerMessage(event.data);
       };
       worker.onerror = (event) => {
         disarmWatchdog();
-        // Les échecs de chargement du script arrivent sans message : afficher
-        // « worker: undefined » n'apprend rien — décrire la panne à la place.
         this.patch({
           phase: 'off',
           error: `worker: ${event.message || tSync('script du worker non chargé — rechargez la page et réessayez')}`,
@@ -227,9 +199,6 @@ class LnLabController {
         mode: restore ? 'restore' : 'fresh',
         seeds: { a: new Uint8Array(seeds.a), b: new Uint8Array(seeds.b) },
         kv: { a: this.kvToArray(kvA), b: this.kvToArray(kvB) },
-        // Regtest : en mode externe uniquement, la config du nœud local
-        // (hôte + identifiants RPC) voyage pré-encodée — le worker n'a pas
-        // accès à localStorage. Mode embarqué : chaîne du serveur BitLab.
         regtestHeader: network === 'regtest' && regtestMode() === 'external' ? regtestHeaderValue() : '',
       });
     } catch (err) {
@@ -256,7 +225,6 @@ class LnLabController {
     worker.postMessage({ type: 'stop' });
   }
 
-  /** Stops the lab AND wipes all local Lightning state (seeds, nodes, channels). */
   async reset(network: LnNetId): Promise<void> {
     this.deactivate();
     await idbDel(SEEDS_KEY(network));
@@ -301,8 +269,6 @@ class LnLabController {
     });
   }
 
-  /* ─────────────────── Messages du worker ─────────────────── */
-
   private onWorkerMessage(msg: {
     type: string;
     [field: string]: unknown;
@@ -337,9 +303,6 @@ class LnLabController {
         const network = this.network;
         if (!network) break;
         const entries = (msg.entries ?? []) as [string, string, string, string, Uint8Array | null][];
-        // Sérialise les écritures : deux drains concurrents rechargeaient
-        // chacun l'état IndexedDB, le mutaient et réécrivaient — le dernier
-        // gagnant pouvait effacer les moniteurs écrits par le premier.
         this.kvQueue = this.kvQueue
           .then(() => this.flushKv(network, entries))
           .catch((err) => this.pushLog('sys', `kv: ${(err as Error).message}`));
@@ -351,20 +314,12 @@ class LnLabController {
         break;
       }
       case 'fundingSubmitted':
-        // Ack du worker après `funding_transaction_generated` : la carte de
-        // financement peut disparaître — un refus LDK aurait émis une erreur
-        // avant cet ack et la carte reste alors réessayable.
         if (this.status.pendingFunding && String(msg.userChannelId ?? '') === this.status.pendingFunding.userChannelId) {
           this.patch({ pendingFunding: null });
         }
         break;
       case 'error': {
         const message = String(msg.message ?? 'erreur inconnue');
-        // Un échec pendant le démarrage (WASM indisponible, restauration
-        // impossible…) laissait la phase « booting » et le spinner à l'écran —
-        // l'erreur n'étant visible que dans un journal rendu seulement en
-        // phase « ready ». On remonte l'état de la phase pour que l'UI
-        // affiche la panne et propose de relancer.
         if (this.status.phase === 'booting') {
           this.patch({ phase: 'off', error: message });
         }
@@ -395,19 +350,11 @@ class LnLabController {
     await idbSet(KV_KEY(network, 'B'), perNode.B);
   }
 
-  /* ─────────────────── Actions ─────────────────── */
-
   private send(payload: Record<string, unknown>) {
     if (!this.worker || this.status.phase !== 'ready') return;
     this.worker.postMessage(payload);
   }
 
-  /** Envoie une requête au worker et résout sur la réponse portant le même
-   * `id` — les erreurs du worker portent désormais `requestId`, donc deux
-   * requêtes concurrentes de même famille (ex. createOffer + decodeOffer)
-   * ne se rejettent plus mutuellement sur la première erreur. Le filet de
-   * 15 s est annulé dès la réponse (les timers orphelins rejetaient des
-   * promesses déjà résolues et fuyaient des listeners). */
   private request<T>(
     payload: Record<string, unknown>,
     matchReply: (data: { type: string; [field: string]: unknown }) => T | undefined,
@@ -427,8 +374,6 @@ class LnLabController {
       const onMessage = (event: MessageEvent) => {
         const data = event.data as { type: string; requestId?: unknown; [field: string]: unknown };
         if (data?.type === 'error') {
-          // Ne rejette que la requête à qui appartient l'erreur : les
-          // erreurs globales (tick, liaison) restent au journal.
           if (data.requestId !== undefined && data.requestId !== id) return;
           cleanup();
           reject(new Error(String(data.message)));
@@ -449,8 +394,6 @@ class LnLabController {
     });
   }
 
-  /** Demande l'ouverture d'un canal A → B. Résout une fois LDK a accepté la
-   * négociation ; rejette avec le vrai message d'erreur sinon. */
   openChannel(valueSats: number, pushMsat: number): Promise<void> {
     const userChannelId = Date.now();
     return this.request<void>(
@@ -462,11 +405,6 @@ class LnLabController {
 
   submitFundingTx(hexTx: string, userChannelId: string): void {
     this.send({ type: 'fundingTx', hex: hexTx, userChannelId });
-    // pendingFunding reste affiché jusqu'à l'accusé du worker
-    // (`fundingSubmitted`) : si LDK refuse la transaction (« aucune demande
-    // de financement en attente », output script différent…), la carte de
-    // financement reste utilisable pour réessayer au lieu de disparaître
-    // sans retour.
   }
 
   createInvoice(node: NodeKey, amountMsat: number | null, description: string, expirySecs: number): Promise<string> {
@@ -482,7 +420,6 @@ class LnLabController {
     this.send({ type: 'payInvoice', node: node === 'A' ? 0 : 1, invoice, amountMsat });
   }
 
-  /** Crée une offer BOLT12 (lno1…) signée par le nœud choisi. */
   createOffer(node: NodeKey, amountMsat: number | null, description: string): Promise<string> {
     const id = `offer-${Date.now()}`;
     return this.request<string>(
@@ -492,12 +429,10 @@ class LnLabController {
     );
   }
 
-  /** Paie une offer BOLT12 : demande de facture via onion messages puis HTLC. */
   payOffer(node: NodeKey, offer: string, amountMsat: number | null, payerNote: string | null): void {
     this.send({ type: 'payOffer', node: node === 'A' ? 0 : 1, offer, amountMsat, payerNote });
   }
 
-  /** Décode une offer BOLT12 sans toucher à l'état des nœuds. */
   decodeOffer(offer: string): Promise<LnOfferView> {
     const id = `decode-${Date.now()}`;
     return this.request<LnOfferView>(
@@ -512,7 +447,6 @@ class LnLabController {
   }
 }
 
-/** Singleton partagé par toutes les vues du labo Lightning. */
 export const lnLab = new LnLabController();
 
 export function msatToSats(msat: string | number | null | undefined): number {

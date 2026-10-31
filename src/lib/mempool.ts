@@ -1,10 +1,3 @@
-/**
- * BitLab — Client API blockchain (Connectivité, cf. 3.2 du cahier des charges)
- * Appels vers les nœuds publics Esplora / mempool.space du réseau actif (mainnet,
- * testnet3, testnet4, signet) via un proxy Edge côté serveur (/api/bitcoin) —
- * agrégation de données publiques uniquement.
- * AUCUNE donnée sensible (clé privée, mnémonique) ne transite par ce client.
- */
 import { useLabStore } from './store';
 import { currentNet, NETWORKS } from './networks';
 import { regtestHeaders } from './regtest';
@@ -53,7 +46,6 @@ export interface AddressUtxo {
   vout: number;
   value: number;
   status: { confirmed: boolean; block_height?: number };
-  /** Présent sur le moteur regtest embarqué : sortie de coinbase (maturité 100 blocs). */
   isCoinbase?: boolean;
 }
 
@@ -69,9 +61,6 @@ export interface TxInfo {
   status: { confirmed: boolean; block_height?: number; block_time?: number };
 }
 
-/** Détail d'un bloc (forme Esplora /block/{hash}) — inclut la liste des txids
- * (moteur regtest embarqué ; sur les réseaux publics, l'UI renvoie vers
- * mempool.space au lieu de déplier le bloc localement). */
 export interface BlockDetail {
   id: string;
   height: number;
@@ -85,12 +74,10 @@ export interface BlockDetail {
   txids: string[];
 }
 
-/** Base de l'explorateur public du réseau actif (liens sortants de l'UI). */
 export function explorerBase(): string {
   return NETWORKS[currentNet()].explorer;
 }
 
-/** Journalise chaque appel réseau (module « réseau » du journal d'activité). */
 function log(kind: 'http' | 'error', label: string, detail: Record<string, unknown>) {
   useLabStore.getState().addLog({
     kind,
@@ -100,13 +87,10 @@ function log(kind: 'http' | 'error', label: string, detail: Record<string, unkno
   });
 }
 
-/** GET générique via le proxy Edge Next.js (sanitisation du chemin côté serveur). */
 export async function mpGet<T>(path: string): Promise<T> {
   const net = currentNet();
   const t0 = performance.now();
   try {
-    // Regtest : la config du nœud local (hôte + identifiants RPC) voyage par
-    // en-tête — jamais dans l'URL, elle n'apparaît dans aucun log d'accès.
     const headers = net === 'regtest' ? regtestHeaders() : {};
     const res = await fetch(`/api/bitcoin?path=${encodeURIComponent(path)}&network=${net}`, {
       cache: 'no-store',
@@ -128,8 +112,6 @@ export async function mpGet<T>(path: string): Promise<T> {
   }
 }
 
-/** GET texte brut (hex de transaction, hash d'en-tête…) — aucune analyse JSON :
- * les points de terminaison /hex répondent en text/plain, pas en JSON. */
 export async function mpGetText(path: string): Promise<string> {
   const net = currentNet();
   const t0 = performance.now();
@@ -155,7 +137,6 @@ export async function mpGetText(path: string): Promise<string> {
   }
 }
 
-/** GET forcé sur un réseau précis (ex. statistiques Lightning mondiales = mainnet). */
 export async function mpGetOn<T>(net: string, path: string): Promise<T> {
   const res = await fetch(`/api/bitcoin?path=${encodeURIComponent(path)}&network=${net}`, { cache: 'no-store' });
   if (!res.ok) {
@@ -165,7 +146,6 @@ export async function mpGetOn<T>(net: string, path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Diffusion d'une transaction brute signée (POST hex → txid) sur le réseau actif. */
 export async function mpBroadcast(rawHex: string): Promise<string> {
   const net = currentNet();
   const t0 = performance.now();
@@ -202,21 +182,16 @@ export interface LightningStats {
   };
 }
 
-/** API structurée du laboratoire (réseau actif). */
 export const api = {
   fees: () => mpGet<RecommendedFees>('v1/fees/recommended'),
   tipHeight: () => mpGet<number>('blocks/tip/height'),
-  // v1/blocks (sans argument) renvoie les 10 derniers blocs, du plus récent au plus ancien.
   recentBlocks: () => mpGet<BlockSummary[]>('v1/blocks'),
   mempool: () => mpGet<MempoolStats>('mempool'),
   mempoolRecent: () => mpGet<RecentTx[]>('mempool/recent'),
   address: (address: string) => mpGet<AddressInfo>(`address/${address}`),
   utxos: (address: string) => mpGet<AddressUtxo[]>(`address/${address}/utxo`),
   tx: (txid: string) => mpGet<TxInfo>(`tx/${txid}`),
-  // Hex brut d'une transaction (text/plain) — anatomie locale sur regtest.
   txHex: (txid: string) => mpGetText(`tx/${txid}/hex`),
-  // Détail d'un bloc avec sa liste de txids (moteur regtest embarqué).
   block: (hash: string) => mpGet<BlockDetail>(`block/${hash}`),
-  // Statistiques Lightning mondiales (mempool.space explore le mainnet).
   lightningStats: () => mpGetOn<LightningStats>('mainnet', 'v1/lightning/statistics/latest'),
 };

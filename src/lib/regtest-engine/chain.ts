@@ -1,18 +1,3 @@
-/**
- * BitLab — Moteur de chaîne regtest embarqué : la chaîne.
- *
- * Un nœud regtest minimal qui vit dans le processus serveur : blocs à
- * difficulté 1 (PoW double-SHA256 réelle), UTXO set, mempool, index
- * d'adresses, subvention avec halving (150 blocs), maturité coinbase
- * (100 confirmations), BIP 34, racine de Merkle multi-transactions.
- * Les dépenses standard (P2WPKH / P2TR key-path / P2PKH) sont vérifiées
- * par signature (cf. verify.ts) ; les dépenses LDK (P2WSH 2-de-2, CSV)
- * passent une vérification structurelle complète (UTXO, double-dépense,
- * conservation, maturité).
- *
- * Discipline mémoire : Maps bornées (plafonds de params.ts), persistance
- * JSON différée côté server.ts, aucune minuterie, aucune fuite indexable.
- */
 import { hex } from '@scure/base';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
@@ -50,15 +35,12 @@ import {
 } from './txparse';
 import { verifyInput, type VerifyPrevout } from './verify';
 
-/* ─────────────────── Types publics ─────────────────── */
-
 export interface BlockRecord {
   hash: string;
   headerHex: string;
   height: number;
   time: number;
   txids: string[];
-  /** Bloc complet (hex) — libéré au-delà de la fenêtre de rétention. */
   raw: string | null;
 }
 
@@ -77,7 +59,7 @@ export interface TxRecord {
 
 interface Utxo {
   valueSats: number;
-  script: string; // hex
+  script: string;
   height: number;
   isCoinbase: boolean;
 }
@@ -101,15 +83,11 @@ export interface SerializedChain {
   mempool: TxRecord[];
 }
 
-/* ─────────────────── Adresses / scripts ─────────────────── */
-
-/** ScriptPubKey d'une adresse regtest (bcrt / m / n / 2) — lève si invalide. */
 export function addressToScriptBcrt(address: string): Uint8Array {
   const decoded = Address(REGTEST_NETWORK).decode(address.trim());
   return OutScript.encode(decoded);
 }
 
-/** Adresse lisible d'un scriptPubKey (undefined si non standard). */
 export function scriptToAddressBcrt(script: Uint8Array): string | undefined {
   try {
     const decoded = OutScript.decode(script);
@@ -119,8 +97,6 @@ export function scriptToAddressBcrt(script: Uint8Array): string | undefined {
     return undefined;
   }
 }
-
-/* ─────────────────── Aides internes ─────────────────── */
 
 const GENESIS_TXID = '4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b';
 
@@ -133,7 +109,6 @@ function sha256d(data: Uint8Array): Uint8Array {
   return sha256(sha256(data));
 }
 
-/** Compare un digest d'en-tête (ordre interne) à la cible 32 octets. */
 function meetsTarget(digest: Uint8Array, target: Uint8Array): boolean {
   for (let i = 0; i < 32; i++) {
     if (digest[i] < target[i]) return true;
@@ -158,26 +133,22 @@ function concatBytes(...chunks: Uint8Array[]): Uint8Array {
   return out;
 }
 
-/** Transaction coinbase canonique : version 2, entrée unique (scriptSig
- * BIP 34 + tag), sortie unique = subvention + frais, locktime 0. */
 function buildCoinbaseTx(height: number, scriptSig: Uint8Array, valueSats: number, payoutScript: Uint8Array): string {
   const chunks: number[] = [];
-  chunks.push(...u32leBytes(2)); // version 2
-  chunks.push(0x01); // 1 entrée
-  for (let i = 0; i < 32; i++) chunks.push(0x00); // prevout nul
-  chunks.push(...u32leBytes(0xffffffff)); // index
+  chunks.push(...u32leBytes(2));
+  chunks.push(0x01);
+  for (let i = 0; i < 32; i++) chunks.push(0x00);
+  chunks.push(...u32leBytes(0xffffffff));
   chunks.push(...writeVarint(scriptSig.length));
   for (const b of scriptSig) chunks.push(b);
-  chunks.push(...u32leBytes(0xffffffff)); // séquence finale
-  chunks.push(0x01); // 1 sortie
+  chunks.push(...u32leBytes(0xffffffff));
+  chunks.push(0x01);
   chunks.push(...u64leBytes(valueSats));
   chunks.push(...writeVarint(payoutScript.length));
   for (const b of payoutScript) chunks.push(b);
-  chunks.push(...u32leBytes(0)); // locktime
+  chunks.push(...u32leBytes(0));
   return hex.encode(new Uint8Array(chunks));
 }
-
-/* ─────────────────── Chaîne ─────────────────── */
 
 export class RegtestChain {
   private blocks = new Map<string, BlockRecord>();
@@ -189,7 +160,6 @@ export class RegtestChain {
   private mempool = new Map<string, TxRecord>();
   private mempoolSpends = new Map<string, string>();
 
-  /** Faucet : clé + script — résident exclusivement côté serveur. */
   private faucetPrivHex!: string;
   private faucetScriptHex!: string;
 
@@ -201,8 +171,6 @@ export class RegtestChain {
     this.faucetPrivHex = hex.encode(crypto.getRandomValues(new Uint8Array(32)));
     this.faucetScriptHex = hex.encode(this.faucetScript());
     this.installGenesis();
-    // Préminage faucet : 101 blocs → les deux premiers coinbase sont mûrs
-    // (100 tBTC) dès la création de la chaîne, le reste mûrit ensuite.
     this.mineTo(null, FAUCET_PREMINE_BLOCKS);
   }
 
@@ -239,8 +207,6 @@ export class RegtestChain {
     });
   }
 
-  /* ── Lecture : tip / blocs ── */
-
   tipHeight(): number {
     return this.heightHash.length - 1;
   }
@@ -276,12 +242,6 @@ export class RegtestChain {
     return this.blocks.get(hash.toLowerCase())?.raw ?? null;
   }
 
-  /** Bloc au format attendu par les parseurs consensus Rust (bitcoin crate /
-   * LDK) : en-tête + compteur de transactions, chaque tx gardant sa forme
-   * autonome (le marqueur/drapeau SegWit suit sa version — le décodeur la
-   * détecte par un compteur d'entrées nul). Le stockage interne omet le
-   * compteur : sans lui, LDK refuse le bloc (« bloc non décodable ») et
-   * aucun canal ne confirme jamais. */
   consensusBlockByHash(hash: string): string | null {
     const rec = this.blocks.get(hash.toLowerCase());
     if (!rec || rec.raw === null) return null;
@@ -297,7 +257,6 @@ export class RegtestChain {
     return hex.encode(concatBytes(bytes.slice(0, 80), new Uint8Array(writeVarint(count)), bytes.slice(80)));
   }
 
-  /** Résumés des `n` derniers blocs (plus récent d'abord — forme Esplora). */
   recentBlocks(n = 10): { id: string; height: number; timestamp: number; tx_count: number; size: number }[] {
     const out: { id: string; height: number; timestamp: number; tx_count: number; size: number }[] = [];
     for (let h = this.tipHeight(); h >= 1 && out.length < n; h--) {
@@ -309,8 +268,6 @@ export class RegtestChain {
     }
     return out;
   }
-
-  /* ── Lecture : mempool ── */
 
   mempoolStats(): { count: number; vsize: number; total_fee: number } {
     let vsize = 0;
@@ -343,8 +300,6 @@ export class RegtestChain {
     }
   }
 
-  /* ── Lecture : transactions ── */
-
   txByTxid(txid: string): TxRecord | null {
     const id = txid.toLowerCase();
     return this.txs.get(id) ?? this.mempool.get(id) ?? null;
@@ -355,7 +310,6 @@ export class RegtestChain {
     return rec?.hex || null;
   }
 
-  /** Vue Esplora d'une transaction (prevouts reconstruits quand connus). */
   txInfo(txid: string): unknown {
     const rec = this.txByTxid(txid);
     if (!rec || !rec.hex) return null;
@@ -408,7 +362,6 @@ export class RegtestChain {
     };
   }
 
-  /** UTXO courant, ou sortie historique reconstruite depuis la tx source. */
   private outputOf(txid: string, vout: number): { script: string; valueSats: number } | null {
     const utxo = this.utxos.get(`${txid}:${vout}`);
     if (utxo) return { script: utxo.script, valueSats: utxo.valueSats };
@@ -424,8 +377,6 @@ export class RegtestChain {
     }
   }
 
-  /* ── Lecture : adresses ── */
-
   addressInfo(address: string): {
     address: string;
     chain_stats: { funded_txo_sum: number; spent_txo_sum: number; tx_count: number };
@@ -437,14 +388,14 @@ export class RegtestChain {
     let spent = 0;
     for (const txid of txids) {
       const rec = this.txs.get(txid);
-      if (!rec?.hex) continue; // tx ancienne purgée — borné (rétention)
+      if (!rec?.hex) continue;
       let parsed: ParsedTx;
       try {
         parsed = parseTx(hex.decode(rec.hex));
       } catch {
         continue;
       }
-      if (rec.height === null) continue; // mempool : compte dans mempool_stats
+      if (rec.height === null) continue;
       for (const out of parsed.outputs) {
         if (hex.encode(out.script) === scriptHex) funded += out.valueSats;
       }
@@ -488,8 +439,6 @@ export class RegtestChain {
         vout,
         value: u.valueSats,
         status: u.height > 0 ? { confirmed: true, block_height: u.height } : { confirmed: false },
-        // Champ additionnel (hors forme Esplora stricte) : permet à l'UI
-        // d'afficher la maturité des coinbase (100 blocs de consensus).
         isCoinbase: u.isCoinbase,
       });
     }
@@ -504,12 +453,9 @@ export class RegtestChain {
       const info = this.txInfo(id);
       if (info) out.push(info);
     }
-    return out.reverse(); // plus récent d'abord (forme Esplora)
+    return out.reverse();
   }
 
-  /* ── Faucet ── */
-
-  /** Solde du pool faucet : mûr + immature (coinbase non encore mûres). */
   faucetBalance(): { matureSats: number; immatureSats: number } {
     let mature = 0;
     let immature = 0;
@@ -523,10 +469,6 @@ export class RegtestChain {
     return { matureSats: mature, immatureSats: immature };
   }
 
-  /**
-   * Distribue `sats` à `address` depuis le pool faucet (vraie transaction
-   * P2WPKH signée côté serveur) puis mine 1 bloc pour la confirmer.
-   */
   faucetSend(address: string, sats = FAUCET_DEFAULT_SATS): {
     txid: string;
     feeSats: number;
@@ -542,7 +484,6 @@ export class RegtestChain {
     const destScript = addressToScriptBcrt(address);
     const spendHeight = this.tipHeight() + 1;
 
-    // Sélection des UTXO faucet mûrs (les plus gros d'abord).
     const candidates: { key: string; value: number }[] = [];
     for (const op of this.scriptUtxos.get(this.faucetScriptHex) ?? []) {
       const u = this.utxos.get(op);
@@ -551,7 +492,7 @@ export class RegtestChain {
       candidates.push({ key: op, value: u.valueSats });
     }
     candidates.sort((a, b) => b.value - a.value);
-    const feeEstimate = 2_500; // ~2 entrées + 2 sorties P2WPKH, large marge
+    const feeEstimate = 2_500;
     const picked: { key: string; value: number }[] = [];
     let totalIn = 0;
     for (const c of candidates) {
@@ -563,7 +504,6 @@ export class RegtestChain {
       throw new ChainError('pool faucet insuffisant — minez des blocs supplémentaires (onglet Mineur)');
     }
 
-    // Construction + signature réelle via btc-signer.
     const faucetScript = hex.decode(this.faucetScriptHex);
     const tx = new Transaction();
     for (const p of picked) {
@@ -588,14 +528,6 @@ export class RegtestChain {
     };
   }
 
-  /* ── Écriture : mempool ── */
-
-  /**
-   * Accepte une transaction brute signée dans le mempool : existence des
-   * UTXO, anti double-dépense (chaîne + mempool), maturité coinbase,
-   * conservation des montants, frais minimaux (1 sat/vB), poids standard,
-   * vérification des signatures des entrées standard.
-   */
   acceptTx(rawHex: string): { txid: string; feeSats: number; vsize: number } {
     const clean = rawHex.trim().toLowerCase();
     let parsed: ParsedTx;
@@ -660,15 +592,9 @@ export class RegtestChain {
         if (this.mempoolSpends.get(op) === txid) this.mempoolSpends.delete(op);
       }
     } catch {
-      /* hex corrompu — entrée retirée quand même */
     }
   }
 
-  /**
-   * Vérifie les entrées d'une tx contre l'état courant ; retourne les frais.
-   * Mode 'mempool' : tout conflit est une erreur. Mode 'block' : un conflit
-   * avec une tx du mempool évince celle-ci (règle Core : le bloc gagne).
-   */
   private validateTxInputs(
     tx: ParsedTx,
     spendHeight: number,
@@ -678,9 +604,6 @@ export class RegtestChain {
   ): number {
     let totalIn = 0;
     const prevouts: VerifyPrevout[] = [];
-    // Passe 1 — résolution des UTXO et règles d'état (existence, double-dépense,
-    // maturité coinbase). Les prevouts collectés alimentent la passe 2 : le
-    // sighash BIP 341 agrège montants et scripts de TOUTES les entrées.
     for (let i = 0; i < tx.inputs.length; i++) {
       const inp = tx.inputs[i];
       const op = `${inp.txid}:${inp.vout}`;
@@ -692,7 +615,7 @@ export class RegtestChain {
       const mempoolOwner = this.mempoolSpends.get(op);
       if (mempoolOwner !== undefined && mempoolOwner !== tx.txid) {
         if (mode === 'mempool') throw new ChainError(`double-dépense mempool (entrée ${i})`);
-        evict?.add(mempoolOwner); // le bloc confirmé prime sur le mempool
+        evict?.add(mempoolOwner);
       }
       if (spentInBlock?.has(op)) throw new ChainError(`double-dépense intra-bloc (entrée ${i})`);
       if (utxo.isCoinbase && spendHeight - utxo.height < COINBASE_MATURITY) {
@@ -703,7 +626,6 @@ export class RegtestChain {
       totalIn += utxo.valueSats;
       spentInBlock?.add(op);
     }
-    // Passe 2 — vérification cryptographique réelle des signatures standard.
     for (let i = 0; i < tx.inputs.length; i++) {
       const verdict = verifyInput(tx, i, prevouts);
       if (!verdict.ok) throw new ChainError(`entrée ${i} refusée : ${verdict.reason ?? 'signature invalide'}`);
@@ -716,13 +638,6 @@ export class RegtestChain {
     return fee;
   }
 
-  /* ── Écriture : minage ── */
-
-  /**
-   * Mine `n` blocs à difficulté 1. La coinbase est payée à `payScript`
-   * (défaut : adresse du faucet) et le mempool est empaqueté par taux de
-   * frais décroissant — exactement la logique d'un mineur réel.
-   */
   mineTo(payScript: Uint8Array | null, n: number): MinedBlock[] {
     const count = Math.max(1, Math.min(5_000, Math.floor(n)));
     const payout = payScript ?? this.faucetScript();
@@ -736,7 +651,6 @@ export class RegtestChain {
   private mineOne(payout: Uint8Array): MinedBlock {
     const height = this.tipHeight() + 1;
 
-    // Empaquetage du mempool (taux de frais décroissant, marge coinbase).
     const byRate = [...this.mempool.values()].sort(
       (a, b) => (b.feeSats ?? 0) / b.weight - (a.feeSats ?? 0) / a.weight,
     );
@@ -750,7 +664,6 @@ export class RegtestChain {
       packedFee += rec.feeSats ?? 0;
     }
 
-    // Coinbase : BIP 34 + tag d'unicité, sortie unique subvention + frais.
     const subsidy = blockSubsidy(height);
     const tag = new Uint8Array([
       ...new TextEncoder().encode('/BitLab/'),
@@ -763,7 +676,6 @@ export class RegtestChain {
       payout,
     );
 
-    // En-tête : version, prev, merkle, time (MTP-friendly), nBits, nonce.
     const prevInternal = hex.decode(this.tipHash()).reverse();
     const merkle = merkleRoot([txIdOfHex(coinbaseHex), ...packed.map((p) => p.txid)]);
     const time = Math.max(this.tipTime() + 1, Math.floor(Date.now() / 1000));
@@ -787,11 +699,6 @@ export class RegtestChain {
     return this.connectValidatedBlock(headerHex, hash, [coinbaseHex, ...packed.map((p) => p.hex)]);
   }
 
-  /**
-   * Connexion d'un bloc miné dans le navigateur (route /api/mine/submit) :
-   * validation complète identique au minage interne — PoW, chaînage,
-   * merkle, BIP 34, maturité, conservation, double-dépense.
-   */
   connectRawBlock(blockHex: string): MinedBlock {
     const bytes = hex.decode(blockHex.trim().toLowerCase());
     if (bytes.length < 80 + 60) throw new ChainError('bloc trop court (en-tête + coinbase attendus)');
@@ -817,17 +724,12 @@ export class RegtestChain {
     return this.connectValidatedBlock(hex.encode(header), hash, txHexes);
   }
 
-  /**
-   * Validation complète puis connexion d'un bloc — chemin unique partagé
-   * par le minage interne et les blocs minés dans le navigateur.
-   */
   private connectValidatedBlock(headerHex: string, hash: string, txHexes: string[]): MinedBlock {
     if (this.blocks.has(hash)) throw new ChainError('bloc déjà connu');
     const header = hex.decode(headerHex);
     const view = new DataView(header.buffer, header.byteOffset, header.byteLength);
     const height = this.tipHeight() + 1;
 
-    // 1) Chaînage, difficulté fixe, PoW réelle.
     const prevDisplay = hex.encode(header.slice(4, 36).reverse());
     if (prevDisplay !== this.tipHash()) {
       throw new ChainError('hash précédent ≠ tip courant (branche orpheline refusée)');
@@ -838,7 +740,6 @@ export class RegtestChain {
       throw new ChainError('hash au-dessus de la cible — PoW insuffisante');
     }
 
-    // 2) Horodatage : plausibilité + médiane des 11 derniers (MTP).
     const time = view.getUint32(68, true);
     if (time > Math.floor(Date.now() / 1000) + MAX_FUTURE_TIME_SEC) {
       throw new ChainError('horodatage trop loin dans le futur');
@@ -851,7 +752,6 @@ export class RegtestChain {
     }
     if (time <= median(lastTimes)) throw new ChainError('horodatage ≤ médiane MTP des 11 derniers blocs');
 
-    // 3) Transactions : coinbase unique en tête.
     if (txHexes.length === 0) throw new ChainError('bloc sans transaction');
     const parsedTxs: ParsedTx[] = txHexes.map((h) => {
       try {
@@ -866,12 +766,10 @@ export class RegtestChain {
       if (parsedTxs[i].isCoinbase) throw new ChainError(`coinbase supplémentaire en position ${i}`);
     }
 
-    // 4) Racine de Merkle.
     if (hex.encode(merkleRoot(parsedTxs.map((t) => t.txid))) !== hex.encode(header.slice(36, 68))) {
       throw new ChainError('racine de Merkle ≠ champ de l’en-tête');
     }
 
-    // 5) BIP 34 : la coinbase annonce sa hauteur.
     const heightPush = bip34Script(height);
     const scriptSig = parsedTxs[0].inputs[0].scriptSig;
     if (scriptSig.length < heightPush.length) throw new ChainError('scriptSig coinbase trop court (BIP 34)');
@@ -879,7 +777,6 @@ export class RegtestChain {
       if (scriptSig[i] !== heightPush[i]) throw new ChainError('préfixe BIP 34 absent de la coinbase');
     }
 
-    // 6) Dépenses des tx non-coinbase (état + intra-bloc) + frais réels.
     const spentInBlock = new Set<string>();
     const evict = new Set<string>();
     const fees: number[] = [0];
@@ -890,7 +787,6 @@ export class RegtestChain {
     let feesTotal = 0;
     for (let i = 1; i < fees.length; i++) feesTotal += fees[i];
 
-    // 7) Coinbase : plafond = subvention + frais.
     let payout = 0;
     for (const out of parsedTxs[0].outputs) payout += out.valueSats;
     const subsidy = blockSubsidy(height);
@@ -898,7 +794,6 @@ export class RegtestChain {
       throw new ChainError(`coinbase excessive (${payout} > subvention ${subsidy} + frais ${feesTotal})`);
     }
 
-    // 8) Connexion : UTXO set, index, blocs.
     this.blocks.set(hash, {
       hash,
       headerHex,
@@ -948,11 +843,9 @@ export class RegtestChain {
       });
     }
 
-    // Mempool : retrait des tx confirmées puis des conflits évincés.
     for (const tx of parsedTxs.slice(1)) this.dropMempoolTx(tx.txid);
     for (const id of evict) this.dropMempoolTx(id);
 
-    // Rétention mémoire.
     this.prune();
 
     return { hash, height, txCount: parsedTxs.length, subsidySats: subsidy, feeSats: feesTotal };
@@ -961,14 +854,13 @@ export class RegtestChain {
   private indexAddr(scriptHex: string, txid: string): void {
     let list = this.addrTxs.get(scriptHex);
     if (!list) {
-      if (this.addrTxs.size >= MAX_INDEXED_ADDRESSES) return; // borne documentée
+      if (this.addrTxs.size >= MAX_INDEXED_ADDRESSES) return;
       list = [];
       this.addrTxs.set(scriptHex, list);
     }
     if (!list.includes(txid)) list.push(txid);
   }
 
-  /** Libère les blocs au-delà de la fenêtre de rétention (headers gardés). */
   private prune(): void {
     const floorHeight = this.tipHeight() - MAX_RETAINED_BLOCKS;
     if (floorHeight <= 0) return;
@@ -989,8 +881,6 @@ export class RegtestChain {
       }
     }
   }
-
-  /* ── Vue d'ensemble (route /api/regtest/info) ── */
 
   info(): {
     height: number;
@@ -1015,8 +905,6 @@ export class RegtestChain {
       genesisHash: REGTEST_GENESIS_HASH,
     };
   }
-
-  /* ── Persistance ── */
 
   serialize(): SerializedChain {
     return {
@@ -1052,13 +940,11 @@ export class RegtestChain {
         for (const inp of parsed.inputs) this.mempoolSpends.set(`${inp.txid}:${inp.vout}`, m.txid);
         for (const out of parsed.outputs) this.indexAddr(hex.encode(out.script), m.txid);
       } catch {
-        /* tx persistée corrompue — ignorée */
       }
     }
   }
 }
 
-/** txid d'une tx brute (réutilisée pour la coinbase fraîchement construite). */
 function txIdOfHex(txHex: string): string {
   return parseTx(hex.decode(txHex)).txid;
 }

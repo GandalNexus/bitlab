@@ -1,16 +1,3 @@
-/**
- * BitLab — Testnet4 miner controller in-browser.
- *
- * Watches tip via Esplora proxy (/api/bitcoin), waits for BIP 94
- * minimum-difficulty windows (tip aged >20 min), assembles template
- * (coinbase → active wallet address), distributes nonce ranges to Web Workers
- * (public/miner/worker.js), and broadcasts found blocks via /api/mine/submit
- * (minimal P2P handshake on server Node).
- *
- * Memory discipline: at most MAX_THREADS short-lived workers (terminate on stop),
- * no unbounded history, single watch timer. No private keys leave browser — coinbase
- * references only public address supplied by user.
- */
 import { hex } from '@scure/base';
 import { addressToScript } from '../bitcoin/tx';
 import { currentNet, type NetId } from '../networks';
@@ -47,7 +34,7 @@ export interface MinerStatus {
   address: string | null;
   threads: number;
   hashes: number;
-  hashrate: number; // H/s (moyenne glissante)
+  hashrate: number;
   window: WindowStatus | null;
   nextHeight: number | null;
   tipAgeSec: number | null;
@@ -58,7 +45,6 @@ export interface MinerStatus {
 
 const MAX_THREADS = 8;
 const TIP_POLL_TESTNET4_MS = 20_000;
-/** Regtest : le tip avance à chaque bloc miné — sondage rapide pour enchaîner. */
 const TIP_POLL_REGTEST_MS = 2_000;
 const CONF_POLL_MS = 120_000;
 const MAX_BLOCKS_TRACKED = 6;
@@ -98,7 +84,6 @@ class MinerController {
   private confTimer: ReturnType<typeof setInterval> | null = null;
   private sessions: WorkerSession[] = [];
   private jobIdSeq = 0;
-  /** Réseau miné — verrouillé au démarrage, revalidé à chaque sondage. */
   private net: NetId = 'testnet4';
   private template: { header76Hex: string; txHex: string; tipHash: string; height: number; target: Uint8Array; subsidySats: number } | null = null;
   private hashrateWindow: { at: number; hashes: number } = { at: 0, hashes: 0 };
@@ -126,9 +111,6 @@ class MinerController {
     });
   }
 
-  /* ──────────────────────── Cycle de vie ──────────────────────── */
-
-  /** Démarre la surveillance + minage vers `address` (testnet4 BIP 94 ou regtest local). */
   start(address: string, threads = 4, net: NetId = 'testnet4'): void {
     if (this.status.phase !== 'off' && this.status.phase !== 'error') return;
     const count = Math.max(1, Math.min(MAX_THREADS, threads));
@@ -174,7 +156,6 @@ class MinerController {
     }
   }
 
-  /** Recalcule une vue i18n-friendly du suivi des confirmations. */
   private startConfirmationWatch() {
     if (this.confTimer) return;
     this.confTimer = setInterval(() => void this.refreshConfirmations(), CONF_POLL_MS);
@@ -187,8 +168,6 @@ class MinerController {
       ...b,
       confirmations: Math.max(0, tipHeight - b.height + 1),
     }));
-    // Un bloc complètement mûr disparaît de la liste (l'affichage passe au
-    // portefeuille, qui voit la balance réelle via l'explorateur).
     const kept = updated.filter((b) => b.confirmations < COINBASE_MATURITY);
     this.patch({ blocks: kept });
     if (kept.length === 0 && this.confTimer) {
@@ -196,8 +175,6 @@ class MinerController {
       this.confTimer = null;
     }
   }
-
-  /* ──────────────────────── Chaîne & fenêtres ──────────────────────── */
 
   private async proxy(path: string): Promise<string | null> {
     const res = await fetch(`/api/bitcoin?network=${this.net}&path=${encodeURIComponent(path)}`, {
@@ -226,14 +203,12 @@ class MinerController {
       const bits = headerU32(header, 72);
       return { hash, height, time, bits };
     } catch {
-      return null; // réseau indisponible — prochaine sonde
+      return null;
     }
   }
 
   private async pollTip(): Promise<void> {
     if (this.status.phase === 'off' || this.status.phase === 'error') return;
-    // Changement de réseau pendant le minage : le gabarit suivrait le mauvais
-    // tip — arrêt immédiat (relançable depuis l'UI sur le nouveau réseau).
     if (this.net !== currentNet()) {
       this.stop();
       return;
@@ -243,17 +218,14 @@ class MinerController {
 
     const nowMs = Date.now();
     const tipAge = Math.floor(nowMs / 1000) - tip.time;
-    // Les tips testnet4 peuvent être datés dans le futur (bots BIP 94) :
-    // on borne l'affichage et on refuse les horloges locales aberrantes.
-    if (tipAge < -TIP_FUTURE_TOLERANCE_SEC) return; // horloge locale suspecte
+    if (tipAge < -TIP_FUTURE_TOLERANCE_SEC) return;
     const nextHeight = tip.height + 1;
     const win: WindowStatus =
       this.net === 'regtest'
-        ? { open: true, reason: 'gap-ok', secondsUntilOpen: 0 } // difficulté 1 en continu, pas de fenêtre BIP 94
+        ? { open: true, reason: 'gap-ok', secondsUntilOpen: 0 }
         : windowStatus(tip.time, nowMs, nextHeight);
     this.patch({ window: win, nextHeight, tipAgeSec: tipAge });
 
-    // Un nouveau tip pendant le minage → notre gabarit devient périmé.
     if (this.status.phase === 'mining' && this.template && this.template.tipHash !== tip.hash) {
       this.stopWorkers();
       this.template = null;
@@ -266,26 +238,17 @@ class MinerController {
     }
   }
 
-  /* ──────────────────────── Minage ──────────────────────── */
-
   private async beginMining(tip: TipInfo, nextHeight: number): Promise<void> {
     const address = this.status.address;
     if (!address) return this.fail('adresse de paiement manquante');
     const isLocal = this.net === 'regtest';
-    // Regtest : les nBits du tip (difficulté 1) sont repris tels quels — un
-    // réajustement récent pourrait différer du powLimit théorique.
     const bits = isLocal ? tip.bits : MIN_DIFF_BITS;
     try {
-      // Tag lisible + 9 octets d'aléa dans le scriptSig (BIP 34 exige la
-      // hauteur en tête ; l'aléa garantit l'unicité inter-blocs du script).
       const tagText = new TextEncoder().encode('/BitLab/');
       const fullTag = new Uint8Array(tagText.length + 9);
       fullTag.set(tagText, 0);
       crypto.getRandomValues(fullTag.subarray(tagText.length));
 
-      // Subvention exacte du bloc selon le réseau et la hauteur (halving
-      // 150 blocs en regtest, 210 000 en testnet4) — une coinbase
-      // supérieure à subvention + frais serait rejetée par la validation.
       const subsidySats = blockSubsidy(nextHeight, this.net);
       if (subsidySats <= 0) return this.fail(`subvention nulle à la hauteur ${nextHeight} — plus rien à miner`);
       const { txHex, txid } = buildCoinbase({
@@ -348,14 +311,12 @@ class MinerController {
       try {
         worker.terminate();
       } catch {
-        /* déjà terminé */
       }
     }
     this.sessions = [];
     this.sessionHashes.clear();
   }
 
-  /** Compteur de hachages cumulés par session worker (pour le hashrate). */
   private sessionHashes = new Map<number, number>();
 
   private onWorkerMessage(session: WorkerSession, msg: { type: string; [k: string]: unknown }) {
@@ -365,8 +326,6 @@ class MinerController {
         break;
       case 'progress': {
         if (msg.job !== session.jobId) break;
-        // Chaque worker rapporte son cumul depuis le début du job ; la
-        // puissance totale est la somme des sessions actives.
         this.sessionHashes.set(session.jobId, Number(msg.hashes ?? 0));
         let total = 0;
         for (const h of this.sessionHashes.values()) total += h;
@@ -375,9 +334,6 @@ class MinerController {
         break;
       }
       case 'exhausted':
-        // Plage de nonce épuisée sans succès : le gabarit est battu sur cette
-        // fenêtre — on laisse le worker en veille, la prochaine sonde de tip
-        // reconstruira un gabarit frais (nouveau tip ou temps écoulé).
         break;
       case 'found':
         void this.onBlockFound(session, Number(msg.nonce));
@@ -392,10 +348,9 @@ class MinerController {
 
   private async onBlockFound(session: WorkerSession, nonce: number): Promise<void> {
     if (!this.template) return;
-    // Double vérification côté hôte — aucun bloc douteux ne quitte le lab.
     const header = assembleBlock(this.template.header76Hex, nonce, '');
     if (!headerMeetsTarget(header.slice(0, 160), this.template.target)) {
-      return; // faux positif (impossible en théorie) — on ignore
+      return;
     }
     const hash = blockHash(header.slice(0, 160));
     const blockHex = assembleBlock(this.template.header76Hex, nonce, this.template.txHex);
@@ -419,8 +374,6 @@ class MinerController {
     }
 
     if (!ok) {
-      // Bloc refusé ou diffusion impossible : on reprend la surveillance —
-      // la prochaine sonde reconstruira un gabarit à jour.
       const height = this.template?.height ?? null;
       this.template = null;
       this.patch({ phase: 'watching', lastError: `diffusion : ${detail}` });
@@ -453,11 +406,8 @@ class MinerController {
       detail: { hauteur: mined.height, hash, récompense: `${minedSubsidy} sats` },
     });
     this.startConfirmationWatch();
-    // Regtest : chaque bloc prolonge la chaîne locale — on enchaîne aussitôt
-    // (le sondage périodique reste la sécurité, ceci enlève juste l'attente).
     if (this.net === 'regtest') void this.pollTip();
   }
 }
 
-/** Singleton partagé par le portefeuille et le labo Lightning. */
 export const miner = new MinerController();
