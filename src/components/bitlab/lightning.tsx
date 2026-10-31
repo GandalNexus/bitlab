@@ -1,14 +1,5 @@
 'use client';
 
-/**
- * BitLab — Laboratoire Lightning RÉEL dans le navigateur.
- *
- * Les deux nœuds LDK (A et B) tournent en WebAssembly côté client, dans un
- * Web Worker : vraies clés, vrai protocole Lightning, vrais canaux financés
- * on-chain (Esplora), vraies factures BOLT11 signées, vrais HTLC. Aucune
- * simulation : chaque écran reflète l'état réel et les erreurs remontent
- * telles quelles. Le serveur ne sert que des fichiers statiques.
- */
 import { useState, useSyncExternalStore } from 'react';
 import {
   AlertTriangle,
@@ -58,8 +49,6 @@ import {
   type LnPendingFunding,
 } from '@/lib/lightning';
 
-/* ─────────────────────────  Aides d'affichage  ───────────────────────── */
-
 function useLnStatus(): LnLabStatus {
   return useSyncExternalStore(lnLab.subscribe, lnLab.getStatus, lnLab.getStatus);
 }
@@ -108,7 +97,6 @@ function EventLine({ e }: { e: LnEventView }) {
       : e.type === 'funding_generation_ready'
         ? `${fmtInt(Number(e.valueSats ?? 0))} sats`
         : (e.channelId ?? e.paymentHash ?? '').slice(0, 16);
-  // Couleur par famille : paiements (ambre), financement (émeraude), fermetures (rouge).
   const iconCls = e.type.startsWith('payment')
     ? 'text-amber-400'
     : e.type.startsWith('funding') || e.type === 'channel_ready'
@@ -137,8 +125,6 @@ function EventLine({ e }: { e: LnEventView }) {
     </div>
   );
 }
-
-/* ─────────────────────────  Vue état des nœuds  ───────────────────────── */
 
 function NodeSummaryCard({ label, nodeId, channels }: { label: string; nodeId: string | null; channels: LnChannelView[] }) {
   const { t } = useT();
@@ -170,8 +156,6 @@ function NodeSummaryCard({ label, nodeId, channels }: { label: string; nodeId: s
   );
 }
 
-/* ─────────────────────────  Pont de financement  ───────────────────────── */
-
 function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSubmit: (hex: string, ucid: string) => void }) {
   const { t } = useT();
   const { toast } = useToast();
@@ -180,9 +164,6 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
   const [walletId, setWalletId] = useState<string>('');
   const [busy, setBusy] = useState(false);
 
-  // Sandbox : seuls les portefeuilles dérivés pour le réseau actif du labo
-  // peuvent financer le canal — des pièces réelles sont hors de portée par
-  // construction (le labo lui-même n'existe que sur réseaux de test).
   const usable = wallets.filter((w) => (w.network ?? DEFAULT_NET) === net);
   const wallet = usable.find((w) => w.id === walletId) ?? usable[0] ?? null;
 
@@ -194,14 +175,9 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
       const valueSats = Number(pending.valueSats);
       const [allUtxos, fees] = await Promise.all([api.utxos(wallet.address), api.fees()]);
       const feeRate = Math.max(1, Number(fees.hourFee) || 1);
-      // Sélection minimale « dépensabilité d'abord » : couvrir la cible avec le
-      // moins d'UTXO possible — les sorties normales d'abord, puis les
-      // coinbases les plus anciennes (déjà mûres). Sans cela, financer
-      // 0.001 BTC dépenserait d'un bloc toutes les coinbases du robinet et
-      // se heurterait à la règle de maturité des 100 blocs.
       const rank = (u: AddressUtxo) => (u.isCoinbase ? (u.status.block_height ?? Number.MAX_SAFE_INTEGER) : -1);
       const ordered = [...allUtxos].sort((a, b) => rank(a) - rank(b));
-      const target = valueSats + 5000; // capacité + marge de frais
+      const target = valueSats + 5000;
       let covered = 0;
       const selected: AddressUtxo[] = [];
       for (const u of ordered) {
@@ -224,9 +200,6 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
           await mpBroadcast(res.hex);
           break;
         } catch (first) {
-          // Sandbox regtest embarquée : la chaîne indique combien de blocs de
-          // maturité manquent — on les mine puis on retente (3 essais max).
-          // Jamais appliqué aux réseaux réels : l'erreur remonte telle quelle.
           const detail = first instanceof Error ? first.message : String(first);
           const need = net === 'regtest' && regtestMode() === 'embedded' ? /encore (\d+) bloc/.exec(detail) : null;
           if (!need || attempt >= 2) throw first;
@@ -239,10 +212,6 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
         }
       }
       onSubmit(res.hex, pending.userChannelId);
-      // Regtest embarqué : le serveur mine aussitôt les blocs de confirmation
-      // (seuil du canal : 6, + 2 blocs de marge — LDK compte les
-      // confirmations à partir du bloc suivant le financement). La chaîne
-      // embarquée est locale : le minage est instantané.
       let minedNote = '';
       if (net === 'regtest' && regtestMode() === 'embedded') {
         try {
@@ -313,8 +282,6 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
     </Card>
   );
 }
-
-/* ─────────────────────────  Vue canaux  ───────────────────────── */
 
 function ChannelsView({ st }: { st: LnLabStatus }) {
   const { t } = useT();
@@ -441,8 +408,6 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
   );
 }
 
-/* ─────────────────────────  Vue factures / paiements  ───────────────────────── */
-
 function Bolt11Panel({ st }: { st: LnLabStatus }) {
   const { t } = useT();
   const { toast } = useToast();
@@ -541,9 +506,6 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
   );
 }
 
-/* ─────────────────────  BOLT12 — offers réutilisables  ───────────────────── */
-
-/** Bandeau pédagogique : les deux protocoles côte à côte, à lire avant d’agir. */
 function ProtocolLegend() {
   const { t } = useT();
   const items = [
@@ -784,8 +746,6 @@ function PaymentsView({ st }: { st: LnLabStatus }) {
   );
 }
 
-/* ─────────────────────────  Vue journal  ───────────────────────── */
-
 function JournalView({ st }: { st: LnLabStatus }) {
   const { t } = useT();
   return (
@@ -847,8 +807,6 @@ function JournalView({ st }: { st: LnLabStatus }) {
     </div>
   );
 }
-
-/* ─────────────────────────  Module principal  ───────────────────────── */
 
 export function LightningModule() {
   const { t } = useT();

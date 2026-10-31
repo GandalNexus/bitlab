@@ -1,10 +1,5 @@
 'use client';
 
-/**
- * BitLab — Explorateur et Visualisation (2.5 du cahier des charges).
- * Vue temps réel de la Mempool Testnet + décodeur de transactions brutes
- * (coller un hex et obtenir une lecture lisible de son contenu).
- */
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Binary, ChevronDown, ExternalLink, Radio, ScanSearch } from 'lucide-react';
@@ -23,7 +18,6 @@ import { fmtInt, satsToBtc } from '@/lib/bitcoin/utils';
 import { tLocale, useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
-/** Historique temps réel de la Mempool du réseau actif. */
 function MempoolLive() {
   const { t } = useT();
   const net = useLabStore((s) => s.network);
@@ -108,10 +102,6 @@ function MempoolLive() {
   );
 }
 
-/** Ligne transaction de la liste temps réel : lien vers l'explorateur public
- * (mempool.space) quand le réseau en possède un, sinon — regtest — bouton
- * dépliable qui révèle l'anatomie de la transaction décodée localement
- * (hex récupéré sur le nœud, lecture champ par champ dans le navigateur). */
 function TxRow({ txid, fee, vsize }: { txid: string; fee?: number; vsize?: number }) {
   const { t } = useT();
   const net = useLabStore((s) => s.network);
@@ -120,7 +110,6 @@ function TxRow({ txid, fee, vsize }: { txid: string; fee?: number; vsize?: numbe
   const hexQuery = useQuery({
     queryKey: ['tx-hex', txid],
     queryFn: () => api.txHex(txid),
-    // Le hex d'une transaction est immuable : chargé à l'ouverture, gardé en cache.
     enabled: !external && open,
     staleTime: Infinity,
     retry: 1,
@@ -187,11 +176,6 @@ function TxRow({ txid, fee, vsize }: { txid: string; fee?: number; vsize?: numbe
   );
 }
 
-/** Carte bloc : lien vers l'explorateur public quand il en existe un, sinon —
- * regtest — dépliage local : en-tête lisible (hash, racine de Merkle, bloc
- * précédent) puis la liste de ses transactions, chacune ouvrant son anatomie.
- * C'est ainsi qu'on retrouve les transactions confirmées d'une chaîne privée :
- * il n'existe aucun mempool.space pour un regtest. */
 function BlockRow({ block }: { block: BlockSummary }) {
   const { t } = useT();
   const net = useLabStore((s) => s.network);
@@ -200,7 +184,6 @@ function BlockRow({ block }: { block: BlockSummary }) {
   const detailQuery = useQuery({
     queryKey: ['block-detail', block.id],
     queryFn: () => api.block(block.id),
-    // Un bloc confirmé est immuable : chargé au dépliage, gardé en cache.
     enabled: !external && open,
     staleTime: Infinity,
     retry: 1,
@@ -293,7 +276,6 @@ function BlockRow({ block }: { block: BlockSummary }) {
   );
 }
 
-/** Décodeur de transactions brutes. */
 function TxDecoder() {
   const { toast } = useToast();
   const { t } = useT();
@@ -314,7 +296,6 @@ function TxDecoder() {
   };
 
   const loadSample = () => {
-    // Vraie transaction SegWit signée et construite localement (démo du décodeur).
     setRaw(
       '020000000001016d1e5c8f3c7d5c0c0d9d9bfad825e7a4f5e63248c6ac7f687e32a228dc80e1150000000000ffffffff0210270000000000001600149682b3791530a7ffc35569ff7a7fefbcbef53a06b699000000000000160014924ff042f8897a2fddd9581f0c7609d9800b5d8f02483045022100ef400c50530ff5c057cea829713e5bce943cc56ad9d95fcbf290fd298259921b0220792032fb55230681a4a0ff8482b944a592ff5bec607573058178af6678a4f1540121034bda180047030ee0228822ac8900c7b4d4c6352e2e0d763cac184063b5fafe3a00000000'
     );
@@ -366,9 +347,6 @@ function TxDecoder() {
   );
 }
 
-/** Lecture anatomique d'une transaction décodée : résumé (txid, version,
- * taille, état) puis entrées et sorties champ par champ. Partagée par le
- * décodeur manuel (onglet Décodeur raw) et l'anatomie locale de l'explorateur. */
 function DecodedTxView({ decoded }: { decoded: DecodedTx }) {
   const { t } = useT();
   return (

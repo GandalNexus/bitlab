@@ -1,12 +1,5 @@
 'use client';
 
-/**
- * BitLab - Activity log (readable view of the store logs).
- * A single card holds every entry (network calls, wallet operations,
- * transactions), filterable by module. Each line shows: time - kind
- * (http/op/error) - module - label - key=value details. Nothing sensitive
- * appears here: private keys stay in the browser and never reach this log.
- */
 import { useMemo, useState } from 'react';
 import { ArrowUpRight, CircleDot, Eraser, ScrollText, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +9,6 @@ import { useLabStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
-/** Module filters: logical id + displayed label. */
 const MODULES: { id: string; label: string }[] = [
   { id: '*', label: 'Tout' },
   { id: 'réseau', label: 'Réseau' },

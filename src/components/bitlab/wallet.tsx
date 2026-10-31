@@ -1,10 +1,5 @@
 'use client';
 
-/**
- * BitLab — Wallet Management (step 2.1).
- * Key pair and address generation (Legacy, SegWit, Taproot),
- * WIF/BIP39 import, built-in faucet and local wallet library.
- */
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -74,7 +69,6 @@ function TypeSelector({ value, onChange }: { value: AddrType; onChange: (t: Addr
   );
 }
 
-/** Détail complet d'un portefeuille avec révélation progressive des secrets. */
 function WalletDetail({ w }: { w: LabWallet }) {
   const [showSecret, setShowSecret] = useState(false);
   const { t } = useT();
@@ -160,7 +154,6 @@ const REQ_BADGE: Record<string, { label: string; cls: string }> = {
   account: { label: 'connexion requise', cls: 'border-sky-600/40 bg-sky-500/10 text-sky-600 dark:text-sky-400' },
 };
 
-/** Faucet : liens externes vérifiés (la distribution directe mempool a été retirée — API indisponible). */
 function FaucetPanel() {
   const net = useLabStore((s) => s.network);
   const cfg = NETWORKS[net];
@@ -176,7 +169,6 @@ function FaucetPanel() {
         <CardDescription>{t(cfg.faucetNote)}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Regtest : le faucet c'est vous — connexion au nœud local + minage. */}
         {cfg.local ? <RegtestSettingsCard /> : null}
         {active ? (
           <Copyable label={t('Votre adresse active à financer')} value={active.address} />
@@ -186,7 +178,6 @@ function FaucetPanel() {
           </div>
         )}
 
-        {/* Faucets externes vérifiés */}
         {cfg.faucets.length > 0 ? (
           <>
             <div className="text-[13px] font-medium text-muted-foreground">{t('Faucets externes — copiez l’adresse ci-dessus, collez-la, recevez :')}</div>
@@ -222,7 +213,6 @@ function FaucetPanel() {
   );
 }
 
-/** Mainnet : aucun faucet — les bitcoins y ont une valeur réelle. */
 function MainnetNotice() {
   const { t } = useT();
   return (
@@ -258,7 +248,6 @@ export function WalletModule() {
   const active = useActiveWallet();
   const { addWallet, removeWallet, setActiveWallet, mineOnKeyGen } = useLabStore();
 
-  // Bibliothèque filtrée par réseau actif — aucune opération croisée possible.
   const netWallets = useMemo(
     () => wallets.filter((w) => (w.network ?? DEFAULT_NET) === net),
     [wallets, net],
@@ -284,9 +273,6 @@ export function WalletModule() {
     }
   };
 
-  /** Si l'utilisateur a activé l'auto-minage, le mineur démarre sur l'adresse
-   * fraîchement générée (testnet4 : fenêtres BIP 94 ; regtest : blocs
-   * instantanés vers la chaîne locale). */
   const maybeAutoMine = (w: LabWallet) => {
     const mineable = (w.network ?? DEFAULT_NET) === 'testnet4' || (w.network ?? DEFAULT_NET) === 'regtest';
     if (mineOnKeyGen && mineable) {
@@ -341,7 +327,6 @@ export function WalletModule() {
           </TabsTrigger>
         </TabsList>
 
-        {/* ── Génération ── */}
         <TabsContent value="generer" className="mt-4 space-y-4">
           <Card>
             <CardHeader className="pb-3">
@@ -387,7 +372,6 @@ export function WalletModule() {
           </Card>
         </TabsContent>
 
-        {/* ── Import ── */}
         <TabsContent value="importer" className="mt-4 space-y-4">
           <Card>
             <CardHeader className="pb-3">
@@ -465,7 +449,6 @@ export function WalletModule() {
           </Card>
         </TabsContent>
 
-        {/* ── Bibliothèque ── */}
         <TabsContent value="bibliotheque" className="mt-4 space-y-4">
           {netWallets.length === 0 ? (
             <Card>
@@ -543,7 +526,6 @@ export function WalletModule() {
         </TabsContent>
       </Tabs>
 
-      {/* ── Faucet intégré (réseaux de test) / notice Mainnet ── */}
       {net === 'mainnet' ? <MainnetNotice /> : <FaucetPanel />}
     </div>
   );

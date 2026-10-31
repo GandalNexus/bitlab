@@ -1,14 +1,5 @@
 'use client';
 
-/**
- * BitLab — Mining module (dedicated page, real PoW in-browser).
- *
- * Mining laboratory: user selects a minable network (Testnet4 via BIP 94
- * windows, embedded Regtest at difficulty 1), selects the wallet that receives
- * each block reward, then starts real SHA-256d hashing on N threads. Coinbase
- * rewards go directly to chosen address (mature after 100 confirmations).
- * No simulation: same block construction, same double SHA-256, same nonce search.
- */
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -45,7 +36,6 @@ const PHASE_STYLE: Record<MinerStatus['phase'], string> = {
   error: 'border-red-600/40 bg-red-500/10 text-red-600 dark:text-red-400',
 };
 
-/** Non-minable networks from browser, with pedagogical reason. */
 const MINING_BLOCKED: Partial<Record<NetId, string>> = {
   mainnet:
     'Le minage est désactivé sur le Mainnet : votre navigateur ne peut pas rivaliser avec le réseau réel, et tout bloc ici aurait une valeur monétaire.',
@@ -73,7 +63,6 @@ export function MiningModule() {
 
   const [status, setStatus] = useState<MinerStatus>(miner.getStatus());
   const [threads, setThreads] = useState(4);
-  /** Portefeuille choisi pour recevoir les récompenses (id dans la bibliothèque). */
   const [payoutId, setPayoutId] = useState<string | null>(null);
 
   useEffect(() => miner.subscribe(() => setStatus(miner.getStatus())), []);
@@ -82,7 +71,6 @@ export function MiningModule() {
   const mineable = cfg.mineable !== 'none';
   const busy = status.phase === 'mining' || status.phase === 'submitting' || status.phase === 'watching';
 
-  /** Portefeuilles compatibles avec le réseau actif (la récompense y est payée). */
   const netWallets = useMemo(
     () => wallets.filter((w) => (w.network ?? DEFAULT_NET) === net),
     [wallets, net],
@@ -98,7 +86,6 @@ export function MiningModule() {
   );
   const blockedNets = useMemo(() => (Object.keys(NETWORKS) as NetId[]).filter((n) => NETWORKS[n].mineable === 'none'), []);
 
-  /** Change de réseau miné : arrêt propre du mineur avant la bascule. */
   const pickNetwork = (next: NetId) => {
     if (next === net) return;
     if (busy) miner.stop();
@@ -106,7 +93,6 @@ export function MiningModule() {
     setNetwork(next);
   };
 
-  /** Sélectionne un portefeuille du nouveau réseau (sinon laisse vide). */
   const setActiveWalletIfPossible = (target: NetId) => {
     const first = wallets.find((w) => (w.network ?? DEFAULT_NET) === target);
     if (first) setActiveWallet(first.id);
@@ -140,7 +126,6 @@ export function MiningModule() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Sélection du réseau miné */}
           <div className="space-y-2">
             <div className="text-[13px] font-medium">{t('Réseau miné')}</div>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -172,7 +157,6 @@ export function MiningModule() {
                 );
               })}
             </div>
-            {/* Réseaux exclus : raison affichée, aucune action possible */}
             <div className="flex flex-wrap gap-2 pt-1">
               {blockedNets.map((n) => (
                 <span
@@ -188,7 +172,6 @@ export function MiningModule() {
 
           {mineable ? (
             <>
-              {/* Portefeuille récompensé */}
               <div className="space-y-2">
                 <div className="text-[13px] font-medium">{t('Récompense vers')}</div>
                 {netWallets.length > 0 ? (
@@ -224,7 +207,6 @@ export function MiningModule() {
                 )}
               </div>
 
-              {/* État en langage clair */}
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className={cn('gap-1.5', PHASE_STYLE[status.phase])}>
                   <Zap className="h-3 w-3" />
@@ -256,7 +238,6 @@ export function MiningModule() {
                 <p className="text-xs text-red-600 dark:text-red-400">{status.lastError}</p>
               ) : null}
 
-              {/* Contrôles */}
               <div className="flex flex-wrap items-end gap-3">
                 <Button size="sm" disabled={!payout || busy} onClick={start} className="gap-1.5">
                   <Pickaxe className="h-3.5 w-3.5" /> {t('Démarrer le mineur')}
@@ -288,7 +269,6 @@ export function MiningModule() {
                 </div>
               </div>
 
-              {/* Blocs trouvés */}
               {status.blocks.length > 0 ? (
                 <div className="space-y-1.5">
                   <div className="text-[13px] font-medium text-muted-foreground">
@@ -323,7 +303,6 @@ export function MiningModule() {
                 </div>
               ) : null}
 
-              {/* Maturation des récompenses — regtest uniquement (champ isCoinbase du moteur embarqué) */}
               {net === 'regtest' && netWallets.length > 0 ? <MaturationPanel wallets={netWallets} /> : null}
 
               <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-[11px] leading-snug text-muted-foreground">
@@ -342,16 +321,6 @@ export function MiningModule() {
   );
 }
 
-/**
- * Panneau « Maturation des récompenses » — regtest uniquement.
- *
- * Une coinbase n'est dépensable qu'après COINBASE_MATURITY blocs (consensus
- * Bitcoin). Ce panneau agrège les sorties de coinbase immatures de tous les
- * portefeuilles du réseau (champ isCoinbase exposé par le moteur embarqué),
- * affiche les blocs restants et propose de frapper d'un clic les blocs
- * manquants : ils alimentent le pool du faucet, et les récompenses déjà en
- * chaîne mûrissent avec eux — sans créer de nouvelle attente à votre adresse.
- */
 function MaturationPanel({ wallets }: { wallets: LabWallet[] }) {
   const { t } = useT();
   const addLog = useLabStore((s) => s.addLog);
@@ -369,8 +338,6 @@ function MaturationPanel({ wallets }: { wallets: LabWallet[] }) {
             const utxos = await api.utxos(w.address);
             const entries = utxos
               .filter((u) => u.isCoinbase && u.status.confirmed && u.status.block_height != null)
-              // Hauteur de dépense = tip + 1 (comme chez Bitcoin Core) : la
-              // récompense est mûre quand tip + 1 - hauteur ≥ COINBASE_MATURITY.
               .map((u) => ({
                 value: u.value,
                 wait: COINBASE_MATURITY - (tip + 1 - (u.status.block_height as number)),
@@ -401,8 +368,6 @@ function MaturationPanel({ wallets }: { wallets: LabWallet[] }) {
   const matureNow = async () => {
     setBusy(true);
     try {
-      // Sans adresse : les nouveaux blocs paient le pool du faucet — les
-      // récompenses existantes mûrissent avec eux, sans nouvelle attente.
       const res = await fetch('/api/regtest/mine', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -452,9 +417,6 @@ function MaturationPanel({ wallets }: { wallets: LabWallet[] }) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-medium">{t('{s} sats en maturation', { s: fmtInt(total) })}</span>
-        {/* whitespace-normal + shrink : l'intitulé long (« Miner N bloc(s) pour tout
-            débloquer ») doit pouvoir se replier sur deux lignes au lieu de pousser la
-            carte hors écran — le shrink-0 par défaut du Button l'en empêche. */}
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void matureNow()} className="gap-1.5 whitespace-normal text-left shrink">
           <Pickaxe className="h-3.5 w-3.5 shrink-0" />
           {busy ? t('minage des blocs…') : t('Miner {k} bloc(s) pour tout débloquer', { k })}

@@ -1,9 +1,5 @@
 'use client';
 
-/**
- * Stellar-Lab-style top bar: brand on the left,
- * network selector + live status + language (FR/EN) + theme (dark/light) on the right.
- */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Blocks, Menu, ChevronDown, Check, ShieldAlert } from 'lucide-react';
 import {
@@ -34,7 +30,6 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
   const pick = (id: NetId) => {
     if (id === net) return;
     setNetwork(id);
-    // Every query includes the network in its key — invalidate to force refresh.
     void qc.invalidateQueries();
   };
 
@@ -49,13 +44,9 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Brand now lives in the header on every breakpoint (logo + Lab pill):
-            the sidebar carries navigation only. Icon + pill hidden under 400 px
-            so the bar never overflows small phones. */}
         <BrandMark responsive />
 
         <div className="ml-auto flex items-center gap-2">
-          {/* Network selector — functional take on Stellar Lab's "● Testnet" */}
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
@@ -103,7 +94,6 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Hauteur du dernier bloc */}
           <div
             className="hidden items-center gap-2 rounded-[6px] border border-border bg-card px-2.5 py-1.5 md:flex"
             title={t('Hauteur du dernier bloc {net}', { net: cfg.label })}
@@ -115,7 +105,6 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
             {!tip.isError && !tip.isLoading ? <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> : null}
           </div>
 
-          {/* Language + theme */}
           <LangToggle />
           <ThemeToggle />
         </div>

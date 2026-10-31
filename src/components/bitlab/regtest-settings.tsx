@@ -1,18 +1,5 @@
 'use client';
 
-/**
- * BitLab — Regtest network settings card.
- *
- * EMBEDDED MODE (default): the private chain lives in the BitLab process —
- * no node installation, Docker, or hypervisor needed. Card shows engine state
- * (height, subsidy, halving, mempool, faucet), distributes sats via built-in
- * faucet, fast mining, and lab reset.
- *
- * EXTERNAL NODE MODE (advanced): connects to user's local Bitcoin Core with
- * REST (-rest=1) + RPC credentials, persisted in localStorage, end-to-end tested
- * (REST tip, RPC balance). Credentials stay in browser: only transmitted to
- * local BitLab server, which targets loopback/private hosts only.
- */
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Coins, Hammer, RotateCcw, Server, XCircle } from 'lucide-react';
@@ -40,7 +27,6 @@ interface EmbeddedInfo {
   faucet: { address: string; matureSats: number; immatureSats: number };
 }
 
-/** Montants proposés par le faucet embarqué (sats). */
 const FAUCET_AMOUNTS = [100_000_000, 500_000_000, 1_000_000_000, 5_000_000_000];
 
 export function RegtestSettingsCard() {
@@ -54,8 +40,6 @@ export function RegtestSettingsCard() {
     setModeState(next);
   };
 
-  // Changement de réseau pendant que la carte est affichée : impossible (la
-  // carte n'est rendue que sur regtest) — garde défensive sans effet sinon.
   if (net !== 'regtest') return null;
 
   return (
@@ -91,7 +75,6 @@ export function RegtestSettingsCard() {
   );
 }
 
-/** Panneau du moteur embarqué : état, faucet, minage rapide, réinitialisation. */
 function EmbeddedPanel() {
   const { t } = useT();
   const active = useActiveWallet();
@@ -243,7 +226,6 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Panneau historique : connexion à un Bitcoin Core local (mode externe). */
 function ExternalPanel() {
   const { t } = useT();
   const active = useActiveWallet();
@@ -260,7 +242,6 @@ function ExternalPanel() {
     }
     setProbe('running');
     try {
-      // 1) REST : lecture publique du tip (aucun identifiant requis).
       await api.tipHeight();
     } catch {
       setProbe('rest-fail');
@@ -271,7 +252,6 @@ function ExternalPanel() {
       return;
     }
     try {
-      // 2) RPC : le solde de l'adresse active valide rpcuser/rpcpass.
       await api.utxos(active.address);
       setProbe('ok');
     } catch {

@@ -1,12 +1,5 @@
 'use client';
 
-/**
- * BitLab - Sidebar styled after Stellar Lab (lab.stellar.org).
- * Navigation sections with the active item as a filled pill (4px radius,
- * accent tint); the developer guide pinned at the bottom (single entry,
- * no section label). Desktop: collapse button (icon rail) persisted in
- * localStorage. Sliding drawer on mobile.
- */
 import { useCallback, useEffect, useState, useSyncExternalStore, type ComponentType } from 'react';
 import Link from 'next/link';
 import {
@@ -29,7 +22,6 @@ export type TabId = 'dashboard' | 'portefeuille' | 'transactions' | 'lightning' 
 
 export const COLLAPSE_KEY = 'bitlab-sidebar-collapsed';
 
-/** Tiny external store: sidebar collapse state persisted in localStorage. */
 const collapseStore = {
   listeners: new Set<() => void>(),
   get(): boolean {
@@ -43,7 +35,6 @@ const collapseStore = {
     try {
       localStorage.setItem(COLLAPSE_KEY, v ? '1' : '0');
     } catch {
-      /* storage unavailable */
     }
     collapseStore.listeners.forEach((l) => l());
   },
@@ -55,7 +46,6 @@ const collapseStore = {
   },
 };
 
-/** Persisted collapsed state (shared between the shell and the sidebar). */
 export function useSidebarCollapsed() {
   const collapsed = useSyncExternalStore(collapseStore.subscribe, collapseStore.get, () => false);
   const toggle = useCallback(() => collapseStore.set(!collapseStore.get()), []);
@@ -86,7 +76,6 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
     ],
   },
 ];
-/** Resources: only the developer guide - the lab documents itself in-app. */
 const RESOURCE_LINKS: {
   label: string;
   href: string;
@@ -95,8 +84,6 @@ const RESOURCE_LINKS: {
 }[] = [
   { label: 'Guide', href: '/guide', icon: BookOpen, external: false },
 ];
-
-// --- Navigation ---
 
 function NavButton({
   icon: Icon,
@@ -183,7 +170,6 @@ export function SidebarNav({
         </div>
       ))}
 
-      {/* Guide - single resource entry, directly under the separator */}
       <div className="space-y-0.5 border-t border-border/60 pt-4">
         {RESOURCE_LINKS.map((r) => (
           <NavButton
@@ -200,12 +186,6 @@ export function SidebarNav({
   );
 }
 
-// --- Shell ---
-
-/** Desktop side panel (fixed, collapsible) + mobile drawer (overlay).
- *  The full-width header cluster (banner + header) sits above the panel; its
- *  exact height is measured with a ResizeObserver so the panel always starts
- *  right below it — banner visible, dismissed or wrapped alike. */
 export function LabSidebar({
   active,
   onNavigate,
@@ -223,7 +203,6 @@ export function LabSidebar({
 }) {
   const { t } = useT();
 
-  // Keep the fixed panel flush under the sticky top cluster.
   const [clusterTop, setClusterTop] = useState(56);
   useEffect(() => {
     const cluster = document.getElementById('lab-top-cluster');
@@ -235,7 +214,6 @@ export function LabSidebar({
     return () => ro.disconnect();
   }, []);
 
-  // Escape closes the mobile drawer while it is open.
   useEffect(() => {
     if (!mobileOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -247,8 +225,6 @@ export function LabSidebar({
 
   return (
     <>
-      {/* Desktop: fixed column below the full-width header cluster, collapsible to an icon rail.
-          No brand row — the logo lives in the header above. */}
       <aside
         style={{ top: clusterTop }}
         className={cn(
@@ -271,7 +247,6 @@ export function LabSidebar({
         </div>
       </aside>
 
-      {/* Mobile: drawer */}
       <div
         className={cn(
           'fixed inset-0 z-50 lg:hidden',
@@ -292,8 +267,6 @@ export function LabSidebar({
             mobileOpen ? 'translate-x-0' : '-translate-x-full',
           )}
         >
-          {/* Drawer header - explicit close only (the backdrop also closes);
-              the brand stays in the page header behind the drawer */}
           <div className="flex h-14 shrink-0 items-center justify-end border-b border-border/70 px-4">
             <button
               onClick={onCloseMobile}
@@ -317,8 +290,6 @@ export function LabSidebar({
   );
 }
 
-/** GandalNexus orbite mark — orange planet + tilted orbit; the strokes and
- * satellite follow currentColor, so the mark adapts to dark and light themes. */
 export function OrbitMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 512 512" className={className} role="img" aria-label="GandalNexus">
@@ -336,21 +307,17 @@ export function OrbitMark({ className }: { className?: string }) {
   );
 }
 
-/** Brand block: lab logo + « Lab » pill (Stellar signature). */
 export function BrandMark({
   responsive = false,
   pill = true,
 }: {
   responsive?: boolean;
-  /** Pastille « Lab ». */
   pill?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2">
       <OrbitMark className="h-8 w-8 shrink-0 text-foreground" />
       {pill ? (
-        /* responsive : pastille masquée sous 400 px — l'icône seule suffit
-            dans l'en-tête mobile, sinon la barre déborde. */
         <span
           className={cn(
             'rounded-full border border-primary/40 bg-primary/10 px-2 py-px text-[11px] font-medium text-primary',

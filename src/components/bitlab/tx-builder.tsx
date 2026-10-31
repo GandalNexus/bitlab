@@ -1,11 +1,5 @@
 'use client';
 
-/**
- * BitLab — Constructeur de Transactions (2.2 & 2.3 du cahier des charges).
- * Workflow par étapes (Stepper) : Sélectionner → Construire → Signer → Diffuser.
- * Sélection d'UTXO, frais en sat/vB avec estimation temps réel, scripts multisig,
- * signature locale et sérialisation hexadécimale brute.
- */
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -56,8 +50,6 @@ const STEPS = [
   { id: 4, label: 'Diffuser', icon: Send },
 ] as const;
 
-/** Maturité des coinbase (règle de consensus) — les sorties de minage ne
- * sont dépensables qu'après 100 blocs, cf. moteur regtest embarqué. */
 const COINBASE_MATURITY = 100;
 
 interface OutputRow {
@@ -65,7 +57,6 @@ interface OutputRow {
   amount: string;
 }
 
-/** Transaction signée prête pour diffusion (résultat de buildSignedTx). */
 interface SignedTx {
   hex: string;
   txid: string;
@@ -74,7 +65,6 @@ interface SignedTx {
   changeSats: number;
 }
 
-/** Étape 1 — choix du portefeuille parmi la bibliothèque active, puis sélection de ses UTXO. */
 function StepSelect({
   selected,
   setSelected,
@@ -97,8 +87,6 @@ function StepSelect({
   const utxosQuery = useQuery({
     queryKey: ['utxos', net, wallet?.address],
     queryFn: () => {
-      // Garde « enabled » ci-dessous : la branche d'erreur est inatteignable,
-      // mais évite le `!` et garde la requête sûre en cas de refacto.
       if (!wallet) throw new Error('Portefeuille actif requis pour interroger les UTXO.');
       return api.utxos(wallet.address);
     },
@@ -106,8 +94,6 @@ function StepSelect({
     refetchInterval: 30_000,
     retry: 1,
   });
-  // Hauteur du tip : calcule la maturité restante des coinbase (champ
-  // isCoinbase fourni par le moteur regtest embarqué uniquement).
   const tipQuery = useQuery({ queryKey: ['tip', net], queryFn: api.tipHeight, refetchInterval: 30_000, retry: 1 });
   const tip = tipQuery.data;
 
@@ -132,7 +118,6 @@ function StepSelect({
 
   return (
     <div className="space-y-4">
-      {/* Choix du portefeuille parmi la bibliothèque du réseau actif */}
       <div className="rounded-lg border border-border bg-muted/30 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <div className="min-w-0 flex-1 space-y-1">
@@ -207,8 +192,6 @@ function StepSelect({
             {[...confirmed, ...pending].map((u) => {
               const idx = selected.findIndex((s) => s.txid === u.txid && s.vout === u.vout);
               const checked = idx >= 0;
-              // Coinbase immatures : dépensables après COINBASE_MATURITY blocs
-              // (hauteur de dépense = tip + 1, comme chez Bitcoin Core).
               const matureIn =
                 u.isCoinbase && tip != null && u.status.block_height != null
                   ? Math.max(0, COINBASE_MATURITY - (tip + 1 - u.status.block_height))
@@ -258,7 +241,6 @@ function StepSelect({
   );
 }
 
-/** Étape 2 — sorties, frais et aperçu multisig. */
 function StepBuild({
   selected,
   outputs,
@@ -415,7 +397,6 @@ function StepBuild({
         </div>
       </div>
 
-      {/* Scripts avancés — multisig */}
       {active ? (
         <Collapsible open={showMs} onOpenChange={setShowMs}>
           <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left text-xs font-medium hover:border-primary/40">
@@ -433,7 +414,6 @@ function StepBuild({
   );
 }
 
-/** Panneau multisig : agrégation des clés publiques du lab → adresse P2WSH. */
 function MultisigPanel() {
   const wallets = useLabStore((s) => s.wallets);
   const { t } = useT();
@@ -506,9 +486,6 @@ function MultisigPanel() {
   );
 }
 
-/** Étapes 3 & 4 — signature locale puis diffusion. La tuile « Diffuser »
- * n'apparaît qu'à l'étape 4 : à l'étape 3, une transaction signée affiche
- * son récapitulatif et une invitation à appuyer sur « Suivant ». */
 function StepSignAndBroadcast({
   selected,
   outputs,
@@ -528,7 +505,6 @@ function StepSignAndBroadcast({
   wallet: LabWallet | null;
   step: number;
   signed: SignedTx | null;
-  /** false dès qu'une entrée/sortie/frais/portefeuille change après la signature. */
   signedValid: boolean;
   onSigned: (res: SignedTx) => void;
   onBroadcasted: (txid: string) => void;
@@ -549,16 +525,13 @@ function StepSignAndBroadcast({
     setBroadcastResult(null);
     try {
       if (!active) throw new Error('Aucun portefeuille actif.');
-      // Diagnostic précis ligne par ligne : une saisie partielle ou un format
-      // étranger (tb1… sur regtest) produit un message ciblé au lieu d'un
-      // refus générique — l'utilisateur sait exactement quoi corriger.
       const cfg = NETWORKS[net];
       const validOutputs: { address: string; amountSats: number }[] = [];
       const problems: string[] = [];
       outputs.forEach((o, i) => {
         const addr = o.address.trim();
         const amt = parseInt(o.amount, 10);
-        if (!addr && !o.amount.trim()) return; // ligne entièrement vide → ignorée
+        if (!addr && !o.amount.trim()) return;
         if (!RX.btcAddress.test(addr)) {
           problems.push(
             addr
@@ -729,7 +702,6 @@ function StepSignAndBroadcast({
   );
 }
 
-/** Composant principal : Stepper 4 étapes. */
 export function TxBuilder() {
   const { t } = useT();
   const net = useLabStore((s) => s.network);
@@ -743,16 +715,10 @@ export function TxBuilder() {
   const [feeRate, setFeeRate] = useState(5);
   const [changeAddress, setChangeAddress] = useState('');
   const [lastTxid, setLastTxid] = useState<string | null>(null);
-  // Transaction signée remontée ici : l'étape Diffuser n'est accessible (bouton
-  // « Suivant ») qu'avec une signature VALIDE — et la signature est invalidée
-  // dès qu'un paramètre de la transaction change (empreinte signFp).
   const [signed, setSigned] = useState<SignedTx | null>(null);
   const [signedFp, setSignedFp] = useState('');
-  // Portefeuille choisi pour ce workflow — le portefeuille « actif » est la valeur par défaut,
-  // mais l'utilisateur peut en sélectionner n'importe lequel de sa bibliothèque du réseau actif.
   const [walletId, setWalletId] = useState<string | null>(null);
 
-  // Bibliothèque filtrée par réseau actif (aucune opération croisée possible).
   const netWallets = useMemo(
     () => wallets.filter((w) => (w.network ?? DEFAULT_NET) === net),
     [wallets, net],
@@ -762,9 +728,6 @@ export function TxBuilder() {
     [netWallets, walletId, active],
   );
 
-  // Empreinte des paramètres de signature : UTXO choisis, sorties, frais,
-  // change et portefeuille. Toute différence avec l'empreinte enregistrée au
-  // moment de signer rend la transaction signée obsolète (jamais diffusée).
   const signFp = useMemo(
     () =>
       JSON.stringify({
@@ -782,7 +745,7 @@ export function TxBuilder() {
   const pickWallet = (id: string) => {
     if (id === wallet?.id) return;
     setWalletId(id);
-    setSelected([]); // les UTXO appartiennent à l'adresse — la sélection est invalide après changement
+    setSelected([]);
     setSigned(null);
     setSignedFp('');
     setLastTxid(null);
@@ -799,8 +762,6 @@ export function TxBuilder() {
     setLastTxid(null);
   };
 
-  // Étape 3 (Signer) : « Suivant » exige une transaction signée ET à jour —
-  // la tuile Diffuser n'est donc jamais montrée avant l'étape 4.
   const canNext = step === 1 ? selected.length > 0 : step === 3 ? signedValid : true;
 
   return (
@@ -816,7 +777,6 @@ export function TxBuilder() {
       />
       <Card>
       <CardHeader className="pb-4">
-        {/* Stepper */}
         <div className="mt-4 flex items-center gap-1 overflow-x-auto pb-1">
           {STEPS.map((s, i) => {
             const Icon = s.icon;
