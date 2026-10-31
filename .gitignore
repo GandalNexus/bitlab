@@ -48,3 +48,9 @@ next-env.d.ts
 
 # Regtest embedded engine — lab chain runtime state (BITLAB_DATA_DIR)
 /.bitlab/
+
+# Comment-cleanup scheduler — hourly backups and rotation state (scripts/cleanup-scheduler.mjs)
+/backups/
+
+# npm lockfile artifact from validation gates (project lockfile is bun.lock)
+package-lock.json
