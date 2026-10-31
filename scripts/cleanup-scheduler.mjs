@@ -218,7 +218,8 @@ function runCycle({ dryRun = false } = {}) {
   const relFiles = res.changed.map((f) => path.relative(ROOT, f));
   git(['add', '--', ...relFiles]);
   const msg = `chore(comments): strip FR+EN comments from ${folder.name} (${res.totals.commentsRemoved} comments, ${entry.linesRemoved} lines)`;
-  const commitHash = git(['-c', 'user.name=BitLab Cleanup Scheduler', '-c', 'user.email=scheduler@bitlab.local', 'commit', '-m', msg]);
+  git(['-c', 'user.name=BitLab Cleanup Scheduler', '-c', 'user.email=scheduler@bitlab.local', 'commit', '-m', msg]);
+  const commitHash = git(['rev-parse', '--short', 'HEAD']);
 
   const zipName = `backup-bitlab-${hour}h.zip`;
   const zipPath = path.join(BACKUP_DIR, zipName);
