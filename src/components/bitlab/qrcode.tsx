@@ -1,9 +1,5 @@
 'use client';
 
-/**
- * BitLab — Rendu de code QR local (aucun service externe).
- * Utilisé pour les adresses de réception et les factures Lightning.
- */
 import { useEffect, useState } from 'react';
 import QRCodeLib from 'qrcode';
 import { tSync } from '@/lib/i18n';

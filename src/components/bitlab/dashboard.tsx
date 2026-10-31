@@ -1,10 +1,5 @@
 'use client';
 
-/**
- * BitLab — Dashboard central (5. UI/UX du cahier des charges).
- * Vue d'ensemble de l'état du réseau : frais actuels, dernier bloc,
- * état du lab et parcours pédagogique Générer → Construire → Signer → Diffuser.
- */
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
@@ -47,7 +42,6 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
 
   return (
     <div className="space-y-8">
-      {/* Hero centré — collé au header (-mt-6 annule le py-6 de <main>) */}
       <section className="lab-glow -mx-4 -mt-6 border-b border-border/60 px-4 pb-10 pt-8 text-center sm:-mx-6 sm:px-6 sm:pt-14">
         <div className="mx-auto max-w-3xl">
           <h1 className="lab-display text-3xl leading-tight sm:text-[40px] sm:leading-[48px]">
@@ -79,7 +73,6 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
         </div>
       </section>
 
-      {/* État du réseau */}
       <section aria-label={t('État du réseau {net}', { net: cfg.label })}>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
@@ -112,7 +105,6 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
         </div>
       </section>
 
-      {/* Workflow pédagogique — cartes fonctionnalités façon Stellar Lab */}
       <section aria-label={t('Workflow pédagogique')}>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {WORKFLOW.map((w, i) => {
@@ -137,7 +129,6 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
         </div>
       </section>
 
-      {/* Journal d'activité — logs lisibles par module */}
       <section aria-label={t('Journal d’activité')}>
         <ActivityLog />
       </section>

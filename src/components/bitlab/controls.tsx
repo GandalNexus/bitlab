@@ -1,15 +1,10 @@
 'use client';
 
-/**
- * BitLab — Contrôles globaux de l'en-tête : bascule de langue (FR ⇄ EN)
- * et bascule jour/nuit. Partagés entre le laboratoire et la page /guide.
- */
 import { Moon, Sun } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { useThemeStore, type Theme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
-/** Bouton pilule FR | EN — bascule de langue instantanée. */
 export function LangToggle() {
   const { lang, setLang, t } = useT();
   return (
@@ -37,7 +32,6 @@ export function LangToggle() {
   );
 }
 
-/** Bouton soleil/lune — mode jour ↔ mode nuit. */
 export function ThemeToggle() {
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);

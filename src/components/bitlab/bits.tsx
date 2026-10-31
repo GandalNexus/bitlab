@@ -1,8 +1,5 @@
 'use client';
 
-/**
- * BitLab — Composants partagés du laboratoire.
- */
 import { useEffect, useState, type ReactNode } from 'react';
 import { Check, Copy, KeyRound } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { tSync } from '@/lib/i18n';
 
-/** En-tête de page façon Stellar Lab : titre 20px/600 + description grise. */
 export function PageIntro({ title, desc, actions }: { title: string; desc?: string; actions?: ReactNode }) {
   return (
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -23,7 +19,6 @@ export function PageIntro({ title, desc, actions }: { title: string; desc?: stri
   );
 }
 
-/** Champ copiable — style Stellar Lab : libellé au-dessus, action intégrée à droite du champ. */
 export function Copyable({
   value,
   display,
@@ -75,7 +70,6 @@ export function Copyable({
   );
 }
 
-/** Carte statistique du tableau de bord. */
 export function StatCard({
   title,
   value,
@@ -107,7 +101,6 @@ export function StatCard({
   );
 }
 
-/** Bloc JSON repliable façon console développeur. */
 export function JsonBlock({ data, maxH = 'max-h-72' }: { data: unknown; maxH?: string }) {
   return (
       <pre
@@ -121,7 +114,6 @@ export function JsonBlock({ data, maxH = 'max-h-72' }: { data: unknown; maxH?: s
   );
 }
 
-/** Étiquette de type de script/adresse. */
 export function TypeBadge({ type }: { type: string }) {
   const colors: Record<string, string> = {
     legacy: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
@@ -139,7 +131,6 @@ export function TypeBadge({ type }: { type: string }) {
   );
 }
 
-/** Bannière d'avertissement sécurité (clés locales). */
 export function SecurityNote({ children }: { children?: ReactNode }) {
   return (
     <div className="flex items-start gap-2 rounded-[6px] border border-primary/25 bg-primary/5 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
@@ -156,7 +147,6 @@ export function SecurityNote({ children }: { children?: ReactNode }) {
   );
 }
 
-/** Formate un horodatage relatif dans la langue active. */
 export function timeAgo(ts: number): string {
   const s = Math.max(1, Math.floor((Date.now() - ts) / 1000));
   if (s < 60) return tSync('il y a {n} s', { n: s });
