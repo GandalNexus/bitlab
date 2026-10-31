@@ -1,11 +1,3 @@
-/**
- * BitLab — Gestion des portefeuilles (2.1 du cahier des charges)
- * Génération de clés privées/publiques + adresses Legacy / SegWit / Taproot,
- * import WIF et phrases mnémoniques BIP39.
- *
- * SÉCURITÉ (protocole Zero-Knowledge) : ces fonctions s'exécutent exclusivement
- * dans le navigateur. Les clés privées ne sont JAMAIS transmises au serveur.
- */
 import { HDKey } from '@scure/bip32';
 import { generateMnemonic, mnemonicToSeedSync, validateMnemonic } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
@@ -53,13 +45,11 @@ export const TYPE_INFO: Record<AddrType, TypeMeta> = {
   },
 };
 
-/** Portefeuille de laboratoire (état local, persisté uniquement en IndexedDB). */
 export interface LabWallet {
   id: string;
   label: string;
   type: AddrType;
   source: 'generated' | 'mnemonic' | 'wif';
-  /** Réseau pour lequel le portefeuille a été dérivé (défaut historique : testnet4). */
   network?: NetId;
   mnemonic?: string;
   derivationPath?: string;
@@ -70,26 +60,22 @@ export interface LabWallet {
   createdAt: number;
 }
 
-/** Extrait l'adresse d'un paiement @scure/btc-signer. Toujours définie pour une
- * entrée valide (clé publique compressée + paramètres de réseau corrects) ; lève
- * une erreur explicite sinon, au lieu d'un `!` qui propagerait un undefined. */
 export function addrOf(p: { address?: string }): string {
   if (!p.address) throw new Error(tSync('Impossible de dériver l’adresse demandée (entrée invalide).'));
   return p.address;
 }
 
-/** Dérive la paire adresse/clé publique pour un type et un réseau donnés depuis la clé privée. */
 export function deriveForType(
   privBytes: Uint8Array,
   type: AddrType,
   net: NetId = currentNet(),
 ): { address: string; publicKeyHex: string } {
-  const pub = secp256k1.getPublicKey(privBytes, true); // 33 octets compressé
+  const pub = secp256k1.getPublicKey(privBytes, true);
   const params = signerNetwork(net);
   let address: string;
   if (type === 'legacy') address = addrOf(p2pkh(pub, params));
   else if (type === 'segwit') address = addrOf(p2wpkh(pub, params));
-  else address = addrOf(p2tr(pub.slice(1), undefined, params)); // Taproot : clé x-only 32 octets
+  else address = addrOf(p2tr(pub.slice(1), undefined, params));
   return { address, publicKeyHex: hex.encode(pub) };
 }
 
@@ -97,13 +83,11 @@ function wifEncode(privBytes: Uint8Array, net: NetId = currentNet()): string {
   return WIF(signerNetwork(net)).encode(privBytes);
 }
 
-/** Génère un portefeuille complet avec phrase mnémonique (BIP39 + dérivation HD). */
 export function createWallet(type: AddrType, words: 12 | 24 = 12, label?: string): LabWallet {
   const mnemonic = generateMnemonic(wordlist, words === 24 ? 256 : 128);
   return walletFromMnemonic(mnemonic, type, label, 'generated');
 }
 
-/** Construit un portefeuille depuis une phrase mnémonique BIP39 (réseau actif). */
 export function walletFromMnemonic(
   mnemonic: string,
   type: AddrType,
@@ -137,7 +121,6 @@ export function walletFromMnemonic(
   };
 }
 
-/** Importe un portefeuille depuis une clé privée WIF (format du réseau actif). */
 export function walletFromWif(wif: string, type: AddrType, label?: string, net: NetId = currentNet()): LabWallet {
   const cleaned = wif.trim();
   let priv: Uint8Array;
@@ -161,7 +144,6 @@ export function walletFromWif(wif: string, type: AddrType, label?: string, net: 
   };
 }
 
-/** Vérifie la validité d'une phrase mnémonique sans lever d'exception. */
 export function checkMnemonic(mnemonic: string): boolean {
   try {
     return validateMnemonic(mnemonic.trim().toLowerCase().replace(/\s+/g, ' '), wordlist);

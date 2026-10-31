@@ -1,9 +1,3 @@
-/**
- * BitLab — Transaction builder (steps 2.2 / 2.3 / 2.5)
- * UTXO selection, fee tuning (sat/vB), local signing,
- * hex serialization, raw tx decoding, and multisig.
- * 100% browser execution — signatures stay client-side.
- */
 import { Transaction, OutScript, Address, multisig as multisigTpl } from '@scure/btc-signer';
 import { bech32, bech32m } from '@scure/base';
 import { concatBytes } from '@noble/hashes/utils.js';
@@ -18,8 +12,6 @@ export interface Utxo {
   vout: number;
   value: number;
   status?: { confirmed: boolean; block_height?: number };
-  /** Only on embedded regtest engine: coinbase output
-   * (100-block maturity before spend, per consensus). */
   isCoinbase?: boolean;
 }
 
@@ -36,22 +28,12 @@ export interface BuildResult {
   changeSats: number;
 }
 
-/** Address → scriptPubKey via btc-signer address decoder
- * (active network, or explicit network — e.g., regtest coinbase outside UI). */
 export function addressToScript(address: string, net: NetId = currentNet()): Uint8Array {
   const value = Address(signerNetwork(net)).decode(address);
   return OutScript.encode(value);
 }
 
-/**
- * Average vsize per input type (vB) — calibrated against actual transactions
- * produced by btc-signer (calibrated against the tx-spend suite). Estimate is used
- * for change calculation; underestimation could drop tx below min-relay (1 sat/vB).
- * SegWit: maximal ECDSA witness (DER 72 + 1); Taproot: fixed Schnorr witness (64 + 1);
- * Legacy: full scriptSig.
- */
 const IN_VSIZE: Record<string, number> = { legacy: 149, segwit: 68.75, taproot: 58 };
-/** Tailles virtuelles moyennes par type de sortie (vB). */
 const OUT_VSIZE: Record<string, number> = { legacy: 34, p2sh: 32, segwit: 31, p2wsh: 43, taproot: 43, op_return: 43 };
 const TX_HEADER_VSIZE = 10.5;
 
@@ -64,28 +46,16 @@ export function outVsizeOf(address: string): number {
     const script = addressToScript(address);
     const t = detectScriptType(script);
     if (t === 'segwit') {
-      // SegWit v0 : le script = version (1 o) + push (1 o) + programme.
-      // P2WPKH (programme de 20 o → script de 22 o) = 31 vB, mais P2WSH
-      // (programme de 32 o → script de 34 o — ex. adresse de financement
-      // Lightning) = 43 vB. Les confondre sous-estime les frais sous min-relay.
       return script.length === 22 ? OUT_VSIZE.segwit : OUT_VSIZE.p2wsh;
     }
     return OUT_VSIZE[t] ?? 34;
   } catch {
-    // Adresse illisible pour le réseau actif : estimation générique — la
-    // construction réelle (draftTx) produira l'erreur pédagogique exacte.
     return 34;
   }
 }
 
-export const DUST_LIMIT = 546; // sats
+export const DUST_LIMIT = 546;
 
-/**
- * Estimation de la taille virtuelle avant signature :
- * vsize = entête + Σ entrées + Σ sorties (+ sortie de monnaie restante).
- * `changeAddress` affine la sortie de change (P2TR = 43 vB, P2WPKH = 31 vB…) —
- * sans lui, l'estimation suppose du SegWit v0.
- */
 export function estimateVsize(
   inType: AddrType,
   nInputs: number,
@@ -99,7 +69,6 @@ export function estimateVsize(
   return v;
 }
 
-/** Construit une transaction complète (UTXO + sorties + frais) sans la signer. */
 export function draftTx(params: {
   utxos: Utxo[];
   inputAddress: string;
@@ -118,17 +87,12 @@ export function draftTx(params: {
   }
 
   const prevScript = addressToScript(inputAddress);
-  // allowLegacyWitnessUtxo : les entrées P2PKH legacy utilisent aussi witnessUtxo (script + montant),
-  // car l'API Esplora ne fournit pas la transaction complète des UTXO.
   const tx = new Transaction({ allowLegacyWitnessUtxo: true });
   for (const u of utxos) {
     if (!RX.txid.test(u.txid)) throw new Error(tSync('TXID d’UTXO invalide.'));
     if (inputType === 'legacy') {
-      // Entrée Legacy P2PKH : script de dépense précédent + montant.
       tx.addInput({ txid: u.txid, index: u.vout, witnessUtxo: { script: prevScript, amount: BigInt(u.value) } });
     } else if (inputType === 'taproot') {
-      // Entrée Taproot : la clé interne brute (x-only, non-tweaked) est requise pour
-      // la signature keypath (Schnorr). Elle est dérivée de la clé privée du portefeuille.
       if (!params.tapInternalKeyHex) throw new Error(tSync('Clé interne Taproot manquante.'));
       tx.addInput({
         txid: u.txid,
@@ -137,16 +101,11 @@ export function draftTx(params: {
         tapInternalKey: hex.decode(params.tapInternalKeyHex),
       });
     } else {
-      // Entrée SegWit v0 : témoin + montant requis (BIP-143).
       tx.addInput({ txid: u.txid, index: u.vout, witnessUtxo: { script: prevScript, amount: BigInt(u.value) } });
     }
   }
   const netParams = signerNetwork();
   const netCfg = NETWORKS[currentNet()];
-  // addOutputAddress décode l'adresse pour le réseau actif : une adresse
-  // d'un autre réseau (tb1… collée sur regtest, bc1… sur testnet…) ou une
-  // saisie partielle lève une erreur technique ("wrong bech32 prefix") —
-  // on la remplace par un message pédagogique avec le format attendu.
   const addOut = (address: string, sats: bigint, kind: 'sortie' | 'change') => {
     try {
       tx.addOutputAddress(address, sats, netParams);
@@ -167,10 +126,6 @@ export function draftTx(params: {
   return tx;
 }
 
-/**
- * Construit, signe et finalise une transaction complète.
- * Gère automatiquement les frais et la sortie de monnaie restante (change).
- */
 export function buildSignedTx(params: {
   utxos: Utxo[];
   outputs: TxOutputDraft[];
@@ -192,7 +147,6 @@ export function buildSignedTx(params: {
   const change = totalIn - totalOut - feeEst;
   const hasChange = change >= DUST_LIMIT;
 
-  // Clé interne Taproot (x-only) dérivée de la clé privée locale — jamais envoyée au serveur.
   const xOnlyKey = secp256k1.getPublicKey(hex.decode(privateKeyHex), true).slice(1);
   const tx = draftTx({
     utxos,
@@ -218,7 +172,6 @@ export function buildSignedTx(params: {
   };
 }
 
-/** Détection du type de script à partir des motifs canoniques. */
 export function detectScriptType(
   script: Uint8Array,
 ): 'legacy' | 'p2sh' | 'segwit' | 'taproot' | 'op_return' | 'unknown' {
@@ -261,9 +214,6 @@ export interface DecodedTx {
   outputs: DecodedOut[];
 }
 
-/** Adresse lisible depuis un script de sortie — sémantique Testnet (tb1q…),
- * conservée pour les portefeuilles de test et la Lightning. Pour l'anatomie
- * des transactions, préférer scriptToAddressOn() conscient du réseau. */
 export function scriptToAddress(script: Uint8Array): string | undefined {
   const t = detectScriptType(script);
   try {
@@ -277,10 +227,6 @@ export function scriptToAddress(script: Uint8Array): string | undefined {
   return undefined;
 }
 
-/** Adresse lisible depuis un script de sortie, encodée pour le réseau donné :
- * bc1… (mainnet), bcrt1… (regtest), tb1… (testnet/signet) — et préfixes
- * base58 assortis. Sans cela, l'anatomie d'une tx regtest afficherait des
- * adresses tb1… qui n'existent pas sur la chaîne locale. */
 export function scriptToAddressOn(script: Uint8Array, net: NetId): string | undefined {
   const t = detectScriptType(script);
   const hrp = net === 'mainnet' ? 'bc' : net === 'regtest' ? REGTEST_NETWORK.bech32 : 'tb';
@@ -297,27 +243,20 @@ export function scriptToAddressOn(script: Uint8Array, net: NetId): string | unde
   return undefined;
 }
 
-/** Décode une transaction sérialisée (hex brut) en structure lisible.
- * Les adresses de sortie sont encodées pour le réseau actif (paramétrable
- * pour les vérifications hors UI). */
 export function decodeRawTx(rawHex: string, net: NetId = currentNet()): DecodedTx {
   const cleaned = rawHex.trim().replace(/\s+/g, '');
   if (!RX.hex.test(cleaned) || cleaned.length < 20) throw new Error(tSync('Hexadécimal de transaction invalide.'));
   const bytes = hex.decode(cleaned);
   const tx = Transaction.fromRaw(bytes, {
-    // Décodage tolérant : entrées/sorties non reconnues acceptées, champs
-    // PSBT inconnus ignorés, cohérence des scripts non vérifiée.
     allowUnknownInputs: true,
     allowUnknownOutputs: true,
     disableScriptCheck: true,
     unknown: 'ignore',
   });
-  // Accesseurs publics de btc-signer v2 (inputs/outputs sont privés).
   const inputs: DecodedIn[] = Array.from({ length: tx.inputsLength }, (_, i) => {
     const inp = tx.getInput(i);
     return {
       index: i,
-      // txid stocké en Uint8Array (ordre d'affichage) ou déjà en chaîne hex.
       txid:
         typeof inp.txid === 'string'
           ? inp.txid
@@ -331,7 +270,7 @@ export function decodeRawTx(rawHex: string, net: NetId = currentNet()): DecodedT
   });
   const outputs: DecodedOut[] = Array.from({ length: tx.outputsLength }, (_, i) => {
     const out = tx.getOutput(i);
-    const script = out.script ?? new Uint8Array(); // absent sur certains PSBT
+    const script = out.script ?? new Uint8Array();
     const t = detectScriptType(script);
     let opReturnText: string | undefined;
     if (t === 'op_return') {
@@ -370,7 +309,6 @@ export interface MultisigResult {
   n: number;
 }
 
-/** Crée une adresse multisig P2WSH native à partir de clés publiques hex (2.2 Scripts avancés). */
 export function createMultisig(pubkeysHex: string[], m: number): MultisigResult {
   if (pubkeysHex.length < 2) throw new Error(tSync('Le multisig nécessite au moins 2 clés publiques.'));
   if (m < 1 || m > pubkeysHex.length) throw new Error(tSync('Seuil m invalide (1 ≤ m ≤ {n}).', { n: pubkeysHex.length }));
@@ -380,7 +318,7 @@ export function createMultisig(pubkeysHex: string[], m: number): MultisigResult 
       throw new Error(tSync('Clé publique invalide (hex compressé 33 octets attendu).'));
     return hex.decode(c);
   });
-  const tpl = multisigTpl(m, pubs, true, true, signerNetwork()); // witness=true → P2WSH
+  const tpl = multisigTpl(m, pubs, true, true, signerNetwork());
   return {
     address: addrOf(tpl),
     scriptHex: hex.encode(tpl.script),

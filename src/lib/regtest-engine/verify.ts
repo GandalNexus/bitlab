@@ -1,18 +1,3 @@
-/**
- * BitLab — Moteur regtest embarqué : vérification des dépenses standard.
- *
- * Le moteur vérifie réellement les signatures des entrées dont le script
- * précédent est standard :
- *   - P2WPKH  (0014{20}) — sighash BIP 143, ECDSA sur secp256k1 ;
- *   - P2TR key-path (5120{32}) — sighash BIP 341 (hash_type 0x00), Schnorr ;
- *   - P2PKH   (76a914{20}88ac) — sighash legacy (SIGHASH_ALL).
- * Seul SIGHASH_ALL (0x01) est accepté : les variantes ANYONECANPAY /
- * SINGLE / NONE sont rejetées (hors périmètre du labo, cf. docs/networks.md).
- *
- * Les entrées vers des scripts non standards (P2WSH 2-de-2 des canaux LDK,
- * scripts CSV des engagements…) sont acceptées après vérification
- * structurelle : LDK produit, signe et vérifie ces transactions lui-même.
- */
 import { hex } from '@scure/base';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { secp256k1 } from '@noble/curves/secp256k1.js';
@@ -20,7 +5,6 @@ import { hash160, reverseHex } from './params';
 import { serializeLegacy, u32leBytes, type ParsedTx } from './txparse';
 import { schnorr } from '@noble/curves/secp256k1.js';
 
-/** Formes de scripts précédents pris en charge. */
 export type StandardKind = 'p2wpkh' | 'p2tr' | 'p2pkh' | 'other';
 
 export function classifyScript(script: Uint8Array): StandardKind {
@@ -30,29 +14,19 @@ export function classifyScript(script: Uint8Array): StandardKind {
   return 'other';
 }
 
-/** SIGHASH_ALL (les variantes sont rejetées — cf. en-tête de module). */
 const SIGHASH_ALL = 0x01;
 
-/** Extrait et valide le nHashType (dernier octet d'un scriptSig/témoin). */
 function splitHashType(sig: Uint8Array): { der: Uint8Array; hashType: number } | null {
-  if (sig.length < 7) return null; // DER minimal 6 octets + 1 octet de type
+  if (sig.length < 7) return null;
   const hashType = sig[sig.length - 1];
-  if (hashType !== SIGHASH_ALL) return null; // variantes non prises en charge
+  if (hashType !== SIGHASH_ALL) return null;
   return { der: sig.slice(0, -1), hashType };
 }
-
-/* ─────────────────── BIP 143 (SegWit v0, P2WPKH) ─────────────────── */
 
 function sha256d(data: Uint8Array): Uint8Array {
   return sha256(sha256(data));
 }
 
-/**
- * Préimage BIP 143 pour une entrée P2WPKH (scriptCode = 0x1976a914{pkh}88ac).
- * Les quatre hachages agrégés sont calculés intégralement à chaque appel :
- * en regtest les transactions sont minuscules, la simplicité prime.
- */
-/** Exposé pour les tests de calibration (vecteur BIP 143 officiel). */
 export function bip143Sighash(tx: ParsedTx, inputIndex: number, prevAmountSats: number, scriptCode: Uint8Array): Uint8Array {
   const hashPrevouts = sha256d(
     concat(
@@ -115,12 +89,10 @@ function concat(chunks: Uint8Array[]): Uint8Array {
   return out;
 }
 
-/** DER (+ octet hashtype retiré) → signature compacte 64 octets (noble v2). */
 function derToCompact(der: Uint8Array): Uint8Array {
   return secp256k1.Signature.fromBytes(der, 'der').toBytes('compact');
 }
 
-/** Entier Bitcoin compact_size (varint) — préfixe de longueur canonique. */
 function compactSizeBytes(n: number): Uint8Array {
   if (n < 253) return new Uint8Array([n]);
   if (n <= 0xffff) return new Uint8Array([0xfd, n & 0xff, (n >>> 8) & 0xff]);
@@ -137,9 +109,6 @@ function compactSizeBytes(n: number): Uint8Array {
   return out;
 }
 
-/* ─────────────────── BIP 341 (Taproot key-path, hash_type 0x00) ─────────────────── */
-
-/** Hachage à étiquette BIP 340 (TaggedHash). */
 function taggedHash(tag: string, msg: Uint8Array): Uint8Array {
   const t = sha256(new TextEncoder().encode(tag));
   return sha256(concat([t, t, msg]));
@@ -151,11 +120,9 @@ function bip341Sighash(
   prevAmounts: number[],
   prevScripts: Uint8Array[],
 ): Uint8Array {
-  // BIP 341 : les quatre hachages agrégés portent sur TOUTES les entrées.
   if (prevAmounts.length !== tx.inputs.length || prevScripts.length !== tx.inputs.length) {
     throw new Error('montants/scripts prevout requis pour toutes les entrées');
   }
-  // sha_prevouts : outpoints complets (txid interne 32 octets + vout 4 octets).
   const shaPrevouts = sha256(
     concat(
       tx.inputs.map((i) =>
@@ -164,7 +131,6 @@ function bip341Sighash(
     ),
   );
   const shaAmounts = sha256(concat(prevAmounts.map((a) => new Uint8Array(u64le(a)))));
-  // sha_scriptpubkeys : chaque script préfixé de sa taille compact_size (forme Core).
   const shaScripts = sha256(
     concat(prevScripts.map((s) => concat([compactSizeBytes(s.length), s]))),
   );
@@ -186,11 +152,10 @@ function bip341Sighash(
     ),
   );
 
-  // hash_type 0x00 (défaut), pas d'annexe, ext_flag 0.
   const spendType = new Uint8Array([0x00]);
   const msg = concat([
-    new Uint8Array([0x00]), // epoch
-    new Uint8Array([0x00]), // hash_type
+    new Uint8Array([0x00]),
+    new Uint8Array([0x00]),
     new Uint8Array(u32leBytes(tx.version >>> 0)),
     new Uint8Array(u32leBytes(tx.locktime >>> 0)),
     shaPrevouts,
@@ -204,8 +169,6 @@ function bip341Sighash(
   return taggedHash('TapSighash', msg);
 }
 
-/* ─────────────────── Legacy (P2PKH) ─────────────────── */
-
 function legacySighash(tx: ParsedTx, inputIndex: number, prevScript: Uint8Array): Uint8Array {
   const serialized = serializeLegacy({
     version: tx.version,
@@ -218,8 +181,6 @@ function legacySighash(tx: ParsedTx, inputIndex: number, prevScript: Uint8Array)
   return sha256d(serialized);
 }
 
-/* ─────────────────── Point d'entrée ─────────────────── */
-
 export interface VerifyPrevout {
   script: Uint8Array;
   valueSats: number;
@@ -227,17 +188,10 @@ export interface VerifyPrevout {
 
 export interface VerifyResult {
   ok: boolean;
-  /** 'other' = script non standard → acceptation structurelle (pas de vérif). */
   kind: StandardKind;
   reason?: string;
 }
 
-/**
- * Vérifie les signatures de l'entrée `inputIndex` contre les prevouts de la
- * transaction. Le tableau `prevouts` doit couvrir TOUTES les entrées (BIP 341
- * agrège montants et scripts de toutes les entrées dans le sighash) ;
- * `prevouts[inputIndex]` est celui de l'entrée vérifiée.
- */
 export function verifyInput(tx: ParsedTx, inputIndex: number, prevouts: VerifyPrevout[]): VerifyResult {
   const prevout = prevouts[inputIndex];
   if (!prevout) return { ok: false, kind: 'other', reason: 'prevout manquant' };
@@ -268,7 +222,6 @@ export function verifyInput(tx: ParsedTx, inputIndex: number, prevouts: VerifyPr
 
     if (kind === 'p2tr') {
       const witness = tx.witness[inputIndex] ?? [];
-      // key-path sans annexe : [sig64]. L'annexe (premier élément pair) est refusée.
       if (witness.length !== 1 || witness[0].length !== 64) {
         return { ok: false, kind, reason: 'dépense Taproot key-path ([sig64]) attendue' };
       }
@@ -284,9 +237,7 @@ export function verifyInput(tx: ParsedTx, inputIndex: number, prevouts: VerifyPr
       return { ok: true, kind };
     }
 
-    // P2PKH legacy
     const scriptSig = tx.inputs[inputIndex].scriptSig;
-    // Forme attendue : <len>47/48 <sigDER><hashtype> <len>21 <pubkey33>
     const parsed = parseP2pkhScriptSig(scriptSig);
     if (!parsed) return { ok: false, kind, reason: 'scriptSig P2PKH illisible' };
     if (hex.encode(hash160(parsed.pubkey)) !== hex.encode(prevout.script.slice(3, 23))) {

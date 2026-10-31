@@ -1,10 +1,4 @@
-/**
- * BitLab — Dictionnaire de traduction anglaise.
- * Clé = phrase française exacte utilisée dans l'UI (apostrophes typographiques ’).
- * Valeur = traduction anglaise. Support minimal : {variables} interpolées.
- */
 export const EN: Record<string, string> = {
-  /* ─────────────────────────── Sidebar ─────────────────────────── */
   'Laboratoire': 'Laboratory',
   'Tableau de bord': 'Dashboard',
   'Portefeuille': 'Wallet',
@@ -21,7 +15,6 @@ export const EN: Record<string, string> = {
   'Déplier': 'Expand',
   'Replier': 'Collapse',
 
-  /* ─────────────────────────── Header ─────────────────────────── */
   'Ouvrir la navigation': 'Open navigation',
   'Annonce': 'Announcement',
   'Fermer l’annonce': 'Close announcement',
@@ -42,7 +35,6 @@ export const EN: Record<string, string> = {
   'Basculer entre mode jour et mode nuit': 'Toggle between day and night mode',
   'Traduire l’interface (FR → EN)': 'Translate the interface (FR → EN)',
 
-  /* ─────────────────────────── Dashboard ─────────────────────────── */
   'Créez. Signez. Diffusez.': 'Create. Sign. Broadcast.',
   'Créez des clés, envoyez des transactions, minez des blocs — pas à pas, Bitcoin n’aura plus de secret pour vous. Commencez par':
     'Create keys, send transactions, mine blocks — step by step, Bitcoin will hold no secrets from you. Start by',
@@ -79,7 +71,6 @@ export const EN: Record<string, string> = {
   'Publiez la transaction signée sur le Testnet et suivez-la dans l’explorateur.':
     'Publish the signed transaction to the Testnet and follow it in the explorer.',
 
-  /* ─────────────────────────── Wallet ─────────────────────────── */
   'Générez des paires de clés {net} (Legacy, SegWit, Taproot), importez une phrase BIP39 ou une clé WIF, et pilotez votre bibliothèque locale.':
     'Generate {net} key pairs (Legacy, SegWit, Taproot), import a BIP39 phrase or a WIF key, and run your local library.',
   'Importer': 'Import',
@@ -154,7 +145,6 @@ export const EN: Record<string, string> = {
   'Schnorr + MAST : confidentialité des scripts et frais optimisés (bech32m).':
     'Schnorr + MAST: script privacy and optimized fees (bech32m).',
 
-  /* ─────────────────────────── Faucet ─────────────────────────── */
   'Faucet — obtenir des BTC de test': 'Faucet — get test BTC',
   'Copiez l’adresse de votre portefeuille actif, collez-la sur un faucet externe ci-dessous, puis suivez la transaction dans l’explorateur.':
     'Copy your active wallet address, paste it into one of the external faucets below, then follow the transaction in the explorer.',
@@ -185,7 +175,6 @@ export const EN: Record<string, string> = {
   'cN… / cS… (préfixe testnet 0xEF)': 'cN… / cS… (testnet prefix 0xEF)',
   '5H… / Kx… / L1… (préfixe mainnet 0x80)': '5H… / Kx… / L1… (mainnet prefix 0x80)',
 
-  /* ─────────────────────────── QR / bits ─────────────────────────── */
   'Code QR : {v}': 'QR code: {v}',
   'Génération du code QR…': 'Generating QR code…',
   'Copier dans le presse-papiers': 'Copy to clipboard',
@@ -195,7 +184,6 @@ export const EN: Record<string, string> = {
   'il y a {n} j': '{n} d ago',
   'Mo': 'MB',
 
-  /* ─────────────────────────── Tx builder ─────────────────────────── */
   'Sélectionner': 'Select',
   'Constructeur de transactions': 'Transaction builder',
   'Sélection des UTXO, définition des sorties, frais en sat/vB, signature locale puis diffusion {net}.':
@@ -257,7 +245,6 @@ export const EN: Record<string, string> = {
   'Signature impossible': 'Signing failed',
   'Aucun portefeuille actif.': 'No active wallet.',
   'Renseignez au moins une sortie valide à l’étape Construire.': 'Provide at least one valid output in the Build step.',
-  // Maturité des coinbase (sorties de minage regtest) et diagnostics du constructeur.
   'mûr dans {n} bloc(s) — non dépensable avant': 'matures in {n} block(s) — not spendable yet',
   'coinbase mûre (100 confirmations)': 'mature coinbase (100 confirmations)',
   'Adresse invalide pour {net} — format attendu : {hint}': 'Invalid address for {net} — expected format: {hint}',
@@ -299,7 +286,6 @@ export const EN: Record<string, string> = {
   'Retrouvez-la dans l’Explorateur — cliquez la transaction pour son anatomie locale.':
     'Find it in the Explorer — click the transaction for its local anatomy.',
 
-  /* ─────────────────────────── Explorer ─────────────────────────── */
   'Transactions en attente': 'Pending transactions',
   '{v} MvB occupés': '{v} MvB used',
   'Frais totaux en attente': 'Total pending fees',
@@ -344,7 +330,6 @@ export const EN: Record<string, string> = {
   'Décodeur raw': 'Raw decoder',
   'Transaction brute': 'Raw transaction',
 
-  /* ─────────────────────────── Lightning ─────────────────────────── */
   'hors service': 'offline',
   'démarrage…': 'starting…',
   'en course': 'running',
@@ -458,10 +443,8 @@ export const EN: Record<string, string> = {
   'capacité totale': 'total capacity',
   'réseau non supporté': 'unsupported network',
 
-  /* ─────────────────────────── Footer / page ─────────────────────────── */
   '{net} · clés 100 % locales': '{net} · 100% local keys',
 
-  /* ─────────────────────────── Guide docs ─────────────────────────── */
   'Guide Bitcoin & Lightning': 'Bitcoin & Lightning guide',
   'Bitcoin et Lightning, expliqués au niveau du protocole — à manipuler directement dans votre navigateur.':
     'Bitcoin and Lightning explained at the protocol level — hands-on, right in your browser.',
@@ -670,7 +653,6 @@ export const EN: Record<string, string> = {
   'Voir la référence': 'See reference',
   'Sources normatives et documentation technique utilisées dans ce guide.': 'Normative sources and technical documentation used in this guide.',
 
-  /* ─────────────────────────── docs-art (SVG) ─────────────────────────── */
   'Du navigateur au réseau Bitcoin': 'From the browser to the Bitcoin network',
   'Dérivation hiérarchique des clés': 'Hierarchical key derivation',
   'Modèle UTXO d’une transaction': 'UTXO model of a transaction',
@@ -717,7 +699,6 @@ export const EN: Record<string, string> = {
   'serveur': 'server',
   'Ce que le navigateur signe, le serveur ne le saura jamais': 'What the browser signs, the server will never know',
 
-  /* ─────────────────────────── Libs (erreurs) ─────────────────────────── */
   'Phrase mnémonique BIP39 invalide (mots inconnus ou checksum erroné).':
     'Invalid BIP39 mnemonic phrase (unknown words or bad checksum).',
   'Échec de la dérivation HD.': 'HD derivation failed.',
@@ -739,7 +720,6 @@ export const EN: Record<string, string> = {
   'erreur {status}': '{status} error',
   'Le montant doit être un multiple de 1000 sats.': 'The amount must be a multiple of 1000 sats.',
 
-  /* ─────────────────────────── Compléments ─────────────────────────── */
   'Canaux': 'Channels',
   'Factures': 'Invoices',
   'Paiements': 'Payments',
@@ -754,7 +734,6 @@ export const EN: Record<string, string> = {
   'et': 'and',
   'créée localement': 'created locally',
 
-  /* ───────────────────── Laboratoire Lightning (WASM) ───────────────────── */
   'Laboratoire Lightning': 'Lightning lab',
   'Deux nœuds LDK réels compilés en WebAssembly tournent dans votre navigateur : canaux financés on-chain, factures BOLT11 signées, paiements HTLC authentiques. Vos clés et vos données restent dans votre navigateur.':
     'Two real LDK nodes compiled to WebAssembly run in your browser: on-chain funded channels, signed BOLT11 invoices, authentic HTLC payments. Your keys and data stay in your browser.',
@@ -876,7 +855,6 @@ export const EN: Record<string, string> = {
   'financement abandonné': 'funding discarded',
   'sorties récupérables (fermeture)': 'spendable outputs (closing)',
 
-  /* ── Mineur Testnet4 (PoW réel dans le navigateur, règle BIP 94) ── */
   'Mineur Testnet4 — PoW réel dans votre navigateur': 'Testnet4 miner — real PoW in your browser',
   'Sans faucet accessible, minez vos propres sats de test : quand un bloc testnet4 arrive plus de 20 minutes après le précédent, le suivant devient minable à difficulté minimale (règle BIP 94). Récompense : 50 tBTC par bloc, utilisables après 100 confirmations.':
     'When no faucet is reachable, mine your own test sats: whenever a testnet4 block arrives more than 20 minutes after the previous one, the next block becomes mineable at minimum difficulty (BIP 94 rule). Reward: 50 tBTC per block, spendable after 100 confirmations.',
@@ -911,7 +889,6 @@ export const EN: Record<string, string> = {
   'Il minera vers {a} pendant les fenêtres BIP 94 — le panneau ci-dessous suit la progression.':
     'It will mine to {a} during BIP 94 windows — the panel below tracks progress.',
 
-  /* ── Regtest : mineur navigateur & nœud externe (mode avancé) ── */
   'Mineur Regtest — PoW réel sur votre chaîne privée': 'Regtest miner — real PoW on your private chain',
   'Mineur — indisponible sur ce réseau': 'Miner — unavailable on this network',
   'Ce réseau ne peut pas être miné depuis le navigateur (faucets du module Portefeuille, ou nœud signataire requis). Utilisez Testnet4 ou Regtest pour le minage réel.':
@@ -936,7 +913,6 @@ export const EN: Record<string, string> = {
     'The Lightning lab is available on testnet4, testnet3, signet and regtest. Switch networks in the sidebar.',
   'Journal': 'Log',
 
-  /* ───────────────── Regtest embarqué (moteur + faucet + mineur) ───────────────── */
   'Chaîne regtest — laboratoire local': 'Regtest chain — local laboratory',
   'La chaîne privée est embarquée dans BitLab : rien à installer, ni Docker, ni machine virtuelle.':
     'The private chain is embedded in BitLab: nothing to install — no Docker, no virtual machine.',
@@ -968,7 +944,6 @@ export const EN: Record<string, string> = {
   'Minez des blocs depuis l’onglet Mineur pour confirmer.': 'Mine blocks from the Miner tab to confirm.',
   'Blocs de confirmation minés automatiquement.': 'Confirmation blocks mined automatically.',
 
-  /* ───────────────── Module Mineur (page dédiée, PoW réel) ───────────────── */
   'Mineur': 'Miner',
   'Mineur — PoW réel dans votre navigateur': 'Miner — real PoW in your browser',
   'Choisissez le réseau à miner, le portefeuille qui recevra les récompenses, puis démarrez : le hachage SHA-256d est réel, seule la difficulté est jouable.':
@@ -983,7 +958,6 @@ export const EN: Record<string, string> = {
   'Aucun portefeuille {net} : créez-en un dans le module Portefeuille — il recevra la récompense de chaque bloc trouvé.':
     'No {net} wallet: create one in the Wallet module — it will receive the reward of every block found.',
 
-  /* ───────────────── Maturation des récompenses (regtest) ───────────────── */
   'Maturation des récompenses': 'Reward maturation',
   'Une récompense de minage attend {n} blocs avant d’être dépensable (consensus Bitcoin). Les blocs minés ici alimentent le pool du faucet — vos récompenses déjà en chaîne mûrissent avec eux.':
     'A mining reward waits {n} blocks before it is spendable (Bitcoin consensus). Blocks mined here feed the faucet pool — your on-chain rewards mature along with them.',
@@ -992,7 +966,6 @@ export const EN: Record<string, string> = {
   'Miner {k} bloc(s) pour tout débloquer': 'Mine {k} block(s) to unlock all',
   'minage des blocs…': 'mining blocks…',
 
-  /* ───────────────── Journal d’activité (logs lisibles par module) ───────────────── */
   'Journal d’activité': 'Activity log',
   'Opérations du laboratoire : réseau, portefeuilles, transactions, minage. Aucun secret n’y figure — les clés restent dans votre navigateur.':
     'Lab operations: network, wallets, transactions, mining. No secrets here — keys stay in your browser.',

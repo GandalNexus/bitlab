@@ -1,26 +1,11 @@
-/**
- * BitLab — Traduction Core ⇄ Esplora pour le réseau regtest (fonctions pures).
- *
- * Le regtest n'a pas d'API Esplora publique : le proxy /api/bitcoin dialogue
- * avec le Bitcoin Core local de l'utilisateur (interface REST activée par
- * `-rest=1`, port partagé avec le RPC). Ce module traduit les réponses Core
- * vers les formes Esplora attendues par le client (mempool.ts) — sans effet
- * de bord, donc testable hors-ligne (cf. tests/regtest.test.ts).
- *
- * Limite documentée : sans `-txindex`, l'historique d'adresse n'est pas
- * reconstruisible ; `address/{a}/txs` répond une liste vide et `tx` est
- * déclaré confirmé (les blocs regtest sont quasi instantanés).
- */
 import type { AddressInfo, AddressUtxo, BlockSummary, MempoolStats, RecentTx, TxInfo } from '../mempool';
 
-/** Satoshi = 10^8 BTC ; Core renvoie des montants décimaux flottants. */
 export function btcToSats(amount: number | string | undefined | null): number {
   const n = typeof amount === 'string' ? Number(amount) : (amount ?? 0);
   if (!Number.isFinite(n) || n < 0) return 0;
   return Math.round(n * 1e8);
 }
 
-/** Adresse lisible d'un scriptPubKey Core (v22+ : `address`, plus ancien : `addresses[]`). */
 function coreAddress(spk: { address?: unknown; addresses?: unknown } | undefined): string | undefined {
   if (!spk) return undefined;
   if (typeof spk.address === 'string') return spk.address;
@@ -28,24 +13,20 @@ function coreAddress(spk: { address?: unknown; addresses?: unknown } | undefined
   return undefined;
 }
 
-/** Frais recommandés regtest : pas de marché de frais sur une chaîne privée. */
 export function regtestFees(): { fastestFee: number; halfHourFee: number; hourFee: number; economyFee: number; minimumFee: number } {
   return { fastestFee: 1, halfHourFee: 1, hourFee: 1, economyFee: 1, minimumFee: 1 };
 }
 
-/** /rest/chaininfo.json → hauteur du tip. */
 export function chainInfoToTipHeight(info: { blocks?: unknown }): number | null {
   const n = Number(info?.blocks);
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
-/** /rest/chaininfo.json → hash du tip. */
 export function chainInfoToTipHash(info: { bestblockhash?: unknown }): string | null {
   const h = info?.bestblockhash;
   return typeof h === 'string' && /^[0-9a-f]{64}$/i.test(h) ? h : null;
 }
 
-/** /rest/blockhashbyheight/{h}.json → hash (forme objet ou chaîne brute selon version). */
 export function blockHashByHeight(payload: unknown): string | null {
   const fromObject = (payload as { blockhash?: unknown })?.blockhash;
   const candidate = typeof fromObject === 'string' ? fromObject : typeof payload === 'string' ? payload : '';
@@ -53,7 +34,6 @@ export function blockHashByHeight(payload: unknown): string | null {
   return /^[0-9a-f]{64}$/i.test(cleaned) ? cleaned : null;
 }
 
-/** /rest/headers/{n}/{hash}.json → tableau d'hex ; on retourne le premier (160 caractères). */
 export function headersToFirstHeader(payload: unknown): string | null {
   if (!Array.isArray(payload)) return null;
   const first = payload[0];
@@ -62,7 +42,6 @@ export function headersToFirstHeader(payload: unknown): string | null {
   return cleaned.length === 160 && /^[0-9a-f]+$/.test(cleaned) ? cleaned : null;
 }
 
-/** /rest/tx/{txid}.json (format Core) → TxInfo (forme Esplora). */
 export function coreTxToEsplora(core: unknown, txid: string): TxInfo {
   const c = (core ?? {}) as {
     version?: unknown;
@@ -116,7 +95,6 @@ export function coreTxToEsplora(core: unknown, txid: string): TxInfo {
   };
 }
 
-/** RPC scantxoutset → UTXOs Esplora d'une adresse. */
 export function scantxoutsetToUtxos(res: unknown): AddressUtxo[] {
   const unspents = (res as { unspents?: unknown[] })?.unspents;
   if (!Array.isArray(unspents)) return [];
@@ -136,7 +114,6 @@ export function scantxoutsetToUtxos(res: unknown): AddressUtxo[] {
     .filter((u): u is AddressUtxo => u !== null);
 }
 
-/** RPC scantxoutset → synthèse d'adresse (solde = total non dépensé). */
 export function scantxoutsetToAddressInfo(res: unknown, address: string): AddressInfo {
   const unspents = scantxoutsetToUtxos(res);
   const funded = unspents.reduce((sum, u) => sum + u.value, 0);
@@ -147,7 +124,6 @@ export function scantxoutsetToAddressInfo(res: unknown, address: string): Addres
   };
 }
 
-/** /rest/mempool/info.json → statistiques mempool. */
 export function mempoolInfoToStats(info: unknown): MempoolStats {
   const m = (info ?? {}) as { size?: unknown; bytes?: unknown; total_fee?: unknown };
   return {
@@ -158,7 +134,6 @@ export function mempoolInfoToStats(info: unknown): MempoolStats {
   };
 }
 
-/** /rest/mempool/contents.json → transactions récentes (sans valeur totale — non fournie par Core). */
 export function mempoolContentsToRecent(contents: unknown): RecentTx[] {
   if (!contents || typeof contents !== 'object' || Array.isArray(contents)) return [];
   return Object.entries(contents as Record<string, unknown>)
@@ -176,7 +151,6 @@ export function mempoolContentsToRecent(contents: unknown): RecentTx[] {
     .slice(0, 50);
 }
 
-/** /rest/block/{hash}.json (Core) → résumé Esplora pour les listes de blocs. */
 export function coreBlockToSummary(core: unknown): BlockSummary | null {
   const b = (core ?? {}) as { hash?: unknown; height?: unknown; time?: unknown; tx?: unknown[]; size?: unknown };
   const hash = typeof b.hash === 'string' && /^[0-9a-f]{64}$/i.test(b.hash) ? b.hash : null;
@@ -191,7 +165,6 @@ export function coreBlockToSummary(core: unknown): BlockSummary | null {
   };
 }
 
-/** Plan d'exécution d'un chemin Esplora sur le nœud regtest. */
 export type RegtestPlan =
   | { kind: 'rest'; upstream: string; accept: 'json' | 'bin' | 'hex' }
   | { kind: 'rpc'; method: 'scantxoutset'; address: string }
@@ -200,37 +173,25 @@ export type RegtestPlan =
   | { kind: 'unsupported' };
 
 const TXID_RX = /^[0-9a-f]{64}$/i;
-/** Caractères valides d'une adresse regtest (base58 testnet ou bech32 bcrt). */
 const ADDR_RX = /^[a-zA-Z0-9]{6,62}$/;
 
-/**
- * Décide comment satisfaire un chemin Esplora sur un nœud Core regtest.
- * Les URLs REST sont construites ici — seuls des identifiants validés
- * (hash/hauteur/adresse déjà filtrés par la liste blanche du proxy) y entrent.
- */
 export function planRegtestRequest(path: string): RegtestPlan {
-  // 1) Frais : statique (pas de marché de frais sur une chaîne privée).
   if (path === 'v1/fees/recommended') return { kind: 'static', body: regtestFees(), type: 'json' };
-  // 2) Historique d'adresse : indisponible sans -txindex → liste vide.
   if (/^address\/[a-zA-Z0-9]{6,62}\/txs$/i.test(path)) return { kind: 'empty', type: 'json' };
 
-  // 3) Solde / UTXOs : scantxoutset (scan ponctuel du set — sans wallet, sans txindex).
   const utxoMatch = path.match(/^address\/([a-zA-Z0-9]{6,62})\/utxo$/i);
   if (utxoMatch && ADDR_RX.test(utxoMatch[1])) return { kind: 'rpc', method: 'scantxoutset', address: utxoMatch[1] };
   const addrMatch = path.match(/^address\/([a-zA-Z0-9]{6,62})$/i);
   if (addrMatch && ADDR_RX.test(addrMatch[1])) return { kind: 'rpc', method: 'scantxoutset', address: addrMatch[1] };
 
-  // 4) Tip : chaininfo.
   if (path === 'blocks/tip/height') return { kind: 'rest', upstream: 'chaininfo.json', accept: 'json' };
   if (path === 'blocks/tip/hash') return { kind: 'rest', upstream: 'chaininfo.json', accept: 'json' };
 
-  // 5) Transactions.
   const txHexMatch = path.match(/^tx\/([0-9a-f]{64})\/hex$/i);
   if (txHexMatch) return { kind: 'rest', upstream: `tx/${txHexMatch[1].toLowerCase()}.hex`, accept: 'hex' };
   const txMatch = path.match(/^tx\/([0-9a-f]{64})$/i);
   if (txMatch) return { kind: 'rest', upstream: `tx/${txMatch[1].toLowerCase()}.json`, accept: 'json' };
 
-  // 6) Blocs.
   const rawMatch = path.match(/^block\/([0-9a-f]{64})\/raw$/i);
   if (rawMatch) return { kind: 'rest', upstream: `block/${rawMatch[1].toLowerCase()}.bin`, accept: 'bin' };
   const headerMatch = path.match(/^block\/([0-9a-f]{64})\/header$/i);
@@ -240,11 +201,9 @@ export function planRegtestRequest(path: string): RegtestPlan {
   const heightMatch = path.match(/^block-height\/(\d{1,7})$/);
   if (heightMatch) return { kind: 'rest', upstream: `blockhashbyheight/${heightMatch[1]}.json`, accept: 'json' };
 
-  // 7) Mempool.
   if (path === 'mempool') return { kind: 'rest', upstream: 'mempool/info.json', accept: 'json' };
   if (path === 'mempool/recent') return { kind: 'rest', upstream: 'mempool/contents.json', accept: 'json' };
 
-  // 8) v1/blocks (résumés des derniers blocs) — traité par le proxy (parcours des prev).
   if (path === 'v1/blocks' || /^v1\/blocks\/\d{1,2}$/.test(path)) return { kind: 'rest', upstream: 'chaininfo.json', accept: 'json' };
 
   return { kind: 'unsupported' };
