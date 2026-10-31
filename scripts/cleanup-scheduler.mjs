@@ -84,7 +84,7 @@ function qualityGates() {
   if (!hasNodeModules()) return { ok: true, skipped: 'node_modules absent' };
   const tsc = runGate('tsc', path.join(ROOT, 'node_modules', '.bin', 'tsc'), ['--noEmit']);
   if (!tsc.ok) return { ok: false, gate: 'tsc', output: tsc.output };
-  const vitest = runGate('vitest', path.join(ROOT, 'node_modules', '.bin', 'vitest'), ['run', '--reporter=basic']);
+  const vitest = runGate('vitest', path.join(ROOT, 'node_modules', '.bin', 'vitest'), ['run', '--reporter=dot']);
   if (!vitest.ok) return { ok: false, gate: 'vitest', output: vitest.output };
   return { ok: true };
 }
@@ -208,7 +208,7 @@ function runCycle({ dryRun = false } = {}) {
     rollbackFiles(res.changed);
     entry.status = 'gate-failed-rolled-back';
     entry.gate = gates.gate;
-    logLine(`GARDE-FOU ${gates.gate} ÉCHOUÉ sur ${folder.name} — rollback de ${res.changed.length} fichiers.`);
+    logLine(`GARDE-FOU ${gates.gate} ÉCHOUÉ sur ${folder.name} — rollback de ${res.changed.length} fichiers. Détail: ${(gates.output || '').split('\n').slice(0, 6).join(' | ').slice(0, 600)}`);
     state.nextIndex++;
     state.history.push(entry);
     saveState(state);
