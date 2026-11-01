@@ -49,13 +49,23 @@ bun run test       # Vitest — offline Bitcoin core tests
 The Lightning module ships a small Rust crate (`rust/lnlab`) that wires two full LDK 0.2 nodes and compiles them to WebAssembly. The build artifact is committed under `public/lnlab/` and loaded lazily by a Web Worker when you switch the lab on — the server never runs Lightning. Rebuild it with:
 
 ```bash
+bash scripts/build-lnlab.sh
+```
+
+or manually:
+
+```bash
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli --version 0.2.100 --locked
 cd rust/lnlab
 cargo build --release --target wasm32-unknown-unknown
-wasm-bindgen --target web --out-dir ../../public/lnlab/ \
+wasm-bindgen --target no-modules --out-dir ../../public/lnlab/ \
   target/wasm32-unknown-unknown/release/lnlab.wasm
+mv ../../public/lnlab/lnlab.js ../../public/lnlab/lnlab_bg.js
+printf '\nexport default wasm_bindgen;\n' >> ../../public/lnlab/lnlab_bg.js
 ```
+
+> The glue is generated with `--target no-modules` and made importable as an ES module by appending `export default wasm_bindgen;`. `public/lnlab/lnlab.js` is a committed loader shim, not a wasm-bindgen output — never overwrite it.
 
 > Lightning runs on **Testnet4** (default), **Testnet3**, **Signet** or **Regtest**. Get testnet sats from the faucets listed in the Wallet module — mine them yourself with the built-in miner (below) — then open a channel from node A (funded by one of your wallets) and pay real invoices and offers between the two nodes. On Regtest, fund your wallet by mining, then open a channel: the full BOLT11/BOLT12 loop runs on your private chain in minutes.
 
