@@ -1,19 +1,3 @@
-/**
- * BitLab — Lightning lab worker (plain JS, intentionally outside the bundler).
- *
- * Hosts one LnLab WASM instance (two real LDK nodes A and B connected through
- * an in-memory socket pair). Responsibilities:
- *   - drive the LDK event loop and the chain feed (Esplora via /api/bitcoin);
- *   - broadcast LDK transactions through the same-origin proxy;
- *   - hand pending KV writes to the main thread (IndexedDB lives there);
- *   - surface events/logs/status to the UI.
- *
- * Message protocol (main -> worker): boot, connect, openChannel, fundingTx,
- * createInvoice, payInvoice, createOffer, payOffer, decodeOffer, closeChannel,
- * status, stop.
- * (worker -> main): ready, status, events, log, kv, broadcast, error, stopped.
- */
-
 import initWasm, { LnLab } from './lnlab.js';
 
 const PROXY = '/api/bitcoin';
@@ -21,10 +5,15 @@ const TICK_MS = 1000;
 const CHAIN_POLL_MS = 10000;
 const FEES_POLL_MS = 300000;
 const MAX_CATCHUP_BLOCKS = 50;
+const HEX_CHUNK = 2;
+const HEX_BYTE_BASE = 16;
+const HEX_PAD = 2;
+const BROADCAST_DETAIL_MAX = 120;
+const CHAIN_BOOT_DELAY_MS = 1500;
 
 let net = null;
 let lab = null;
-let best = null; // { height: number, hash: string }
+let best = null;
 let timers = [];
 let stopping = false;
 let regtestHeader = '';
@@ -40,8 +29,6 @@ function post(msg) {
 function log(node, line) {
   post({ type: 'log', node, line });
 }
-
-/* ────────────────────────── Proxy helpers ────────────────────────── */
 
 async function proxyJson(path) {
   const res = await fetch(`${PROXY}?path=${encodeURIComponent(path)}&network=${net}`, { headers: extraHeaders() });
@@ -59,7 +46,7 @@ async function proxyBlockHex(hash) {
   if (!res.ok) throw new Error(`bloc ${hash.slice(0, 12)} indisponible (${res.status})`);
   const bytes = new Uint8Array(await res.arrayBuffer());
   let hex = '';
-  for (let i = 0; i < bytes.length; i += 1) hex += bytes[i].toString(16).padStart(2, '0');
+  for (let i = 0; i < bytes.length; i += 1) hex += bytes[i].toString(HEX_BYTE_BASE).padStart(HEX_PAD, '0');
   return hex;
 }
 
@@ -71,13 +58,12 @@ async function broadcastTx(network, txHex) {
       body: txHex,
     });
     const body = await res.text();
-    post({ type: 'broadcast', ok: res.ok, detail: body.slice(0, 120) });
+    post({ type: 'broadcast', ok: res.ok, detail: body.slice(0, BROADCAST_DETAIL_MAX) });
   } catch (err) {
     post({ type: 'broadcast', ok: false, detail: String(err) });
   }
 }
 
-/* Host functions imported by the WASM module (see rust/lnlab/src/chainio.rs). */
 self.lnlabHost = {
   hostLog(level, message) {
     log('sys', message);
@@ -86,8 +72,6 @@ self.lnlabHost = {
     broadcastTx(network, txHex);
   },
 };
-
-/* ────────────────────────── Status / events ────────────────────────── */
 
 function emitStatus() {
   if (!lab) return;
@@ -130,8 +114,6 @@ function runTick() {
   }
 }
 
-/* ────────────────────────── Chain feed ────────────────────────── */
-
 async function pollChain() {
   if (!lab || stopping || !best) return;
   try {
@@ -157,7 +139,6 @@ async function pollFees() {
   if (!lab || stopping) return;
   try {
     const fees = await proxyJson('v1/fees/recommended');
-    // sat/vB -> sat/kwu (1 vB = 4 weight units, 1 sat/vB = 250 sat/kwu).
     const fast = Math.max(253, Math.round(Number(fees.fastestFee) * 250));
     const normal = Math.max(253, Math.round(Number(fees.hourFee) * 250));
     const slow = Math.max(253, Math.round(Number(fees.economyFee) * 250));
@@ -171,17 +152,14 @@ function startTimers() {
   timers.push(setInterval(runTick, TICK_MS));
   timers.push(setInterval(pollChain, CHAIN_POLL_MS));
   timers.push(setInterval(pollFees, FEES_POLL_MS));
-  // Prime fees immediately, then poll the chain shortly after boot.
   pollFees();
-  setTimeout(pollChain, 1500);
+  setTimeout(pollChain, CHAIN_BOOT_DELAY_MS);
 }
 
 function stopTimers() {
   timers.forEach((id) => clearInterval(id));
   timers = [];
 }
-
-/* ────────────────────────── Boot ────────────────────────── */
 
 async function boot(msg) {
   net = msg.network;
@@ -212,11 +190,6 @@ async function boot(msg) {
   runTick();
 }
 
-/* ────────────────────────── Message handlers ────────────────────────── */
-
-/** Poste une erreur en la rattachant à sa requête (requestId) quand elle en
- * provient : le contrôleur n'apparie plus les erreurs par préfixe de
- * message, donc deux requêtes concurrentes ne se volent plus leur rejet. */
 function fail(requestId, message) {
   post({ type: 'error', message, ...(requestId !== undefined ? { requestId } : {}) });
 }
@@ -243,8 +216,6 @@ const handlers = {
     try {
       lab.create_channel(BigInt(msg.valueSats), BigInt(msg.pushMsat), BigInt(msg.userChannelId));
       runTick();
-      // Explicit ack so the main thread can resolve its request — LDK errors
-      // below surface as a rejected promise instead of a silent no-op.
       post({ type: 'channelRequested', userChannelId: msg.userChannelId });
     } catch (err) {
       fail(msg.userChannelId, `canal: ${err.message || err}`);
@@ -255,8 +226,6 @@ const handlers = {
     try {
       lab.funding_transaction_generated(BigInt(msg.userChannelId), msg.hex);
       runTick();
-      // Ack : le contrôleur efface la carte de financement — un refus LDK
-      // émet une erreur avant cet ack et laisse la carte réessayable.
       post({ type: 'fundingSubmitted', userChannelId: msg.userChannelId });
     } catch (err) {
       fail(msg.userChannelId, `financement: ${err.message || err}`);
@@ -311,7 +280,6 @@ const handlers = {
 
   decodeOffer(msg) {
     try {
-      // decode_offer is a static wasm-bindgen method — call it on the class.
       post({ type: 'offerInfo', id: msg.id, info: LnLab.decode_offer(msg.offer) });
     } catch (err) {
       fail(msg.id, `offer: ${err.message || err}`);
@@ -327,15 +295,6 @@ const handlers = {
     }
   },
 
-  logs() {
-    if (!lab) return;
-    try {
-      post({ type: 'logs', a: Array.from(lab.logs(0)), b: Array.from(lab.logs(1)) });
-    } catch (err) {
-      log('sys', `logs: ${err.message || err}`);
-    }
-  },
-
   stop() {
     stopping = true;
     try {
@@ -343,8 +302,8 @@ const handlers = {
         drainKv();
         lab.free();
       }
-    } catch (err) {
-      /* best effort */
+    } catch {
+      lab = null;
     }
     lab = null;
     stopTimers();
