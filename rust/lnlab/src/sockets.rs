@@ -1,23 +1,12 @@
-//! BitLab lnlab — in-memory linked sockets between node A and node B.
-//!
-//! LDK's `PeerManager` is transport-agnostic: anything implementing
-//! `SocketDescriptor` works. The two lab nodes live in the same worker, so the
-//! "network link" is a pair of cross-referenced queues. Every Lightning message
-//! (noise handshake, channel negotiation, HTLCs, commitment signatures) is real
-//! protocol data — only the transport is a memory pipe.
-
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
 use lightning::ln::peer_handler::SocketDescriptor;
 
-/// One endpoint of the link. `Eq`/`Hash` are derived from the side so that the
-/// `PeerManager` internal maps treat clones of the same endpoint as one peer.
 #[derive(Clone)]
 pub(crate) struct LnSocket {
         side: u8,
-        /// The other side's inbox: `send_data` pushes there.
         peer_inbox: Rc<RefCell<VecDeque<Vec<u8>>>>,
         open: Rc<RefCell<bool>>,
 }
@@ -43,7 +32,6 @@ pub(crate) struct Link {
 }
 
 impl LnSocket {
-        /// Creates a linked pair (A endpoint, B endpoint).
         pub(crate) fn pair() -> (LnSocket, LnSocket, Link) {
                 let inbox_a = Rc::new(RefCell::new(VecDeque::new()));
                 let inbox_b = Rc::new(RefCell::new(VecDeque::new()));

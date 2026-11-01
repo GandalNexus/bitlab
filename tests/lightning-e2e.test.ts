@@ -263,3 +263,63 @@ describe('labo Lightning e2e — deux nœuds LDK réels sur la chaîne regtest e
     restored.free();
   });
 });
+
+describe('labo Lightning e2e — canal restauré puis payé après redémarrage', () => {
+  const seedA = crypto.getRandomValues(new Uint8Array(32));
+  const seedB = crypto.getRandomValues(new Uint8Array(32));
+  const now = Math.floor(Date.now() / 1000);
+  const wallet = makeWallet(0x88);
+  let lab: any = null;
+
+  it('canal ouvert, financé et confirmé avant arrêt du laboratoire', () => {
+    kvStore.clear();
+    chain.faucetSend(wallet.address, 500_000_000);
+    lab = LnLabClass!.boot_fresh('regtest', seedA, seedB, chain.tipHeight(), chain.tipHash(), now);
+    lab.create_channel(CHANNEL_SATS, 0n, 42n);
+    const fgr = drain(lab).find((e) => e.type === 'funding_generation_ready');
+    expect(fgr, 'funding_generation_ready attendu').toBeDefined();
+    expect(fgr!.userChannelId).toBe('42');
+    const res = buildSignedTx({
+      utxos: chain.addressUtxos(wallet.address),
+      outputs: [{ address: scriptToAddressOn(hex.decode(fgr!.outputScript!), 'regtest')!, amountSats: Number(CHANNEL_SATS) }],
+      feeRateSatVb: 1,
+      changeAddress: wallet.address,
+      privateKeyHex: wallet.privateKeyHex,
+      inputAddress: wallet.address,
+      inputType: wallet.type,
+    });
+    chain.acceptTx(res.hex);
+    expect(() => lab.funding_transaction_generated(42n, res.hex)).not.toThrow();
+    drain(lab);
+    expect(mineAndFeed(lab, 8).some((e) => e.type === 'channel_ready')).toBe(true);
+    expect(flushKv(lab)).toBeGreaterThan(0);
+  });
+
+  it('boot_restore retrouve le canal prêt et paie une facture BOLT11 dessus', () => {
+    const idA = lab.node_id(0);
+    const idB = lab.node_id(1);
+    const kvA = kvOf('A');
+    const kvB = kvOf('B');
+    lab.free();
+
+    lab = LnLabClass!.boot_restore('regtest', seedA, seedB, now + 300, kvA, kvB);
+    expect(lab.node_id(0)).toBe(idA);
+    expect(lab.node_id(1)).toBe(idB);
+    drain(lab);
+    const channels = Array.from(lab.list_channels(0));
+    expect(channels).toHaveLength(1);
+    expect(asBool(channels[0].isUsable)).toBe(true);
+
+    const bolt11 = lab.create_invoice(1, 7_000_000n, 'post-restart', 3600, Math.floor(Date.now() / 1000));
+    expect(bolt11.startsWith('lnbcrt')).toBe(true);
+    lab.pay_invoice(0, bolt11, null);
+    const events = drain(lab, 24);
+    const sent = events.find((e) => e.type === 'payment_sent' && e.node === 'A');
+    expect(sent, 'payment_sent attendu côté A après restauration').toBeDefined();
+    expect(String(sent!.amountMsat)).toBe('7000000');
+    expect(events.some((e) => e.type === 'payment_claimed' && e.node === 'B')).toBe(true);
+    expect(events.some((e) => e.type === 'payment_path_failed' || e.type === 'htlc_handling_failed')).toBe(false);
+    flushKv(lab);
+    lab.free();
+  });
+});

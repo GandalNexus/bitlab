@@ -213,7 +213,6 @@ let wasm_bindgen;
             wasm.__wbg_lnlab_free(ptr, 0);
         }
         /**
-         * Current chain position of the lab (both nodes share the feed).
          * @returns {any}
          */
         best_block() {
@@ -221,7 +220,6 @@ let wasm_bindgen;
             return ret;
         }
         /**
-         * Boots two fresh nodes whose chain view starts at the current tip.
          * @param {string} network
          * @param {Uint8Array} seed_a
          * @param {Uint8Array} seed_b
@@ -245,14 +243,6 @@ let wasm_bindgen;
             }
             return LnLab.__wrap(ret[0]);
         }
-        /**
-         * Opens the in-memory P2P link A -> B (real noise handshake).
-         *
-         * Idempotent and self-repairing: any previous link is torn down first
-         * (`socket_disconnected` on both PeerManagers), so stale entries can
-         * never make `new_*_connection` reject with `Entry::Occupied` — that
-         * was the root cause of the dead "reconnect" button.
-         */
         connect_ab() {
             const ret = wasm.lnlab_connect_ab(this.__wbg_ptr);
             if (ret[1]) {
@@ -260,7 +250,6 @@ let wasm_bindgen;
             }
         }
         /**
-         * Processes one chain block (hex) for both nodes; returns emitted events.
          * @param {number} height
          * @param {string} block_hex
          * @returns {Array<any>}
@@ -275,7 +264,6 @@ let wasm_bindgen;
             return takeFromExternrefTable0(ret[0]);
         }
         /**
-         * Pays a BOLT11 invoice over the direct channel (real HTLC, real routing).
          * @param {number} node
          * @param {string} invoice
          * @param {bigint | null} [amount_msat_override]
@@ -289,7 +277,6 @@ let wasm_bindgen;
             }
         }
         /**
-         * Boots two nodes from IndexedDB-backed state (KV entries + manager bytes).
          * @param {string} network
          * @param {Uint8Array} seed_a
          * @param {Uint8Array} seed_b
@@ -312,9 +299,6 @@ let wasm_bindgen;
             return LnLab.__wrap(ret[0]);
         }
         /**
-         * Creates a real BOLT12 offer (lno1…) on the selected node. The offer
-         * carries a one-hop blinded message path back to the issuing node, so
-         * any peer of that node can request an invoice through onion messages.
          * @param {number} node
          * @param {bigint | null | undefined} amount_msat
          * @param {string} description
@@ -341,7 +325,6 @@ let wasm_bindgen;
             }
         }
         /**
-         * Decodes a BOLT12 offer without touching any node state (static).
          * @param {string} offer
          * @returns {any}
          */
@@ -355,7 +338,6 @@ let wasm_bindgen;
             return takeFromExternrefTable0(ret[0]);
         }
         /**
-         * True while the in-memory P2P link is up.
          * @returns {boolean}
          */
         is_connected() {
@@ -363,7 +345,6 @@ let wasm_bindgen;
             return ret !== 0;
         }
         /**
-         * Closes a channel cooperatively from the selected node.
          * @param {number} node
          * @param {string} channel_id_hex
          */
@@ -376,7 +357,6 @@ let wasm_bindgen;
             }
         }
         /**
-         * Channel summary for the selected node.
          * @param {number} node
          * @returns {Array<any>}
          */
@@ -388,9 +368,6 @@ let wasm_bindgen;
             return takeFromExternrefTable0(ret[0]);
         }
         /**
-         * Opens a channel from A to B. The funding transaction is built and signed
-         * by the lab wallet in the main thread when `funding_generation_ready`
-         * arrives, then handed back via `funding_transaction_generated`.
          * @param {bigint} value_sats
          * @param {bigint} push_msat
          * @param {bigint} user_channel_id
@@ -402,7 +379,6 @@ let wasm_bindgen;
             }
         }
         /**
-         * Creates and signs a real BOLT11 invoice on the selected node.
          * @param {number} node
          * @param {bigint | null | undefined} amount_msat
          * @param {string} description
@@ -431,7 +407,6 @@ let wasm_bindgen;
             }
         }
         /**
-         * Decodes a BOLT11 invoice without touching any node state (static).
          * @param {string} invoice
          * @returns {any}
          */
@@ -445,7 +420,6 @@ let wasm_bindgen;
             return takeFromExternrefTable0(ret[0]);
         }
         /**
-         * Feeds back the funding transaction built by the lab wallet.
          * @param {bigint} user_channel_id
          * @param {string} tx_hex
          */
@@ -458,7 +432,6 @@ let wasm_bindgen;
             }
         }
         /**
-         * Recent LDK log lines for the selected node (bounded tail).
          * @param {number} node
          * @returns {Array<any>}
          */
@@ -470,8 +443,6 @@ let wasm_bindgen;
             return takeFromExternrefTable0(ret[0]);
         }
         /**
-         * Drives the protocol: message pump + pending events + persistence.
-         * Returns the events emitted during this tick.
          * @returns {Array<any>}
          */
         tick() {
@@ -482,7 +453,6 @@ let wasm_bindgen;
             return takeFromExternrefTable0(ret[0]);
         }
         /**
-         * Compressed public key (node id) of the selected node, hex-encoded.
          * @param {number} node
          * @returns {string}
          */
@@ -505,8 +475,6 @@ let wasm_bindgen;
             }
         }
         /**
-         * Drains pending KV writes for both nodes: entries of
-         * [nodeLabel, primary, secondary, key, Uint8Array | null].
          * @returns {Array<any>}
          */
         kv_dirty() {
@@ -514,7 +482,6 @@ let wasm_bindgen;
             return ret;
         }
         /**
-         * Pushes fee rates (sat/kwu) converted from Esplora sat/vB by the worker.
          * @param {number} fast
          * @param {number} normal
          * @param {number} slow
@@ -523,9 +490,6 @@ let wasm_bindgen;
             wasm.lnlab_set_fees(this.__wbg_ptr, fast, normal, slow);
         }
         /**
-         * Pays a BOLT12 offer from the selected node: sends an invoice request
-         * over onion messages, then pays the returned invoice over the direct
-         * channel. The result surfaces later as normal payment events.
          * @param {number} node
          * @param {string} offer
          * @param {bigint | null} [amount_msat]
