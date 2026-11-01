@@ -1,17 +1,3 @@
-/**
- * BitLab — tests d'envoi entre portefeuilles (Vitest, 100 % hors-ligne).
- *
- * Objectif : prouver que le constructeur de transactions de l'application
- * (buildSignedTx, le même code que celui exécuté dans le navigateur) produit
- * des dépenses acceptées par le moteur regtest embarqué (acceptTx = mêmes
- * règles que Bitcoin Core : BIP 143, BIP 341 key-path, maturité coinbase,
- * anti double-dépense), entre portefeuilles de même type ET de types
- * différents (segwit P2WPKH, taproot P2TR, legacy P2PKH).
- *
- * Le scénario reproduit l'usage réel : deux portefeuilles créés dans le labo,
- * l'un financé, l'autre vide, envoi d'un montant avec change au portefeuille
- * source — exactement le flux « Sélectionner → Construire → Signer → Diffuser ».
- */
 import { describe, expect, it } from 'vitest';
 import { hex } from '@scure/base';
 import {
@@ -23,16 +9,11 @@ import { deriveForType, type AddrType } from '../src/lib/bitcoin/keys';
 import { buildSignedTx, estimateVsize, type Utxo } from '../src/lib/bitcoin/tx';
 import { RX } from '../src/lib/bitcoin/utils';
 
-// Tout le module tx.ts (décodeur d'adresses, scripts, changements) suit le
-// réseau actif du store : on force le regtest embarqué pour ces tests.
 registerNetGetter(() => 'regtest');
 
-/** Chaîne regtest neuve en mémoire (préminage 101 blocs → 100 tBTC mûrs). */
 const chain = new RegtestChain();
 
-/** 5 tBTC en sats — financement de référence d'un portefeuille de test. */
 const FUNDING = 500_000_000;
-/** 1 tBTC en sats — montant de référence d'un envoi. */
 const SEND = 100_000_000;
 
 interface TestWallet {
@@ -41,25 +22,21 @@ interface TestWallet {
   address: string;
 }
 
-/** Portefeuille déterministe (clé dérivée de `seed`) via le code réel du labo. */
 function makeWallet(seed: number, type: AddrType): TestWallet {
   const priv = hex.decode(seed.toString(16).padStart(64, '0'));
   const { address } = deriveForType(priv, type, 'regtest');
   return { type, privHex: hex.encode(priv), address };
 }
 
-/** Solde confirmé (forme Esplora du moteur embarqué). */
 function balanceOf(address: string): number {
   const info = chain.addressInfo(address);
   return info.chain_stats.funded_txo_sum - info.chain_stats.spent_txo_sum;
 }
 
-/** Finance `address` via le faucet réel du moteur (tx P2WPKH signée + 1 bloc). */
 function fund(address: string): void {
   chain.faucetSend(address, FUNDING);
 }
 
-/** Envoi signé par buildSignedTx puis accepté et confirmé par le moteur. */
 function spend(
   from: TestWallet,
   outputs: { address: string; amountSats: number }[],
@@ -75,19 +52,15 @@ function spend(
     inputType: from.type,
   });
   const accepted = chain.acceptTx(res.hex);
-  chain.mineTo(null, 1); // confirme la tx (empaquetage réel du mempool)
+  chain.mineTo(null, 1);
   return { res, accepted };
 }
-
-/* ───────────────────────── Validation des adresses bcrt ───────────────────────── */
 
 describe('adresses regtest bcrt1… (régression du refus « sortie valide »)', () => {
   it('accepte les adresses bcrt1q (P2WPKH), bcrt1p (P2TR) et m/n (P2PKH) dans RX.btcAddress', () => {
     for (const type of ['segwit', 'taproot', 'legacy'] as AddrType[]) {
       const w = makeWallet(0xa1, type);
       expect(w.address.startsWith('bcrt1') || /^[mn2]/.test(w.address)).toBe(true);
-      // LE bug corrigé : la regex du labo rejetait tout préfixe bcrt1…
-      // → « Renseignez au moins une sortie valide à l'étape Construire. »
       expect(RX.btcAddress.test(w.address)).toBe(true);
     }
   });
@@ -97,11 +70,9 @@ describe('adresses regtest bcrt1… (régression du refus « sortie valide »)',
     expect(RX.btcAddress.test('bcrt1')).toBe(false);
     expect(RX.btcAddress.test('bcrt1q< script >')).toBe(false);
     expect(RX.btcAddress.test('2Mzpp亚马逊')).toBe(false);
-    expect(RX.btcAddress.test('TB1QXYKL5TVTWLPUNSTVHHH2FDNQD9SDYVNSNY33GB')).toBe(true); // majuscules bech32 tolérées
+    expect(RX.btcAddress.test('TB1QXYKL5TVTWLPUNSTVHHH2FDNQD9SDYVNSNY33GB')).toBe(true);
   });
 });
-
-/* ───────────────── Envois entre portefeuilles de même type ───────────────── */
 
 describe('envois entre portefeuilles de même type', () => {
   it('segwit → segwit : P2WPKH → P2WPKH avec change au portefeuille source', () => {
@@ -115,11 +86,10 @@ describe('envois entre portefeuilles de même type', () => {
 
     expect(accepted.txid).toBe(res.txid);
     expect(res.feeSats).toBeGreaterThan(0);
-    // Estimation conservatrice : les frais réels ≥ vsize × 1 sat/vB demandé.
     expect(res.feeSats).toBeGreaterThanOrEqual(res.vsize);
     expect(res.feeSats).toBeLessThanOrEqual(res.vsize + 4);
     expect(balanceOf(bob.address)).toBe(SEND);
-    expect(balanceOf(alice.address)).toBe(FUNDING - SEND - res.feeSats); // change réel
+    expect(balanceOf(alice.address)).toBe(FUNDING - SEND - res.feeSats);
   });
 
   it('taproot → taproot : P2TR key-path (Schnorr) → P2TR avec change', () => {
@@ -143,12 +113,9 @@ describe('envois entre portefeuilles de même type', () => {
 
     expect(balanceOf(bob.address)).toBe(SEND);
     expect(balanceOf(alice.address)).toBe(FUNDING - SEND - res.feeSats);
-    // Une entrée P2PKH pèse ~148 vB : vsize total > 200 vB contre ~140 en segwit.
     expect(res.vsize).toBeGreaterThan(200);
   });
 });
-
-/* ─────────────── Envois entre portefeuilles de types différents ─────────────── */
 
 describe('envois entre portefeuilles de types différents', () => {
   it('segwit → taproot : sortie P2TR (bech32m) dépensable par le portefeuille taproot', () => {
@@ -204,7 +171,6 @@ describe('envois entre portefeuilles de types différents', () => {
     const d = makeWallet(0x14, 'segwit');
     fund(a.address);
 
-    // Chaque saut laisse la marge de frais : 2 → 1,5 → 1 tBTC.
     const hop1 = spend(a, [{ address: b.address, amountSats: 200_000_000 }]);
     const hop2 = spend(b, [{ address: c.address, amountSats: 150_000_000 }]);
     const hop3 = spend(c, [{ address: d.address, amountSats: 100_000_000 }]);
@@ -212,21 +178,18 @@ describe('envois entre portefeuilles de types différents', () => {
     expect(balanceOf(d.address)).toBe(100_000_000);
     expect(balanceOf(b.address)).toBe(200_000_000 - 150_000_000 - hop2.res.feeSats);
     expect(balanceOf(c.address)).toBe(150_000_000 - 100_000_000 - hop3.res.feeSats);
-    // Chaque saut garde la conservation : entrée = sorties + frais.
     for (const h of [hop1, hop2, hop3]) {
       expect(h.res.feeSats).toBeGreaterThan(0);
     }
   });
 });
 
-/* ───────────────────────────── Cas limites réels ───────────────────────────── */
-
 describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
   it('multi-entrées : deux UTXO segwit consommés dans une seule transaction', () => {
     const sender = makeWallet(0x15, 'segwit');
     const dest = makeWallet(0x16, 'taproot');
     fund(sender.address);
-    fund(sender.address); // deuxième UTXO
+    fund(sender.address);
 
     const utxos = chain.addressUtxos(sender.address);
     expect(utxos.length).toBe(2);
@@ -244,7 +207,6 @@ describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
     const utxos = chain.addressUtxos(sender.address);
     const totalIn = utxos.reduce((s, u) => s + u.value, 0);
 
-    // Montant = total − 300 sats : le change (300 − frais réels) tombe sous 546.
     const est = estimateVsize('segwit', utxos.length, [{ address: dest.address, amountSats: totalIn }], true);
     const feeEst = Math.ceil(est * 1);
     const amount = totalIn - 300;
@@ -252,22 +214,20 @@ describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
 
     const { res } = spend(sender, [{ address: dest.address, amountSats: amount }], { utxos });
 
-    expect(res.changeSats).toBe(0); // aucune sortie de change
-    expect(res.feeSats).toBe(300); // tout le reste part en frais
+    expect(res.changeSats).toBe(0);
+    expect(res.feeSats).toBe(300);
     expect(balanceOf(dest.address)).toBe(amount);
     expect(balanceOf(sender.address)).toBe(0);
   });
 
   it('refuse de dépenser une coinbase immature (fonds issus du minage direct)', () => {
     const miner = makeWallet(0x19, 'taproot');
-    // Le minage paie la coinbase directement au portefeuille (generatetoaddress).
     chain.mineTo(addressToScriptBcrt(miner.address), 1);
 
     const utxos = chain.addressUtxos(miner.address);
     expect(utxos.length).toBe(1);
-    expect(utxos[0].isCoinbase).toBe(true); // champ exposé à l'UI
+    expect(utxos[0].isCoinbase).toBe(true);
 
-    // La signature locale réussit (côté navigateur)…
     const signed = buildSignedTx({
       utxos: utxos,
       outputs: [{ address: makeWallet(0x1a, 'segwit').address, amountSats: SEND }],
@@ -277,10 +237,8 @@ describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
       inputAddress: miner.address,
       inputType: 'taproot',
     });
-    // …mais le moteur applique la règle de consensus : maturité 100 blocs.
     expect(() => chain.acceptTx(signed.hex)).toThrow(/coinbase immature/);
 
-    // 99 blocs de plus → hauteur de dépense 100 → la coinbase devient mûre.
     chain.mineTo(null, 99);
     const accepted = chain.acceptTx(signed.hex);
     expect(accepted.txid).toBe(signed.txid);
@@ -289,7 +247,6 @@ describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
   it('rejette une adresse d’un autre réseau avec un message pédagogique (pas « wrong bech32 prefix »)', () => {
     const sender = makeWallet(0x1b, 'segwit');
     fund(sender.address);
-    // Adresse testnet4 valide (tb1q…) — le HRP ne correspond pas au bcrt regtest.
     const foreign = deriveForType(hex.decode('aa'.repeat(32)), 'segwit', 'testnet4').address;
     expect(foreign.startsWith('tb1q')).toBe(true);
 
@@ -322,7 +279,7 @@ describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
     ).toThrow(/dépasse/);
 
     expect(() =>
-      spend(sender, [{ address: dest, amountSats: 100 }]), // < 546 sats
+      spend(sender, [{ address: dest, amountSats: 100 }]),
     ).toThrow(/poussière/);
   });
 
@@ -345,16 +302,16 @@ describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
     const txB = buildSignedTx({
       utxos,
       outputs: [{ address: r2, amountSats: SEND }],
-      feeRateSatVb: 2, // mêmes entrées, destinataire différent
+      feeRateSatVb: 2,
       changeAddress: sender.address,
       privateKeyHex: sender.privHex,
       inputAddress: sender.address,
       inputType: 'segwit',
     });
 
-    chain.acceptTx(txA.hex); // première entrée dans le mempool
+    chain.acceptTx(txA.hex);
     expect(() => chain.acceptTx(txB.hex)).toThrow(/double-dépense mempool/);
-    chain.mineTo(null, 1); // confirme A — B est rejetée, le fond est protégé
+    chain.mineTo(null, 1);
     expect(balanceOf(r1)).toBe(SEND);
     expect(balanceOf(r2)).toBe(0);
   });
