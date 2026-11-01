@@ -1,13 +1,4 @@
 #!/usr/bin/env bash
-# BitLab — reconstruit le moteur de minage WASM (rust/miner → public/miner).
-#
-# L'artefact compilé est commité sous public/miner/ ; ce script n'est utile
-# qu'après une modification du crate (rust/miner/src/lib.rs). Même recette que
-# le labo Lightning (cible « no-modules » + pont ESM), cf. docs/lightning.md.
-#
-# Pré-requis :
-#   rustup target add wasm32-unknown-unknown
-#   cargo install wasm-bindgen-cli --version 0.2.100 --locked
 set -euo pipefail
 
 cd "$(dirname "$0")/../rust/miner"
@@ -23,8 +14,6 @@ OUT=../../public/miner
 cp target/wbindgen-out/miner_bg.wasm      "$OUT/miner_bg.wasm"
 cp target/wbindgen-out/miner_bg.wasm.d.ts "$OUT/miner_bg.wasm.d.ts"
 cp target/wbindgen-out/miner.d.ts         "$OUT/miner.d.ts"
-# Le glue no-modules s'appelle miner.js : renommé miner_bg.js puis rendu
-# importable en tant que module ES (export default ajouté en fin de fichier).
 cp target/wbindgen-out/miner.js           "$OUT/miner_bg.js"
 printf '\nexport default wasm_bindgen;\n' >> "$OUT/miner_bg.js"
 
