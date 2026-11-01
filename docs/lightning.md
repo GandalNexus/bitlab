@@ -65,7 +65,11 @@ using the `lightning` crate directly:
 
 The crate is compiled with LDK's `std` feature disabled: the wasm32 target has
 no wall clock (`Instant::now` traps), and the no-std paths derive time from
-explicit timestamps passed by JavaScript.
+explicit timestamps passed by JavaScript. The committed artifact is rebuilt
+with `bash scripts/build-lnlab.sh` (see the commands in
+[README.md](../README.md)); the glue is generated with `--target no-modules`
+and appended an `export default` line so the committed `lnlab.js` loader shim
+can import it from a module worker.
 
 ## Lifecycle
 
@@ -75,8 +79,10 @@ explicit timestamps passed by JavaScript.
    (`crypto.getRandomValues`) and stores them in IndexedDB. Subsequent boots
    restore the same node identities.
 3. **Restore** — the worker re-reads the persisted KV maps (channel monitors,
-   channel manager) so channels survive reloads. Otherwise the nodes start
-   fresh at the current Esplora tip.
+   channel manager) so channels survive reloads: each monitor is
+   re-registered with the node's `ChainMonitor` (`watch_channel`) before the
+   first tick, so payments resume over restored channels. Otherwise the nodes
+   start fresh at the current Esplora tip.
 4. **Peer link** — A connects to B through the in-memory socket pair and the
    Noise handshake runs for real. If the link drops, the UI offers to
    reconnect.
@@ -92,8 +98,12 @@ explicit timestamps passed by JavaScript.
 1. Open a channel from A: choose a capacity and an optional `push_msat`
    (the amount granted to B at open).
 2. LDK emits a funding request; the UI turns it into a payable P2WSH address
-   (`scriptToAddress`). Fund it from any of your wallets — the transaction is
-   built and signed locally, then broadcast through the proxy.
+   (`scriptToAddress`) and selects UTXOs from any of your wallets with a
+   vsize-aware fee estimate before building and signing locally — the
+   transaction is broadcast through the proxy and handed back to LDK via
+   `funding_transaction_generated`. A discarded or refused request clears the
+   pending-funding state on both sides, so a stale payment can never fund an
+   abandoned channel.
 3. The channel appears as *pending* with a confirmation counter (6 blocks).
 4. Once ready, create a BOLT-11 invoice on B, copy or scan it, pay it from A,
    and watch the HTLC settle; reverse the direction with `push_msat` funds.
