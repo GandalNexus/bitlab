@@ -104,6 +104,7 @@ class LnLabController {
   private worker: Worker | null = null;
   private network: LnNetId | null = null;
   private kvQueue: Promise<void> = Promise.resolve();
+  private kvEpoch = 0;
 
   getStatus = (): LnLabStatus => this.status;
 
@@ -212,20 +213,25 @@ class LnLabController {
       this.patch({ phase: 'off' });
       return;
     }
+    this.kvEpoch += 1;
     this.patch({ phase: 'stopping' });
-    const timeout = setTimeout(() => worker.terminate(), 3000);
+    const timeout = setTimeout(() => {
+      worker.terminate();
+      this.finishStop(worker);
+    }, 3000);
     const onStopped = (event: MessageEvent) => {
       if (event.data?.type !== 'stopped') return;
       clearTimeout(timeout);
       worker.removeEventListener('message', onStopped);
       worker.terminate();
-      this.finishStop();
+      this.finishStop(worker);
     };
     worker.addEventListener('message', onStopped);
     worker.postMessage({ type: 'stop' });
   }
 
   async reset(network: LnNetId): Promise<void> {
+    this.kvEpoch += 1;
     this.deactivate();
     await idbDel(SEEDS_KEY(network));
     await idbDel(KV_KEY(network, 'A'));
@@ -243,7 +249,8 @@ class LnLabController {
     });
   }
 
-  private finishStop() {
+  private finishStop(worker: Worker | null) {
+    if (worker && this.worker !== worker) return;
     this.worker = null;
     this.patch({ phase: 'off', connected: false });
   }
@@ -302,9 +309,12 @@ class LnLabController {
       case 'kv': {
         const network = this.network;
         if (!network) break;
+        const epoch = this.kvEpoch;
         const entries = (msg.entries ?? []) as [string, string, string, string, Uint8Array | null][];
         this.kvQueue = this.kvQueue
-          .then(() => this.flushKv(network, entries))
+          .then(() => {
+            if (epoch === this.kvEpoch) return this.flushKv(network, entries);
+          })
           .catch((err) => this.pushLog('sys', `kv: ${(err as Error).message}`));
         break;
       }
@@ -327,7 +337,7 @@ class LnLabController {
         break;
       }
       case 'stopped':
-        this.finishStop();
+        this.finishStop(this.worker);
         break;
       default:
         break;
