@@ -1,11 +1,3 @@
-/**
- * BitLab — tests hors-ligne du support regtest (Vitest).
- *
- * Le regtest est la chaîne privée de l'utilisateur : dérivation d'adresses
- * bcrt, traduction Core ⇄ Esplora (fonctions pures), garde-fous de config
- * du nœud local et gabarits de minage à difficulté 1. Aucun réseau, aucun
- * DOM — tout est vérifiable offline.
- */
 import { describe, expect, it } from 'vitest';
 import { hex } from '@scure/base';
 import { WIF } from '@scure/btc-signer';
@@ -37,7 +29,6 @@ import {
 } from '../src/lib/mining/core';
 import { addressToScript } from '../src/lib/bitcoin/tx';
 
-/** Clé privée fixe (déterministe, usage test uniquement). */
 const PRIV = hex.decode('1111111111111111111111111111111111111111111111111111111111111111');
 
 describe('registre des réseaux (regtest ajouté sans rupture)', () => {
@@ -75,16 +66,13 @@ describe('adresses et WIF regtest', () => {
     expect(segwit.address.startsWith('bcrt1q')).toBe(true);
     expect(taproot.address.startsWith('bcrt1p')).toBe(true);
     expect(/^[mn]/.test(legacy.address)).toBe(true);
-    // Même clé → données bech32 identiques sur testnet4 et regtest (préfixes
-    // Base58 partagés), hors checksum — il dépend du HRP. La validation réseau
-    // reste stricte : un tb1… n'est jamais un bcrt1….
     const segwitTestnet = deriveForType(PRIV, 'segwit', 'testnet4');
     expect(segwit.address.slice(5, -6)).toBe(segwitTestnet.address.slice(3, -6));
   });
 
   it('encode un WIF préfixe regtest (0xEF) et reboucle via walletFromWif', async () => {
     const wif = WIF(REGTEST_NETWORK).encode(PRIV);
-    expect(wif.startsWith('c')).toBe(true); // 0xEF → préfixe « c » (comme testnet)
+    expect(wif.startsWith('c')).toBe(true);
     const { walletFromWif } = await import('../src/lib/bitcoin/keys');
     const w = walletFromWif(wif, 'segwit', undefined, 'regtest');
     expect(w.privateKeyHex).toBe(hex.encode(PRIV));
@@ -179,7 +167,6 @@ describe('regtest-translate : transactions et UTXOs', () => {
     expect(info.address).toBe('bcrt1qtest');
     expect(info.chain_stats.funded_txo_sum).toBe(6_250_000_000);
     expect(info.chain_stats.spent_txo_sum).toBe(0);
-    // Entrées corrompues filtrées, pas de crash.
     expect(scantxoutsetToUtxos({ unspents: [{ txid: 'zz' }, null] })).toEqual([]);
     expect(scantxoutsetToUtxos(null)).toEqual([]);
   });
@@ -263,16 +250,13 @@ describe('config du nœud local (garde anti-SSRF)', () => {
 describe('minage regtest : difficulté 1, gabarits continus', () => {
   it('REGTEST_MIN_BITS (0x207fffff) décode vers une cible quasi libre', () => {
     const target = compactBitsToTarget(REGTEST_MIN_BITS);
-    // Mantisse 0x7fffff × 256^29 : cible big-endian standard « 7fffff » suivi
-    // de 29 octets nuls (la formule inversée produisait « ffff7f » + un
-    // décalage d'un octet dès que le MSB de la mantisse est nul).
     expect([...target.subarray(0, 3)]).toEqual([0x7f, 0xff, 0xff]);
     expect(target.subarray(3).every((b) => b === 0)).toBe(true);
   });
 
   it('timeGapSec = 0 : nTime = max(maintenant, tip + 1) — pas de datation BIP 94', () => {
     const nowMs = 1_800_000_000_000;
-    const tipTime = Math.floor(nowMs / 1000) - 3600; // chaîne regtest inactive depuis 1 h
+    const tipTime = Math.floor(nowMs / 1000) - 3600;
     const header76 = assembleHeader76({
       tipHashHex: '1'.repeat(64),
       txidHex: '2'.repeat(64),
@@ -282,7 +266,6 @@ describe('minage regtest : difficulté 1, gabarits continus', () => {
       timeGapSec: 0,
     });
     expect(headerU32(header76, 68)).toBe(Math.floor(nowMs / 1000));
-    // La seconde suivante suffit même si le tip date de la même seconde (règle MTP).
     const consecutive = assembleHeader76({
       tipHashHex: '1'.repeat(64),
       txidHex: '2'.repeat(64),
@@ -313,7 +296,6 @@ describe('minage regtest : difficulté 1, gabarits continus', () => {
     const target = compactBitsToTarget(REGTEST_MIN_BITS);
     let nonce = -1;
     for (let n = 0; n < 1_000_000; n++) {
-      // Test direct sur l'en-tête assemblé (le worker balaie le champ nonce).
       const candidate = header76 + n.toString(16).padStart(8, '0');
       if (headerMeetsTarget(candidate, target)) {
         nonce = n;
@@ -321,12 +303,9 @@ describe('minage regtest : difficulté 1, gabarits continus', () => {
       }
     }
     expect(nonce).toBeGreaterThanOrEqual(0);
-    // Difficulté 1 ≈ 1,5 hachage attendu par bloc : un nonce < 1000 est
-    // statistiquement certain (p(échec) < 10^-400) — c'est le propos pédagogique.
     expect(nonce).toBeLessThan(1000);
     const hash = blockHash(header76 + (nonce as number).toString(16).padStart(8, '0'));
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
-    // La coinbase référence bien l'adresse bcrt (script P2WPKH 0014…).
     expect(txHex).toContain(hex.encode(addressToScript(address, 'regtest')));
   });
 });

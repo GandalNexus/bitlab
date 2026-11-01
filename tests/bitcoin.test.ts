@@ -1,10 +1,3 @@
-/**
- * BitLab — tests hors-ligne du cœur Bitcoin (Vitest).
- * Suite de validation Bitcoin (ex-tooling hors suite) : génération de clés (3 types),
- * WIF, mnémonique BIP39, construction/signature Legacy/SegWit/Taproot,
- * décodage raw, multisig P2WSH, estimation des frais.
- * Aucune connexion réseau requise.
- */
 import { describe, expect, it } from 'vitest';
 import {
   TYPE_INFO,
