@@ -28,6 +28,8 @@ Chaque cycle :
 5. **Commit** Conventional Commits : `chore(comments): strip FR+EN comments from <dossier> (<n> comments, <m> lines)`.
 6. **Backup zip** : `git archive HEAD` → `backups/backup-bitlab-<HH>h.zip` (heure locale Africa/Dakar ; un zip de même nom est écrasé).
 
+À la **fin du premier cycle** (9e dossier traité), une archive finale supplémentaire `backups/backup-bitlab-final-<HH>h-avec-git.zip` est produite : elle contient l'arbre de travail **et le dossier `.git`** complet (historique des commits de cleanup inclus). Exclusions : `node_modules/`, `backups/`, `.next/`, `target/`, `next-dev/`. Elle n'est créée qu'une seule fois (garde `finalArchiveDone` dans `cleanup-state.json`).
+
 Après les 9 dossiers, le scheduler passe en **mode maintenance** : il re-scanne un dossier par heure (round-robin) et nettoie tout nouveau commentaire introduit entre-temps ; sans changement, aucun commit ni zip n'est produit.
 
 ## Utilisation

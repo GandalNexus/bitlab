@@ -62,6 +62,29 @@ function saveState(state) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf8');
 }
 
+function createFinalBackup(hour) {
+  const zipName = `backup-bitlab-final-${hour}h-avec-git.zip`;
+  const zipPath = path.join(BACKUP_DIR, zipName);
+  fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  execFileSync('zip', ['-r', '-q', zipPath, '.', '-x', 'node_modules/*', 'backups/*', '.next/*', 'target/*', 'next-dev/*'], { cwd: ROOT });
+  const zipKB = Math.round(fs.statSync(zipPath).size / 1024);
+  logLine(`CYCLE COMPLET — archive finale ${zipName} (${zipKB} KB) : arbre de travail + arbre git (.git) avec l'historique complet des commits de cleanup.`);
+  return { name: zipName, kb: zipKB };
+}
+
+function advanceCycle(state, entry, hour) {
+  state.nextIndex++;
+  if (state.nextIndex >= FOLDERS.length) state.complete = true;
+  state.history.push(entry);
+  saveState(state);
+  if (state.complete && !state.finalArchiveDone) {
+    state.finalArchiveDone = true;
+    const fb = createFinalBackup(hour);
+    entry.finalBackup = fb.name;
+    saveState(state);
+  }
+}
+
 function git(args, opts = {}) {
   return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', ...opts }).trim();
 }
@@ -177,23 +200,14 @@ function runCycle({ dryRun = false } = {}) {
     entry.status = 'error-rolled-back';
     entry.errors = res.errors.map((e) => `${path.relative(ROOT, e.file)}: ${e.error.split('\n')[0]}`);
     logLine(`ERREUR ${folder.name} — rollback de ${res.changed.length} fichiers. ${entry.errors.join(' | ')}`);
-    if (!dryRun) {
-      state.nextIndex++;
-      state.history.push(entry);
-      saveState(state);
-    }
+    if (!dryRun) advanceCycle(state, entry, hour);
     return entry;
   }
 
   if (res.totals.filesChanged === 0) {
     entry.status = firstPass ? 'already-clean' : 'nothing-to-do';
     logLine(`${folder.name} — rien à nettoyer (${res.totals.files} fichiers scannés).`);
-    if (!dryRun) {
-      state.nextIndex++;
-      if (state.nextIndex >= FOLDERS.length) state.complete = true;
-      state.history.push(entry);
-      saveState(state);
-    }
+    if (!dryRun) advanceCycle(state, entry, hour);
     return entry;
   }
 
@@ -209,9 +223,7 @@ function runCycle({ dryRun = false } = {}) {
     entry.status = 'gate-failed-rolled-back';
     entry.gate = gates.gate;
     logLine(`GARDE-FOU ${gates.gate} ÉCHOUÉ sur ${folder.name} — rollback de ${res.changed.length} fichiers. Détail: ${(gates.output || '').split('\n').slice(0, 6).join(' | ').slice(0, 600)}`);
-    state.nextIndex++;
-    state.history.push(entry);
-    saveState(state);
+    advanceCycle(state, entry, hour);
     return entry;
   }
 
@@ -233,10 +245,7 @@ function runCycle({ dryRun = false } = {}) {
   entry.backupKB = zipKB;
   logLine(`${folder.name} — ${res.totals.commentsRemoved} commentaires supprimés (fr ${res.totals.fr} / en ${res.totals.en}), ${entry.linesRemoved} lignes en moins sur ${res.totals.filesChanged}/${res.totals.files} fichiers — commit ${entry.commit} — ${zipName} (${zipKB} KB)`);
 
-  state.nextIndex++;
-  if (state.nextIndex >= FOLDERS.length) state.complete = true;
-  state.history.push(entry);
-  saveState(state);
+  advanceCycle(state, entry, hour);
   return entry;
 }
 
