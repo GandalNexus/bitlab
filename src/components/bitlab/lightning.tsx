@@ -32,7 +32,7 @@ import { QRCode } from './qrcode';
 import { useLabStore } from '@/lib/store';
 import { NETWORKS, DEFAULT_NET } from '@/lib/networks';
 import { api, mpBroadcast, type AddressUtxo } from '@/lib/mempool';
-import { buildSignedTx } from '@/lib/bitcoin/tx';
+import { buildSignedTx, estimateVsize, DUST_LIMIT } from '@/lib/bitcoin/tx';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import { regtestMode } from '@/lib/regtest';
 import { useT } from '@/lib/i18n';
@@ -177,15 +177,17 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
       const feeRate = Math.max(1, Number(fees.hourFee) || 1);
       const rank = (u: AddressUtxo) => (u.isCoinbase ? (u.status.block_height ?? Number.MAX_SAFE_INTEGER) : -1);
       const ordered = [...allUtxos].sort((a, b) => rank(a) - rank(b));
-      const target = valueSats + 5000;
+      const output = { address: pending.address, amountSats: valueSats };
+      const needed = (inputs: number) =>
+        valueSats + Math.ceil(estimateVsize(wallet.type, inputs, [output], true, wallet.address) * feeRate) + DUST_LIMIT;
       let covered = 0;
       const selected: AddressUtxo[] = [];
       for (const u of ordered) {
         selected.push(u);
         covered += u.value;
-        if (covered >= target) break;
+        if (covered >= needed(selected.length)) break;
       }
-      const utxos = covered >= target ? selected : allUtxos;
+      const utxos = covered >= needed(selected.length) ? selected : allUtxos;
       const res = buildSignedTx({
         utxos,
         outputs: [{ address: pending.address, amountSats: valueSats }],
