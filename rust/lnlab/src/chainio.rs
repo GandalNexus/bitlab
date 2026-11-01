@@ -1,11 +1,3 @@
-//! BitLab lnlab — host-side plumbing for LDK: logger, fee estimator, broadcaster.
-//!
-//! All chain I/O is delegated to JavaScript (same-origin proxy `/api/bitcoin`),
-//! because `mempool.space` does not send CORS headers and the worker must not
-//! talk to the network directly. No clock API is ever used: wasm32-unknown-unknown
-//! has no wall clock (`Instant::now` traps), so timestamps are always provided
-//! by JavaScript.
-
 use std::cell::RefCell;
 
 use bitcoin::consensus::encode::serialize;
@@ -17,8 +9,9 @@ use lightning::chain::chaininterface::{
 use lightning::util::logger::{Level, Logger, Record};
 use wasm_bindgen::prelude::*;
 
-/// Log sink shared with JavaScript. Keeps a bounded in-memory tail (for the UI)
-/// and mirrors everything to the browser console via an imported function.
+const LOG_LINE_MAX_CHARS: usize = 400;
+const LOG_TAIL_MAX_LINES: usize = 80;
+
 #[wasm_bindgen]
 extern "C" {
         #[wasm_bindgen(js_namespace = lnlabHost)]
@@ -35,6 +28,20 @@ impl JsLogger {
         pub(crate) fn new() -> Self {
                 Self { tail: RefCell::new(Vec::new()) }
         }
+
+        fn push(&self, level: u8, message: String) {
+                let mut tail = self.tail.borrow_mut();
+                tail.insert(0, (level, message));
+                tail.truncate(LOG_TAIL_MAX_LINES);
+        }
+
+        pub(crate) fn tail_strings(&self) -> Vec<String> {
+                self.tail
+                        .borrow()
+                        .iter()
+                        .map(|(lvl, msg)| format!("[{}] {}", level_tag(*lvl), msg))
+                        .collect()
+        }
 }
 
 impl Logger for JsLogger {
@@ -47,33 +54,9 @@ impl Logger for JsLogger {
                         Level::Warn => 4,
                         Level::Error => 5,
                 };
-                let message = record.args.to_string();
-                if message.len() > 400 {
-                        // Keep the tail bounded and readable.
-                        let truncated: String = message.chars().take(400).collect();
-                        self.push(level, truncated.clone());
-                        hostLog(level, &truncated);
-                } else {
-                        self.push(level, message.clone());
-                        hostLog(level, &message);
-                }
-        }
-}
-
-impl JsLogger {
-        fn push(&self, level: u8, message: String) {
-                let mut tail = self.tail.borrow_mut();
-                tail.insert(0, (level, message));
-                tail.truncate(80);
-        }
-
-        /// Snapshot of recent log lines for the UI (plain strings).
-        pub(crate) fn tail_strings(&self) -> Vec<String> {
-                self.tail
-                        .borrow()
-                        .iter()
-                        .map(|(lvl, msg)| format!("[{}] {}", level_tag(*lvl), msg))
-                        .collect()
+                let message: String = record.args.to_string().chars().take(LOG_LINE_MAX_CHARS).collect();
+                self.push(level, message.clone());
+                hostLog(level, &message);
         }
 }
 
@@ -85,7 +68,6 @@ fn level_tag(level: u8) -> &'static str {
         }
 }
 
-/// Fee rates pushed by JavaScript (converted from Esplora `sat/vB` to `sat/kwu`).
 #[derive(Clone, Copy)]
 pub(crate) struct FeeRates {
         pub fast: u32,
@@ -126,9 +108,6 @@ impl FeeEstimator for JsFeeEstimator {
         }
 }
 
-/// Forwards transactions to JavaScript, which broadcasts them through the
-/// same-origin Esplora proxy (`POST /api/bitcoin?path=tx`). Fire-and-forget:
-/// delivery issues are surfaced to the student in the UI, not to LDK.
 pub(crate) struct JsBroadcaster {
         pub network: String,
 }
@@ -136,16 +115,13 @@ pub(crate) struct JsBroadcaster {
 impl BroadcasterInterface for JsBroadcaster {
         fn broadcast_transactions(&self, txs: &[&Transaction]) {
                 for tx in txs {
-                        let raw = serialize(*tx);
-                        let hex = raw.as_hex().to_string();
+                        let hex = serialize(*tx).as_hex().to_string();
                         hostLog(3, &format!("broadcast tx {}", hex.get(0..16).unwrap_or("")));
                         hostBroadcast(&self.network, &hex);
                 }
         }
 }
 
-/// Unused chain filter: we feed full blocks to both `ChannelManager` and
-/// `ChainMonitor`, so LDK never needs to request filtered data.
 pub(crate) struct NoFilter;
 
 impl lightning::chain::Filter for NoFilter {

@@ -1,13 +1,8 @@
-//! BitLab lnlab — serialization of LDK `Event`s into JavaScript objects.
-//!
-//! The worker receives a flat array of `{ node, type, ...fields }` records and
-//! maps them onto i18n keys in the UI. Only lab-relevant variants carry fields;
-//! everything else is surfaced with its variant name so nothing is silently
-//! dropped.
-
+use bitcoin::hex::DisplayHex as _;
 use js_sys::{Array, Object};
 use lightning::events::Event;
 use wasm_bindgen::JsValue;
+
 pub(crate) fn event_to_js(node_label: &str, event: &Event) -> JsValue {
         let obj = Object::new();
         set(&obj, "node", node_label);
@@ -23,7 +18,7 @@ pub(crate) fn event_to_js(node_label: &str, event: &Event) -> JsValue {
                         set(&obj, "temporaryChannelId", &temporary_channel_id.to_string());
                         set(&obj, "counterparty", &counterparty_node_id.to_string());
                         set(&obj, "valueSats", &channel_value_satoshis.to_string());
-                        set(&obj, "outputScript", &output_script.to_hex_string());
+                        set(&obj, "outputScript", &output_script.as_bytes().as_hex().to_string());
                         set(&obj, "userChannelId", &(*user_channel_id as u64).to_string());
                 },
                 Event::ChannelPending { channel_id, counterparty_node_id, funding_txo, .. } => {
@@ -113,16 +108,4 @@ fn set(obj: &Object, key: &str, value: &str) {
 
 fn hex32(bytes: [u8; 32]) -> String {
         bytes.iter().map(|b| format!("{:02x}", b)).collect()
-}
-
-/// Local hex helper for script bytes (ScriptBuf implements Display as hex, but
-/// keep an explicit path independent of formatting defaults).
-trait ToHexString {
-        fn to_hex_string(&self) -> String;
-}
-
-impl ToHexString for bitcoin::ScriptBuf {
-        fn to_hex_string(&self) -> String {
-                self.as_bytes().iter().map(|b| format!("{:02x}", b)).collect()
-        }
 }

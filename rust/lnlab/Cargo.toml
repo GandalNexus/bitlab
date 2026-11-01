@@ -8,9 +8,6 @@ description = "BitLab - two real LDK Lightning nodes compiled to WebAssembly for
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# `std` is intentionally disabled: LDK's std paths call SystemTime/Instant,
-# which trap on wasm32-unknown-unknown. no-std paths derive time from
-# explicit parameters we pass from JavaScript.
 lightning = { version = "0.2.7", default-features = false, features = ["grind_signatures"] }
 lightning-invoice = { version = "0.34", default-features = false }
 bitcoin = "0.32"

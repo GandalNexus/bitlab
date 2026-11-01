@@ -1,19 +1,9 @@
-//! BitLab lnlab — LDK persistence backed by JavaScript (IndexedDB).
-//!
-//! LDK 0.2 writes every channel monitor update synchronously through the
-//! `KVStoreSync` trait. On the web, IndexedDB is asynchronous, so we keep an
-//! in-memory map plus a dirty set; the worker drains the dirty set after every
-//! tick and flushes it to IndexedDB. Loss on tab crash is bounded to the last
-//! flush interval and only affects already-persisted-on-chain data recovery,
-//! which LDK re-derives from the chain feed.
-
 use std::cell::RefCell;
 use std::collections::{BTreeSet, HashMap};
 use std::rc::Rc;
 
 use lightning::io;
 use lightning::util::persist::KVStoreSync;
-use wasm_bindgen::prelude::*;
 
 pub(crate) type StoreKey = (String, String, String);
 
@@ -49,7 +39,6 @@ impl JsKvStore {
                 let dropped_keys: Vec<StoreKey> = self.dropped.borrow().iter().cloned().collect();
                 self.dropped.borrow_mut().clear();
                 for key in dropped_keys {
-                        // Only report a tombstone if the key is really gone.
                         if !self.data.borrow().contains_key(&key) {
                                 out.push((key, None));
                         }
@@ -108,14 +97,8 @@ impl KVStoreSync for JsKvStore {
         }
 }
 
-/// Shared per-node store handed to LDK components as `Rc<JsKvStore>`.
 pub(crate) type SharedKv = Rc<JsKvStore>;
 
 pub(crate) fn shared_store() -> SharedKv {
         Rc::new(JsKvStore::new())
-}
-
-#[allow(dead_code)]
-pub(crate) fn kv_error_to_js(error: &io::Error) -> JsValue {
-        JsValue::from_str(&format!("kv error: {}", error))
 }
