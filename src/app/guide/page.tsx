@@ -1,11 +1,5 @@
 'use client';
 
-/**
- * BitLab Docs — developer guide (external page, developers.stellar.org style).
- * Dedicated docs header, fixed side navigation with scrollspy, illustrated
- * section banners, tables and callouts — no code blocks.
- * FR <-> EN translation via t().
- */
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
@@ -29,8 +23,6 @@ import {
   ArtTx,
 } from '@/components/bitlab/docs-art';
 import { BrandMark } from '@/components/bitlab/sidebar';
-
-/* ──────────────────────────────  Primitives  ────────────────────────────── */
 
 function Callout({ kind, title, children }: { kind: 'info' | 'warn' | 'danger'; title: string; children: ReactNode }) {
   const styles = {
@@ -113,7 +105,6 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
   );
 }
 
-/** Illustrated section banner (no header strip — the art stands alone). */
 function Banner({ children }: { children: ReactNode }) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -122,19 +113,17 @@ function Banner({ children }: { children: ReactNode }) {
   );
 }
 
-/** Scroll to bibliography entry `n` and flash it (target of an in-text [n] citation). */
 function goToRef(n: number) {
   const el = document.getElementById(`ref-${n}`);
   if (!el) return;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
   el.classList.remove('ref-flash');
-  void el.offsetWidth; // restart the animation on repeated clicks
+  void el.offsetWidth;
   el.classList.add('ref-flash');
   window.setTimeout(() => el.classList.remove('ref-flash'), 2000);
 }
 
-/** In-text numbered citation — clickable [n] jumping to the references section. */
 function Ref({ n }: { n: number }) {
   const { t } = useT();
   return (
@@ -148,8 +137,6 @@ function Ref({ n }: { n: number }) {
     </button>
   );
 }
-
-/* ──────────────────────────────  Sections  ────────────────────────────── */
 
 function SectionDemarrer() {
   const { t } = useT();
@@ -412,9 +399,6 @@ function SectionSecurite() {
   );
 }
 
-/* ──────────────────────────────  Références  ────────────────────────────── */
-
-/** Bibliographie — sources normatives et documentation technique. */
 const REFS: { label: string; url: string }[] = [
   { label: 'S. Nakamoto — « Bitcoin: A Peer-to-Peer Electronic Cash System » (2008)', url: 'https://bitcoin.org/bitcoin.pdf' },
   { label: 'Bitcoin Core — Developer documentation', url: 'https://developer.bitcoin.org/' },
@@ -465,8 +449,6 @@ function SectionReferences() {
   );
 }
 
-/* ──────────────────────────────  Coquille docs  ────────────────────────────── */
-
 const NAV = [
   { id: 'demarrer', label: 'Démarrer' },
   { id: 'cles-adresses', label: 'Clés & adresses' },
@@ -493,7 +475,6 @@ export default function GuideDocsPage() {
   const { t } = useT();
   const [active, setActive] = useState('demarrer');
 
-  // Scrollspy — visible section in the top third of the window.
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entries) => {
@@ -516,7 +497,6 @@ export default function GuideDocsPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Dedicated docs header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/" aria-label="BitLab" className="flex items-center">
@@ -536,7 +516,6 @@ export default function GuideDocsPage() {
         </div>
       </header>
 
-      {/* Hero docs */}
       <div className="border-b border-border/60 bg-gradient-to-b from-primary/8 via-transparent to-transparent">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <h1 className="lab-display max-w-3xl text-3xl leading-tight sm:text-[38px] sm:leading-[46px]">
@@ -548,7 +527,6 @@ export default function GuideDocsPage() {
         </div>
       </div>
 
-      {/* Body: side nav + content */}
       <div className="mx-auto flex max-w-6xl gap-10 px-4 py-10 sm:px-6">
         <nav aria-label={t('Sections du guide')} className="hidden w-56 shrink-0 lg:block">
           <div className="sticky top-20 space-y-0.5">

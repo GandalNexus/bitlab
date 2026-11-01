@@ -1,18 +1,3 @@
-/**
- * BitLab — multi-network Esplora proxy (Edge).
- *
- * Public networks (mainnet, testnet3, testnet4, signet): relay to public
- * mempool.space nodes with strict path sanitization (regex whitelist) to
- * prevent injection.
- *
- * Local network (regtest): BY DEFAULT an embedded regtest chain engine in the
- * BitLab process responds in Esplora format (no installation, Docker, or hypervisor
- * — see src/lib/regtest-engine). If user enabled "external node" mode (Settings card,
- * X-Regtest-Cfg header present), proxy translates paths to user's local Bitcoin Core
- * (-rest=1) and two strictly scoped RPCs — historical behavior preserved.
- *
- * No sensitive data (private key, mnemonic) transits through this route.
- */
 import { NextRequest, NextResponse } from 'next/server';
 import { decodeRegtestHeader, isLocalHost, type RegtestCfg } from '@/lib/regtest';
 import { getRegtestChain, persist } from '@/lib/regtest-engine/server';
@@ -40,7 +25,6 @@ const UPSTREAMS: Record<string, string> = {
 
 const DEFAULT_NET = 'testnet4';
 
-/** Strict whitelist of allowed paths (injection protection). */
 const ALLOWED_GET: RegExp[] = [
   /^v1\/fees\/recommended$/,
   /^blocks\/tip\/height$/,
@@ -51,18 +35,13 @@ const ALLOWED_GET: RegExp[] = [
   /^address\/[a-z0-9]{6,90}(\/utxo|\/txs)?$/i,
   /^tx\/[a-f0-9]{64}$/i,
   /^tx\/[a-f0-9]{64}\/hex$/i,
-  // Lightning lab: block position and raw download.
   /^block-height\/\d+$/,
   /^block\/[a-f0-9]{64}\/raw$/i,
-  // Block detail (embedded regtest explorer).
   /^block\/[a-f0-9]{64}$/i,
-  // Testnet4 miner: tip header for BIP 94 template assembly.
   /^block\/[a-f0-9]{64}\/header$/i,
-  // Global Lightning stats (mempool.space, mainnet).
   /^v1\/lightning\/statistics\/latest$/,
 ];
 
-/** Raw block (bytes): transferred as-is, never cached in memory. */
 const RAW_BLOCK = /^block\/[a-f0-9]{64}\/raw$/i;
 
 function sanitizePath(raw: string | null): string | null {
@@ -75,19 +54,15 @@ function sanitizeNet(raw: string | null): string {
   return raw && (raw in UPSTREAMS || raw === 'regtest') ? raw : DEFAULT_NET;
 }
 
-/* ───────────────────────── Regtest adapter (local node) ───────────────────────── */
-
 const REST_TIMEOUT_MS = 8_000;
 const RPC_TIMEOUT_MS = 15_000;
 
-/** Valide la config du nœud : hôte local/privé uniquement, port explicite. */
 function safeRegtestCfg(req: NextRequest): RegtestCfg | null {
   const cfg = decodeRegtestHeader(req.headers.get('x-regtest-cfg'));
   if (!cfg || !isLocalHost(cfg.host)) return null;
   return cfg;
 }
 
-/** Appel JSON-RPC 1.0 strictement borné (methodes whitelistées par les appelants). */
 async function regtestRpc(cfg: RegtestCfg, method: string, params: unknown[]): Promise<unknown> {
   const auth = Buffer.from(`${cfg.user}:${cfg.pass}`).toString('base64');
   const res = await fetch(`http://${cfg.host}:${cfg.port}/`, {
@@ -114,7 +89,6 @@ function textRes(body: string, status = 200): NextResponse {
   return new NextResponse(body, { status, headers: { 'content-type': 'text/plain', 'x-network': 'regtest' } });
 }
 
-/** Requête REST Core → réponse traduite ou transférée. */
 async function regtestRest(
   cfg: RegtestCfg,
   upstream: string,
@@ -140,7 +114,6 @@ async function regtestRest(
 
   const json: unknown = text ? JSON.parse(text) : null;
 
-  // Chemins « brut de texte » : hauteur/hash du tip, hash par hauteur, en-tête.
   if (path === 'blocks/tip/height') {
     const h = chainInfoToTipHeight(json as { blocks?: unknown });
     return h === null ? jsonRes({ erreur: 'chaininfo illisible' }, 502) : textRes(String(h));
@@ -163,7 +136,6 @@ async function regtestRest(
   if (path === 'mempool') return jsonRes(mempoolInfoToStats(json));
   if (path === 'mempool/recent') return jsonRes(mempoolContentsToRecent(json));
 
-  // v1/blocks : parcours des 10 derniers blocs via les previousblockhash.
   if (path === 'v1/blocks' || /^v1\/blocks\/\d{1,2}$/.test(path)) {
     const wanted = Number(path.split('/')[2] ?? 10) || 10;
     const tipHash = chainInfoToTipHash(json as { bestblockhash?: unknown });
@@ -190,7 +162,6 @@ async function regtestRest(
   return jsonRes({ erreur: 'chemin regtest non traduit' }, 400);
 }
 
-/** GET regtest : dispatch statique / REST / RPC. */
 async function regtestGet(path: string, cfg: RegtestCfg | null): Promise<NextResponse> {
   const plan = planRegtestRequest(path);
   switch (plan.kind) {
@@ -221,16 +192,8 @@ async function regtestGet(path: string, cfg: RegtestCfg | null): Promise<NextRes
   }
 }
 
-/* ───────────────────────── Route principale ───────────────────────── */
-
-/** Cache mémoire court (60 s) par réseau pour limiter la charge sur les nœuds publics. */
 const cache = new Map<string, { at: number; body: string; status: number }>();
 const TTL = 60_000;
-/**
- * Plafond mémoire : les adresses explorées ne doivent jamais faire croître
- * le cache indéfiniment (processus serveur long-vivant). Au-delà de MAX,
- * on purge d'abord les entrées expirées, puis on évince les plus anciennes.
- */
 const MAX_CACHE_ENTRIES = 300;
 
 function evictCache(): void {
@@ -254,8 +217,6 @@ export async function GET(req: NextRequest) {
   }
   const net = sanitizeNet(req.nextUrl.searchParams.get('network'));
 
-  // Regtest : moteur embarqué par défaut — nœud externe si l'en-tête de
-  // configuration est présent (mode avancé de la carte Réglages).
   if (net === 'regtest') {
     const cfg = safeRegtestCfg(req);
     if (cfg) {
@@ -265,7 +226,6 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ erreur: 'Nœud regtest injoignable — vérifiez que Bitcoin Core tourne avec -rest=1.' }, { status: 502 });
       }
     }
-    // Moteur embarqué : aucune configuration, aucune installation requise.
     try {
       const chain = await getRegtestChain();
       const result = handleEsploraPath(chain, path);
@@ -295,7 +255,6 @@ export async function GET(req: NextRequest) {
   }
   try {
     if (RAW_BLOCK.test(path)) {
-      // Un bloc complet peut dépasser 1 Mo : transfert binaire sans cache.
       const upstream = await fetch(`${UPSTREAMS[net]}/${path}`, {
         headers: { accept: 'application/octet-stream' },
         cache: 'no-store',
@@ -333,7 +292,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/** Diffusion d'une transaction brute signée (POST /tx) sur le réseau choisi. */
 export async function POST(req: NextRequest) {
   const path = req.nextUrl.searchParams.get('path');
   if (path !== 'tx') {
@@ -345,8 +303,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ erreur: 'Transaction brute hexadécimale invalide.' }, { status: 400 });
   }
 
-  // Regtest : moteur embarqué par défaut (acceptation mempool réelle) —
-  // ou diffusion via RPC sendrawtransaction si un nœud externe est configuré.
   if (net === 'regtest') {
     const cfg = safeRegtestCfg(req);
     if (cfg) {

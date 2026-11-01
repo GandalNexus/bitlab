@@ -1,15 +1,3 @@
-/**
- * BitLab — Faucet regtest embarqué.
- *
- * Distribue des BTC de test à une adresse regtest : le serveur construit et
- * signe une vraie transaction P2WPKH depuis son pool faucet (préminé de 101
- * blocs à la création de la chaîne), l'accepte dans le mempool puis mine
- * 1 bloc pour la confirmer. Le destinataire peut dépenser immédiatement
- * (la maturité de 100 blocs ne s'applique qu'aux récompenses coinbase).
- *
- * Aucune clé utilisateur ne transite ici : seule la clé du faucet — générée
- * localement, sans valeur — réside côté serveur.
- */
 import { NextRequest, NextResponse } from 'next/server';
 import { getRegtestChain, persist } from '@/lib/regtest-engine/server';
 import { FAUCET_DEFAULT_SATS } from '@/lib/regtest-engine/params';

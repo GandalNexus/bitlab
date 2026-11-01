@@ -1,12 +1,3 @@
-/**
- * BitLab — Minage regtest côté serveur (generatetoaddress embarqué).
- *
- * Mine `blocks` blocs à difficulté 1 sur la chaîne regtest embarquée.
- * La coinbase est payée à `address` (bcrt/m/n/2) si fournie, sinon à
- * l'adresse du faucet interne (le pool se reconstitue). Le mempool est
- * empaqueté par taux de frais décroissant — exactement le comportement
- * d'un mineur réel. Plafond : 500 blocs par requête (discipline mémoire).
- */
 import { NextRequest, NextResponse } from 'next/server';
 import { getRegtestChain, persist } from '@/lib/regtest-engine/server';
 import { addressToScriptBcrt } from '@/lib/regtest-engine/chain';
@@ -26,7 +17,7 @@ export async function POST(req: NextRequest) {
   try {
     let payScript: Uint8Array | null = null;
     if (typeof body.address === 'string' && body.address.trim()) {
-      payScript = addressToScriptBcrt(body.address); // lève si adresse invalide
+      payScript = addressToScriptBcrt(body.address);
     }
     const mined = chain.mineTo(payScript, blocks);
     await persist(chain);

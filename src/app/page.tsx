@@ -1,11 +1,5 @@
 'use client';
 
-/**
- * BitLab - main page (single visible route).
- * Stellar-Lab-style shell: fixed left sidebar (mobile drawer), full-width
- * top bar, content area on the right.
- * Modules: Dashboard, Wallet, Transactions, Lightning, Miner, Explorer.
- */
 import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LabHeader } from '@/components/bitlab/header';
@@ -38,7 +32,6 @@ export default function BitLabPage() {
   const netLabel = NETWORKS[net].label;
   const realFunds = NETWORKS[net].realFunds;
 
-  // Load lab state from IndexedDB (client mount only).
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
@@ -55,14 +48,12 @@ export default function BitLabPage() {
           onToggleCollapsed={toggleSidebar}
         />
 
-        {/* Full-width top cluster — spans over the sidebar (measured by LabSidebar) */}
         <div id="lab-top-cluster" className="sticky top-0 z-40">
           <AnnouncementBanner />
           <LabHeader onOpenMobileNav={() => setMobileNavOpen(true)} />
         </div>
 
         <div className={cn('flex flex-1 flex-col transition-[padding] duration-200 ease-out', sidebarCollapsed ? 'lg:pl-[68px]' : 'lg:pl-64')}>
-          {/* Content */}
           <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
             {tab === 'dashboard' ? <Dashboard onNavigate={(t) => setTab(t as TabId)} /> : null}
             {tab === 'portefeuille' ? <WalletModule /> : null}
@@ -72,7 +63,6 @@ export default function BitLabPage() {
             {tab === 'explorateur' ? <ExplorerModule /> : null}
           </main>
 
-          {/* Discreet footer - only a reminder of the active network */}
           <footer className="mt-auto border-t border-border/70 bg-card/40 py-3.5">
             <div className="mx-auto flex max-w-5xl justify-center px-4 text-[11px] text-muted-foreground sm:px-6">
               <span className={cn('text-muted-foreground/70', realFunds && 'text-amber-600 dark:text-amber-500/90')}>
