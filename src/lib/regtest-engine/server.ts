@@ -29,8 +29,7 @@ async function load(): Promise<RegtestChain> {
   } catch {
     try {
       await fs.mkdir(dirname(file), { recursive: true });
-    } catch {
-    }
+    } catch {}
     return new RegtestChain();
   }
 }
@@ -43,8 +42,7 @@ async function flushNow(chain: RegtestChain): Promise<void> {
     const tmp = `${file}.${process.pid}.tmp`;
     await fs.writeFile(tmp, JSON.stringify(chain.serialize()), 'utf8');
     await fs.rename(tmp, file);
-  } catch {
-  }
+  } catch {}
 }
 
 function scheduleFlush(chain: RegtestChain): void {
@@ -56,7 +54,10 @@ function scheduleFlush(chain: RegtestChain): void {
       globalRef.__bitlabRegtestFlush = undefined;
     });
   }, FLUSH_DELAY_MS);
-  if (typeof globalRef.__bitlabRegtestTimer === 'object' && 'unref' in globalRef.__bitlabRegtestTimer) {
+  if (
+    typeof globalRef.__bitlabRegtestTimer === 'object' &&
+    'unref' in globalRef.__bitlabRegtestTimer
+  ) {
     (globalRef.__bitlabRegtestTimer as { unref(): void }).unref();
   }
 }

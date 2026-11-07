@@ -19,8 +19,7 @@ export const useLangStore = create<LangState>((set) => ({
   setLang: (lang) => {
     try {
       localStorage.setItem(LANG_KEY, lang);
-    } catch {
-    }
+    } catch {}
     if (typeof document !== 'undefined') document.documentElement.lang = lang;
     set({ lang });
   },

@@ -318,8 +318,7 @@ class MinerController {
     for (const { worker } of this.sessions) {
       try {
         worker.terminate();
-      } catch {
-      }
+      } catch {}
     }
     this.sessions = [];
     this.sessionHashes.clear();

@@ -61,8 +61,7 @@ function snap(
 async function persist(s: PersistedLab): Promise<void> {
   try {
     await idbSet(IDB_KEY, s);
-  } catch {
-  }
+  } catch {}
 }
 
 export const useLabStore = create<LabState>((set, get) => ({

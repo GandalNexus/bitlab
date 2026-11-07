@@ -99,7 +99,14 @@ const MAX_EVENTS = 60;
 const MAX_LOGS = 200;
 
 class LnLabController {
-  private status: LnLabStatus = { ...initialStatus, channelsA: [], channelsB: [], events: [], logs: [], broadcasts: [] };
+  private status: LnLabStatus = {
+    ...initialStatus,
+    channelsA: [],
+    channelsB: [],
+    events: [],
+    logs: [],
+    broadcasts: [],
+  };
   private listeners = new Set<() => void>();
   private worker: Worker | null = null;
   private network: LnNetId | null = null;
@@ -147,7 +154,15 @@ class LnLabController {
   async activate(network: LnNetId): Promise<void> {
     if (this.status.phase === 'booting' || this.status.phase === 'ready') return;
     this.network = network;
-    this.patch({ phase: 'booting', network, error: null, logs: [], events: [], broadcasts: [], pendingFunding: null });
+    this.patch({
+      phase: 'booting',
+      network,
+      error: null,
+      logs: [],
+      events: [],
+      broadcasts: [],
+      pendingFunding: null,
+    });
     try {
       const seeds = await this.loadOrCreateSeeds(network);
       const kvA = await this.loadKvMap(network, 'A');
@@ -200,7 +215,8 @@ class LnLabController {
         mode: restore ? 'restore' : 'fresh',
         seeds: { a: new Uint8Array(seeds.a), b: new Uint8Array(seeds.b) },
         kv: { a: this.kvToArray(kvA), b: this.kvToArray(kvB) },
-        regtestHeader: network === 'regtest' && regtestMode() === 'external' ? regtestHeaderValue() : '',
+        regtestHeader:
+          network === 'regtest' && regtestMode() === 'external' ? regtestHeaderValue() : '',
       });
     } catch (err) {
       this.patch({ phase: 'off', error: `activation: ${(err as Error).message}` });
@@ -272,14 +288,16 @@ class LnLabController {
   private kvToArray(map: KvMap): Array<[string, string, string, Uint8Array]> {
     return Object.entries(map).map(([composite, value]) => {
       const sep = composite.indexOf('|');
-      return [composite.slice(0, sep), composite.slice(sep + 1, composite.indexOf('|', sep + 1)), composite.slice(composite.indexOf('|', sep + 1) + 1), value] as [string, string, string, Uint8Array];
+      return [
+        composite.slice(0, sep),
+        composite.slice(sep + 1, composite.indexOf('|', sep + 1)),
+        composite.slice(composite.indexOf('|', sep + 1) + 1),
+        value,
+      ] as [string, string, string, Uint8Array];
     });
   }
 
-  private onWorkerMessage(msg: {
-    type: string;
-    [field: string]: unknown;
-  }) {
+  private onWorkerMessage(msg: { type: string; [field: string]: unknown }) {
     switch (msg.type) {
       case 'ready':
         this.patch({
@@ -295,8 +313,8 @@ class LnLabController {
         this.patch({
           connected: Boolean(msg.connected),
           best: (msg.best as { height: number; hash: string }) ?? this.status.best,
-          channelsA: (msg.channelsA as unknown[]) as LnChannelView[],
-          channelsB: (msg.channelsB as unknown[]) as LnChannelView[],
+          channelsA: msg.channelsA as unknown[] as LnChannelView[],
+          channelsB: msg.channelsB as unknown[] as LnChannelView[],
         });
         break;
       }
@@ -310,7 +328,13 @@ class LnLabController {
         const network = this.network;
         if (!network) break;
         const epoch = this.kvEpoch;
-        const entries = (msg.entries ?? []) as [string, string, string, string, Uint8Array | null][];
+        const entries = (msg.entries ?? []) as [
+          string,
+          string,
+          string,
+          string,
+          Uint8Array | null,
+        ][];
         this.kvQueue = this.kvQueue
           .then(() => {
             if (epoch === this.kvEpoch) return this.flushKv(network, entries);
@@ -319,12 +343,18 @@ class LnLabController {
         break;
       }
       case 'broadcast': {
-        const broadcasts = [{ ok: Boolean(msg.ok), detail: String(msg.detail ?? ''), at: Date.now() }, ...this.status.broadcasts].slice(0, 20);
+        const broadcasts = [
+          { ok: Boolean(msg.ok), detail: String(msg.detail ?? ''), at: Date.now() },
+          ...this.status.broadcasts,
+        ].slice(0, 20);
         this.patch({ broadcasts });
         break;
       }
       case 'fundingSubmitted':
-        if (this.status.pendingFunding && String(msg.userChannelId ?? '') === this.status.pendingFunding.userChannelId) {
+        if (
+          this.status.pendingFunding &&
+          String(msg.userChannelId ?? '') === this.status.pendingFunding.userChannelId
+        ) {
           this.patch({ pendingFunding: null });
         }
         break;
@@ -344,7 +374,10 @@ class LnLabController {
     }
   }
 
-  private async flushKv(network: LnNetId, entries: [string, string, string, string, Uint8Array | null][]) {
+  private async flushKv(
+    network: LnNetId,
+    entries: [string, string, string, string, Uint8Array | null][],
+  ) {
     const perNode: Partial<Record<NodeKey, KvMap>> = {
       A: await this.loadKvMap(network, 'A'),
       B: await this.loadKvMap(network, 'B'),
@@ -408,7 +441,10 @@ class LnLabController {
     const userChannelId = Date.now();
     return this.request<void>(
       { type: 'openChannel', valueSats, pushMsat, userChannelId },
-      (data) => (data.type === 'channelRequested' && Number(data.userChannelId) === userChannelId ? true : undefined) as void,
+      (data) =>
+        (data.type === 'channelRequested' && Number(data.userChannelId) === userChannelId
+          ? true
+          : undefined) as void,
       'délai de la demande d’ouverture dépassé',
     );
   }
@@ -417,10 +453,22 @@ class LnLabController {
     this.send({ type: 'fundingTx', hex: hexTx, userChannelId });
   }
 
-  createInvoice(node: NodeKey, amountMsat: number | null, description: string, expirySecs: number): Promise<string> {
+  createInvoice(
+    node: NodeKey,
+    amountMsat: number | null,
+    description: string,
+    expirySecs: number,
+  ): Promise<string> {
     const id = `inv-${Date.now()}`;
     return this.request<string>(
-      { type: 'createInvoice', id, node: node === 'A' ? 0 : 1, amountMsat, description, expirySecs },
+      {
+        type: 'createInvoice',
+        id,
+        node: node === 'A' ? 0 : 1,
+        amountMsat,
+        description,
+        expirySecs,
+      },
       (data) => (data.type === 'invoice' && data.id === id ? (data.bolt11 as string) : undefined),
       'délai de création de facture dépassé',
     );
@@ -439,7 +487,12 @@ class LnLabController {
     );
   }
 
-  payOffer(node: NodeKey, offer: string, amountMsat: number | null, payerNote: string | null): void {
+  payOffer(
+    node: NodeKey,
+    offer: string,
+    amountMsat: number | null,
+    payerNote: string | null,
+  ): void {
     this.send({ type: 'payOffer', node: node === 'A' ? 0 : 1, offer, amountMsat, payerNote });
   }
 
@@ -447,7 +500,8 @@ class LnLabController {
     const id = `decode-${Date.now()}`;
     return this.request<LnOfferView>(
       { type: 'decodeOffer', id, offer },
-      (data) => (data.type === 'offerInfo' && data.id === id ? (data.info as LnOfferView) : undefined),
+      (data) =>
+        data.type === 'offerInfo' && data.id === id ? (data.info as LnOfferView) : undefined,
       'délai de décodage dépassé',
     );
   }

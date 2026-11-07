@@ -61,7 +61,8 @@ export interface LabWallet {
 }
 
 export function addrOf(p: { address?: string }): string {
-  if (!p.address) throw new Error(tSync('Impossible de dériver l’adresse demandée (entrée invalide).'));
+  if (!p.address)
+    throw new Error(tSync('Impossible de dériver l’adresse demandée (entrée invalide).'));
   return p.address;
 }
 
@@ -121,7 +122,12 @@ export function walletFromMnemonic(
   };
 }
 
-export function walletFromWif(wif: string, type: AddrType, label?: string, net: NetId = currentNet()): LabWallet {
+export function walletFromWif(
+  wif: string,
+  type: AddrType,
+  label?: string,
+  net: NetId = currentNet(),
+): LabWallet {
   const cleaned = wif.trim();
   let priv: Uint8Array;
   try {

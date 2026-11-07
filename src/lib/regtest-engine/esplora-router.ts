@@ -58,7 +58,9 @@ export function handleEsploraPath(chain: RegtestChain, path: string): EsploraRes
   const rawMatch = path.match(/^block\/([0-9a-f]{64})\/raw$/i);
   if (rawMatch) {
     const raw = chain.consensusBlockByHash(rawMatch[1]);
-    return raw ? { status: 200, type: 'bin', body: hex.decode(raw) } : notFound('bloc hors rétention');
+    return raw
+      ? { status: 200, type: 'bin', body: hex.decode(raw) }
+      : notFound('bloc hors rétention');
   }
   const headerMatch = path.match(/^block\/([0-9a-f]{64})\/header$/i);
   if (headerMatch) {
