@@ -34,7 +34,7 @@ const broadcasts: { network: string; txHex: string; ok: boolean; detail?: string
 
 type WasmEvent = { node: string; type: string; [field: string]: string | undefined };
 
-let LnLabClass: (typeof import('../public/lnlab/lnlab').LnLab) | null = null;
+let LnLabClass: typeof import('../public/lnlab/lnlab').LnLab | null = null;
 let lab: any = null;
 
 beforeAll(async () => {
@@ -68,7 +68,13 @@ function mineAndFeed(lab: any, count: number): WasmEvent[] {
 const kvStore = new Map<string, Uint8Array>();
 function flushKv(node: any): number {
   let n = 0;
-  for (const entry of Array.from(node.kv_dirty()) as [string, string, string, string, Uint8Array | null][]) {
+  for (const entry of Array.from(node.kv_dirty()) as [
+    string,
+    string,
+    string,
+    string,
+    Uint8Array | null,
+  ][]) {
     const [label, primary, secondary, key, value] = entry;
     const composite = `${label}|${primary}|${secondary}|${key}`;
     if (value === null || value === undefined) kvStore.delete(composite);
@@ -202,7 +208,9 @@ describe('labo Lightning e2e — deux nœuds LDK réels sur la chaîne regtest e
     expect(String(sent!.amountMsat)).toBe('21000000');
     expect(claimed, 'payment_claimed attendu côté B').toBeDefined();
     expect(String(claimed!.amountMsat)).toBe('21000000');
-    expect(events.some((e) => e.type === 'payment_path_failed' || e.type === 'htlc_handling_failed')).toBe(false);
+    expect(
+      events.some((e) => e.type === 'payment_path_failed' || e.type === 'htlc_handling_failed'),
+    ).toBe(false);
 
     const after = Array.from(lab.list_channels(0))[0];
     expect(BigInt(String(after.outboundMsat))).toBeLessThan(BigInt(String(before.outboundMsat)));
@@ -229,7 +237,9 @@ describe('labo Lightning e2e — deux nœuds LDK réels sur la chaîne regtest e
     expect(bolt12Sent!.preimage).toMatch(/^[0-9a-f]{64}$/);
     const claimed = events.filter((e) => e.type === 'payment_claimed' && e.node === 'B');
     expect(claimed.some((e) => e.amountMsat === '15000000')).toBe(true);
-    expect(events.some((e) => e.type === 'payment_path_failed' || e.type === 'htlc_handling_failed')).toBe(false);
+    expect(
+      events.some((e) => e.type === 'payment_path_failed' || e.type === 'htlc_handling_failed'),
+    ).toBe(false);
     const after = Array.from(lab.list_channels(0))[0];
     expect(BigInt(String(after.outboundMsat))).toBeLessThan(BigInt(String(before.outboundMsat)));
     expect(flushKv(lab)).toBeGreaterThan(0);
@@ -281,7 +291,12 @@ describe('labo Lightning e2e — canal restauré puis payé après redémarrage'
     expect(fgr!.userChannelId).toBe('42');
     const res = buildSignedTx({
       utxos: chain.addressUtxos(wallet.address),
-      outputs: [{ address: scriptToAddressOn(hex.decode(fgr!.outputScript!), 'regtest')!, amountSats: Number(CHANNEL_SATS) }],
+      outputs: [
+        {
+          address: scriptToAddressOn(hex.decode(fgr!.outputScript!), 'regtest')!,
+          amountSats: Number(CHANNEL_SATS),
+        },
+      ],
       feeRateSatVb: 1,
       changeAddress: wallet.address,
       privateKeyHex: wallet.privateKeyHex,
@@ -310,7 +325,13 @@ describe('labo Lightning e2e — canal restauré puis payé après redémarrage'
     expect(channels).toHaveLength(1);
     expect(asBool(channels[0].isUsable)).toBe(true);
 
-    const bolt11 = lab.create_invoice(1, 7_000_000n, 'post-restart', 3600, Math.floor(Date.now() / 1000));
+    const bolt11 = lab.create_invoice(
+      1,
+      7_000_000n,
+      'post-restart',
+      3600,
+      Math.floor(Date.now() / 1000),
+    );
     expect(bolt11.startsWith('lnbcrt')).toBe(true);
     lab.pay_invoice(0, bolt11, null);
     const events = drain(lab, 24);
@@ -318,7 +339,9 @@ describe('labo Lightning e2e — canal restauré puis payé après redémarrage'
     expect(sent, 'payment_sent attendu côté A après restauration').toBeDefined();
     expect(String(sent!.amountMsat)).toBe('7000000');
     expect(events.some((e) => e.type === 'payment_claimed' && e.node === 'B')).toBe(true);
-    expect(events.some((e) => e.type === 'payment_path_failed' || e.type === 'htlc_handling_failed')).toBe(false);
+    expect(
+      events.some((e) => e.type === 'payment_path_failed' || e.type === 'htlc_handling_failed'),
+    ).toBe(false);
     flushKv(lab);
     lab.free();
   });

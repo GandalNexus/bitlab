@@ -10,7 +10,14 @@ export type StandardKind = 'p2wpkh' | 'p2tr' | 'p2pkh' | 'other';
 export function classifyScript(script: Uint8Array): StandardKind {
   if (script.length === 22 && script[0] === 0x00 && script[1] === 0x14) return 'p2wpkh';
   if (script.length === 34 && script[0] === 0x51 && script[1] === 0x20) return 'p2tr';
-  if (script.length === 25 && script[0] === 0x76 && script[1] === 0xa9 && script[22] === 0x88 && script[24] === 0xac) return 'p2pkh';
+  if (
+    script.length === 25 &&
+    script[0] === 0x76 &&
+    script[1] === 0xa9 &&
+    script[22] === 0x88 &&
+    script[24] === 0xac
+  )
+    return 'p2pkh';
   return 'other';
 }
 
@@ -27,13 +34,22 @@ function sha256d(data: Uint8Array): Uint8Array {
   return sha256(sha256(data));
 }
 
-export function bip143Sighash(tx: ParsedTx, inputIndex: number, prevAmountSats: number, scriptCode: Uint8Array): Uint8Array {
+export function bip143Sighash(
+  tx: ParsedTx,
+  inputIndex: number,
+  prevAmountSats: number,
+  scriptCode: Uint8Array,
+): Uint8Array {
   const hashPrevouts = sha256d(
     concat(
-      tx.inputs.map((i) => concat([hex.decode(reverseHex(i.txid)), new Uint8Array(u32leBytes(i.vout >>> 0))])),
+      tx.inputs.map((i) =>
+        concat([hex.decode(reverseHex(i.txid)), new Uint8Array(u32leBytes(i.vout >>> 0))]),
+      ),
     ),
   );
-  const hashSequence = sha256d(concat(tx.inputs.map((i) => new Uint8Array(u32leBytes(i.sequence)))));
+  const hashSequence = sha256d(
+    concat(tx.inputs.map((i) => new Uint8Array(u32leBytes(i.sequence)))),
+  );
   const hashOutputs = sha256d(
     concat(
       tx.outputs.map((o) => {
@@ -175,7 +191,9 @@ function legacySighash(tx: ParsedTx, inputIndex: number, prevScript: Uint8Array)
     inputs: tx.inputs,
     outputs: tx.outputs,
     locktime: tx.locktime,
-    scriptSigOverrides: new Map(tx.inputs.map((_, i) => [i, i === inputIndex ? prevScript : new Uint8Array()])),
+    scriptSigOverrides: new Map(
+      tx.inputs.map((_, i) => [i, i === inputIndex ? prevScript : new Uint8Array()]),
+    ),
     appendHashType: SIGHASH_ALL,
   });
   return sha256d(serialized);
@@ -192,7 +210,11 @@ export interface VerifyResult {
   reason?: string;
 }
 
-export function verifyInput(tx: ParsedTx, inputIndex: number, prevouts: VerifyPrevout[]): VerifyResult {
+export function verifyInput(
+  tx: ParsedTx,
+  inputIndex: number,
+  prevouts: VerifyPrevout[],
+): VerifyResult {
   const prevout = prevouts[inputIndex];
   if (!prevout) return { ok: false, kind: 'other', reason: 'prevout manquant' };
   const kind = classifyScript(prevout.script);
@@ -253,7 +275,9 @@ export function verifyInput(tx: ParsedTx, inputIndex: number, prevouts: VerifyPr
   }
 }
 
-function parseP2pkhScriptSig(scriptSig: Uint8Array): { sigDer: Uint8Array; pubkey: Uint8Array } | null {
+function parseP2pkhScriptSig(
+  scriptSig: Uint8Array,
+): { sigDer: Uint8Array; pubkey: Uint8Array } | null {
   try {
     if (scriptSig.length < 40 || scriptSig[0] < 9 || scriptSig[0] > 74) return null;
     const sigLen = scriptSig[0];

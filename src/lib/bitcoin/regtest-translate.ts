@@ -1,4 +1,11 @@
-import type { AddressInfo, AddressUtxo, BlockSummary, MempoolStats, RecentTx, TxInfo } from '../mempool';
+import type {
+  AddressInfo,
+  AddressUtxo,
+  BlockSummary,
+  MempoolStats,
+  RecentTx,
+  TxInfo,
+} from '../mempool';
 
 export function btcToSats(amount: number | string | undefined | null): number {
   const n = typeof amount === 'string' ? Number(amount) : (amount ?? 0);
@@ -6,14 +13,22 @@ export function btcToSats(amount: number | string | undefined | null): number {
   return Math.round(n * 1e8);
 }
 
-function coreAddress(spk: { address?: unknown; addresses?: unknown } | undefined): string | undefined {
+function coreAddress(
+  spk: { address?: unknown; addresses?: unknown } | undefined,
+): string | undefined {
   if (!spk) return undefined;
   if (typeof spk.address === 'string') return spk.address;
   if (Array.isArray(spk.addresses) && typeof spk.addresses[0] === 'string') return spk.addresses[0];
   return undefined;
 }
 
-export function regtestFees(): { fastestFee: number; halfHourFee: number; hourFee: number; economyFee: number; minimumFee: number } {
+export function regtestFees(): {
+  fastestFee: number;
+  halfHourFee: number;
+  hourFee: number;
+  economyFee: number;
+  minimumFee: number;
+} {
   return { fastestFee: 1, halfHourFee: 1, hourFee: 1, economyFee: 1, minimumFee: 1 };
 }
 
@@ -29,7 +44,8 @@ export function chainInfoToTipHash(info: { bestblockhash?: unknown }): string | 
 
 export function blockHashByHeight(payload: unknown): string | null {
   const fromObject = (payload as { blockhash?: unknown })?.blockhash;
-  const candidate = typeof fromObject === 'string' ? fromObject : typeof payload === 'string' ? payload : '';
+  const candidate =
+    typeof fromObject === 'string' ? fromObject : typeof payload === 'string' ? payload : '';
   const cleaned = candidate.replace(/"/g, '').trim();
   return /^[0-9a-f]{64}$/i.test(cleaned) ? cleaned : null;
 }
@@ -63,7 +79,10 @@ export function coreTxToEsplora(core: unknown, txid: string): TxInfo {
         vout?: unknown;
         sequence?: unknown;
         coinbase?: unknown;
-        prevout?: { value?: unknown; scriptPubKey?: { hex?: unknown; address?: unknown; addresses?: unknown } };
+        prevout?: {
+          value?: unknown;
+          scriptPubKey?: { hex?: unknown; address?: unknown; addresses?: unknown };
+        };
       };
       const isCoinbase = typeof v.coinbase === 'string';
       return {
@@ -83,7 +102,10 @@ export function coreTxToEsplora(core: unknown, txid: string): TxInfo {
       };
     }),
     vout: vout.map((raw) => {
-      const v = (raw ?? {}) as { value?: unknown; scriptPubKey?: { address?: unknown; addresses?: unknown } };
+      const v = (raw ?? {}) as {
+        value?: unknown;
+        scriptPubKey?: { address?: unknown; addresses?: unknown };
+      };
       return {
         scriptpubkey_address: coreAddress(v.scriptPubKey),
         value: btcToSats(v.value as number),
@@ -100,7 +122,12 @@ export function scantxoutsetToUtxos(res: unknown): AddressUtxo[] {
   if (!Array.isArray(unspents)) return [];
   return unspents
     .map((raw): AddressUtxo | null => {
-      const u = (raw ?? {}) as { txid?: unknown; vout?: unknown; amount?: unknown; height?: unknown };
+      const u = (raw ?? {}) as {
+        txid?: unknown;
+        vout?: unknown;
+        amount?: unknown;
+        height?: unknown;
+      };
       const txid = typeof u.txid === 'string' && /^[0-9a-f]{64}$/i.test(u.txid) ? u.txid : null;
       if (!txid) return null;
       const height = Number(u.height);
@@ -108,7 +135,10 @@ export function scantxoutsetToUtxos(res: unknown): AddressUtxo[] {
         txid,
         vout: Number(u.vout ?? 0),
         value: btcToSats(u.amount as number),
-        status: { confirmed: true, ...(Number.isFinite(height) && height > 0 ? { block_height: height } : {}) },
+        status: {
+          confirmed: true,
+          ...(Number.isFinite(height) && height > 0 ? { block_height: height } : {}),
+        },
       };
     })
     .filter((u): u is AddressUtxo => u !== null);
@@ -138,7 +168,12 @@ export function mempoolContentsToRecent(contents: unknown): RecentTx[] {
   if (!contents || typeof contents !== 'object' || Array.isArray(contents)) return [];
   return Object.entries(contents as Record<string, unknown>)
     .map(([txid, raw]) => {
-      const e = (raw ?? {}) as { fee?: unknown; fees?: { base?: unknown }; vsize?: unknown; size?: unknown };
+      const e = (raw ?? {}) as {
+        fee?: unknown;
+        fees?: { base?: unknown };
+        vsize?: unknown;
+        size?: unknown;
+      };
       const feeBtc = e.fees?.base ?? e.fee;
       return {
         txid,
@@ -152,7 +187,13 @@ export function mempoolContentsToRecent(contents: unknown): RecentTx[] {
 }
 
 export function coreBlockToSummary(core: unknown): BlockSummary | null {
-  const b = (core ?? {}) as { hash?: unknown; height?: unknown; time?: unknown; tx?: unknown[]; size?: unknown };
+  const b = (core ?? {}) as {
+    hash?: unknown;
+    height?: unknown;
+    time?: unknown;
+    tx?: unknown[];
+    size?: unknown;
+  };
   const hash = typeof b.hash === 'string' && /^[0-9a-f]{64}$/i.test(b.hash) ? b.hash : null;
   const height = Number(b.height);
   if (!hash || !Number.isFinite(height)) return null;
@@ -180,31 +221,47 @@ export function planRegtestRequest(path: string): RegtestPlan {
   if (/^address\/[a-zA-Z0-9]{6,62}\/txs$/i.test(path)) return { kind: 'empty', type: 'json' };
 
   const utxoMatch = path.match(/^address\/([a-zA-Z0-9]{6,62})\/utxo$/i);
-  if (utxoMatch && ADDR_RX.test(utxoMatch[1])) return { kind: 'rpc', method: 'scantxoutset', address: utxoMatch[1] };
+  if (utxoMatch && ADDR_RX.test(utxoMatch[1]))
+    return { kind: 'rpc', method: 'scantxoutset', address: utxoMatch[1] };
   const addrMatch = path.match(/^address\/([a-zA-Z0-9]{6,62})$/i);
-  if (addrMatch && ADDR_RX.test(addrMatch[1])) return { kind: 'rpc', method: 'scantxoutset', address: addrMatch[1] };
+  if (addrMatch && ADDR_RX.test(addrMatch[1]))
+    return { kind: 'rpc', method: 'scantxoutset', address: addrMatch[1] };
 
-  if (path === 'blocks/tip/height') return { kind: 'rest', upstream: 'chaininfo.json', accept: 'json' };
-  if (path === 'blocks/tip/hash') return { kind: 'rest', upstream: 'chaininfo.json', accept: 'json' };
+  if (path === 'blocks/tip/height')
+    return { kind: 'rest', upstream: 'chaininfo.json', accept: 'json' };
+  if (path === 'blocks/tip/hash')
+    return { kind: 'rest', upstream: 'chaininfo.json', accept: 'json' };
 
   const txHexMatch = path.match(/^tx\/([0-9a-f]{64})\/hex$/i);
-  if (txHexMatch) return { kind: 'rest', upstream: `tx/${txHexMatch[1].toLowerCase()}.hex`, accept: 'hex' };
+  if (txHexMatch)
+    return { kind: 'rest', upstream: `tx/${txHexMatch[1].toLowerCase()}.hex`, accept: 'hex' };
   const txMatch = path.match(/^tx\/([0-9a-f]{64})$/i);
-  if (txMatch) return { kind: 'rest', upstream: `tx/${txMatch[1].toLowerCase()}.json`, accept: 'json' };
+  if (txMatch)
+    return { kind: 'rest', upstream: `tx/${txMatch[1].toLowerCase()}.json`, accept: 'json' };
 
   const rawMatch = path.match(/^block\/([0-9a-f]{64})\/raw$/i);
-  if (rawMatch) return { kind: 'rest', upstream: `block/${rawMatch[1].toLowerCase()}.bin`, accept: 'bin' };
+  if (rawMatch)
+    return { kind: 'rest', upstream: `block/${rawMatch[1].toLowerCase()}.bin`, accept: 'bin' };
   const headerMatch = path.match(/^block\/([0-9a-f]{64})\/header$/i);
-  if (headerMatch) return { kind: 'rest', upstream: `headers/1/${headerMatch[1].toLowerCase()}.json`, accept: 'json' };
+  if (headerMatch)
+    return {
+      kind: 'rest',
+      upstream: `headers/1/${headerMatch[1].toLowerCase()}.json`,
+      accept: 'json',
+    };
   const blockMatch = path.match(/^block\/([0-9a-f]{64})$/i);
-  if (blockMatch && TXID_RX.test(blockMatch[1])) return { kind: 'rest', upstream: `block/${blockMatch[1].toLowerCase()}.json`, accept: 'json' };
+  if (blockMatch && TXID_RX.test(blockMatch[1]))
+    return { kind: 'rest', upstream: `block/${blockMatch[1].toLowerCase()}.json`, accept: 'json' };
   const heightMatch = path.match(/^block-height\/(\d{1,7})$/);
-  if (heightMatch) return { kind: 'rest', upstream: `blockhashbyheight/${heightMatch[1]}.json`, accept: 'json' };
+  if (heightMatch)
+    return { kind: 'rest', upstream: `blockhashbyheight/${heightMatch[1]}.json`, accept: 'json' };
 
   if (path === 'mempool') return { kind: 'rest', upstream: 'mempool/info.json', accept: 'json' };
-  if (path === 'mempool/recent') return { kind: 'rest', upstream: 'mempool/contents.json', accept: 'json' };
+  if (path === 'mempool/recent')
+    return { kind: 'rest', upstream: 'mempool/contents.json', accept: 'json' };
 
-  if (path === 'v1/blocks' || /^v1\/blocks\/\d{1,2}$/.test(path)) return { kind: 'rest', upstream: 'chaininfo.json', accept: 'json' };
+  if (path === 'v1/blocks' || /^v1\/blocks\/\d{1,2}$/.test(path))
+    return { kind: 'rest', upstream: 'chaininfo.json', accept: 'json' };
 
   return { kind: 'unsupported' };
 }

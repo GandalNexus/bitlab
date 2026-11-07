@@ -17,16 +17,14 @@ export function regtestMode(): RegtestMode {
   try {
     const stored = localStorage.getItem(MODE_KEY);
     if (stored === 'embedded' || stored === 'external') return stored;
-  } catch {
-  }
+  } catch {}
   return loadRegtestCfg().user ? 'external' : 'embedded';
 }
 
 export function setRegtestMode(mode: RegtestMode): void {
   try {
     localStorage.setItem(MODE_KEY, mode);
-  } catch {
-  }
+  } catch {}
 }
 
 export function isLocalHost(host: string): boolean {
@@ -61,8 +59,7 @@ export function loadRegtestCfg(): RegtestCfg {
 export function saveRegtestCfg(cfg: RegtestCfg): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-  } catch {
-  }
+  } catch {}
 }
 
 export function regtestHeaderValue(): string {

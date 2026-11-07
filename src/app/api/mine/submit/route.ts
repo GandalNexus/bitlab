@@ -42,7 +42,10 @@ const POST_SEND_GRACE_MS = 3_000;
 const MAX_PEERS = 3;
 
 function checksum(payload: Buffer): Buffer {
-  return createHash('sha256').update(createHash('sha256').update(payload).digest()).digest().subarray(0, 4);
+  return createHash('sha256')
+    .update(createHash('sha256').update(payload).digest())
+    .digest()
+    .subarray(0, 4);
 }
 
 function message(net: NetSpec, command: string, payload: Buffer): Buffer {
@@ -57,20 +60,35 @@ function message(net: NetSpec, command: string, payload: Buffer): Buffer {
 function versionPayload(): Buffer {
   const p = Buffer.alloc(85);
   let o = 0;
-  p.writeInt32LE(70016, o); o += 4;
-  p.writeBigUInt64LE(0n, o); o += 8;
-  p.writeBigInt64LE(BigInt(Math.floor(Date.now() / 1000)), o); o += 8;
-  p.writeBigUInt64LE(0n, o); o += 8;
-  o += 10; p.writeUInt16BE(0xffff, o); o += 2; p.writeUInt8(127, o); o += 3; p.writeUInt8(1, o); o += 1;
-  p.writeUInt16LE(0, o); o += 2;
-  p.writeBigUInt64LE(0n, o); o += 8;
+  p.writeInt32LE(70016, o);
+  o += 4;
+  p.writeBigUInt64LE(0n, o);
+  o += 8;
+  p.writeBigInt64LE(BigInt(Math.floor(Date.now() / 1000)), o);
+  o += 8;
+  p.writeBigUInt64LE(0n, o);
+  o += 8;
+  o += 10;
+  p.writeUInt16BE(0xffff, o);
+  o += 2;
+  p.writeUInt8(127, o);
+  o += 3;
+  p.writeUInt8(1, o);
+  o += 1;
+  p.writeUInt16LE(0, o);
+  o += 2;
+  p.writeBigUInt64LE(0n, o);
+  o += 8;
   o += 16;
-  p.writeUInt16LE(0, o); o += 2;
+  p.writeUInt16LE(0, o);
+  o += 2;
   const nonce = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-  p.writeBigUInt64LE(BigInt('0x' + nonce), o); o += 8;
+  p.writeBigUInt64LE(BigInt('0x' + nonce), o);
+  o += 8;
   const ua = Buffer.from(USER_AGENT, 'ascii');
   const rest = Buffer.concat([
-    Buffer.from([ua.length]), ua,
+    Buffer.from([ua.length]),
+    ua,
     Buffer.from([0, 0, 0, 0]),
     Buffer.from([0]),
   ]);
@@ -93,7 +111,10 @@ function parseMessages(net: NetSpec, buf: Buffer): ParsedMessage[] {
     const length = buf.readUInt32LE(pos + 16);
     if (length > 4_000_000) break;
     if (buf.length - pos < 24 + length) break;
-    const command = buf.subarray(pos + 4, pos + 16).toString('ascii').replace(/\0+$/, '');
+    const command = buf
+      .subarray(pos + 4, pos + 16)
+      .toString('ascii')
+      .replace(/\0+$/, '');
     out.push({ command, payload: buf.subarray(pos + 24, pos + 24 + length) });
     pos += 24 + length;
   }
@@ -111,7 +132,10 @@ function targetFromBits(bits: number): Buffer {
   return t;
 }
 
-function validateBlockHex(blockHex: string, spec: NetSpec): { ok: true; block: Buffer } | { ok: false; reason: string } {
+function validateBlockHex(
+  blockHex: string,
+  spec: NetSpec,
+): { ok: true; block: Buffer } | { ok: false; reason: string } {
   if (!/^[0-9a-f]+$/i.test(blockHex) || blockHex.length % 2 !== 0) {
     return { ok: false, reason: 'bloc illisible (hex)' };
   }
@@ -125,7 +149,10 @@ function validateBlockHex(blockHex: string, spec: NetSpec): { ok: true; block: B
   const header = block.subarray(0, 80);
   const bits = header.readUInt32LE(72);
   if (spec.minDiffBits !== null && bits !== spec.minDiffBits) {
-    return { ok: false, reason: `nBits ${bits.toString(16)} ≠ difficulté minimale — hors périmètre BitLab` };
+    return {
+      ok: false,
+      reason: `nBits ${bits.toString(16)} ≠ difficulté minimale — hors périmètre BitLab`,
+    };
   }
   const time = header.readUInt32LE(68);
   const now = Math.floor(Date.now() / 1000);
@@ -163,7 +190,11 @@ function shufflePeers(items: string[]): string[] {
   return items;
 }
 
-function submitToPeer(spec: NetSpec, ip: string, block: Buffer): Promise<'sent' | 'rejected' | 'error'> {
+function submitToPeer(
+  spec: NetSpec,
+  ip: string,
+  block: Buffer,
+): Promise<'sent' | 'rejected' | 'error'> {
   return new Promise((resolve) => {
     const socket = net.createConnection({ host: ip, port: spec.port });
     let buffer = Buffer.alloc(0);
@@ -261,5 +292,9 @@ export async function POST(req: NextRequest) {
       { status: 502 },
     );
   }
-  return Response.json({ ok: true, peers: reached, detail: `bloc relayé vers ${reached.length} pair(s)` });
+  return Response.json({
+    ok: true,
+    peers: reached,
+    detail: `bloc relayé vers ${reached.length} pair(s)`,
+  });
 }

@@ -30,8 +30,7 @@ export const useThemeStore = create<ThemeState>((set) => ({
   setTheme: (theme) => {
     try {
       localStorage.setItem(THEME_KEY, theme);
-    } catch {
-    }
+    } catch {}
     applyThemeClass(theme);
     set({ theme });
   },
