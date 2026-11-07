@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+dist
+build
+coverage
+bun.lock
+package-lock.json
+next-env.d.ts
+rust
+public
+scripts
+docs
+.github
+**/*.md
+*.log
