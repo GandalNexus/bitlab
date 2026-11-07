@@ -1,12 +1,19 @@
-# BitLab
+<div align="center">
+  <a href="https://github.com/GandalNexus/bitlab">
+    <img src="public/icon-light.svg#gh-light-mode-only" alt="BitLab" width="140" />
+    <img src="public/icon-dark.svg#gh-dark-mode-only" alt="BitLab" width="140" />
+  </a>
 
-**A hands-on Bitcoin & Lightning laboratory — from key to block.**
+  <h1>BitLab</h1>
+  <p><strong>A hands-on Bitcoin & Lightning laboratory — from key to block.</strong></p>
+
+  <p>
+    <a href="./.github/workflows/ci.yml"><img alt="CI" src="https://github.com/GandalNexus/bitlab/actions/workflows/ci.yml/badge.svg" /></a>
+    <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
+  </p>
+</div>
 
 BitLab is a teaching sandbox where you can generate real wallets, build and sign real transactions, run a real Lightning node (LDK), and explore the mempool — across Mainnet, Testnet3, Testnet4, Signet and your own local Regtest chain. Private keys are derived, stored and used **exclusively in your browser**.
-
-[![CI](https://github.com/GandalNexus/bitlab/actions/workflows/ci.yml/badge.svg)](./.github/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-
 
 ## Features
 
