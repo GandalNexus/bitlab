@@ -10,14 +10,7 @@ export type StandardKind = 'p2wpkh' | 'p2tr' | 'p2pkh' | 'other';
 export function classifyScript(script: Uint8Array): StandardKind {
   if (script.length === 22 && script[0] === 0x00 && script[1] === 0x14) return 'p2wpkh';
   if (script.length === 34 && script[0] === 0x51 && script[1] === 0x20) return 'p2tr';
-  if (
-    script.length === 25 &&
-    script[0] === 0x76 &&
-    script[1] === 0xa9 &&
-    script[22] === 0x88 &&
-    script[24] === 0xac
-  )
-    return 'p2pkh';
+  if (script.length === 25 && script[0] === 0x76 && script[1] === 0xa9 && script[22] === 0x88 && script[24] === 0xac) return 'p2pkh';
   return 'other';
 }
 
@@ -34,32 +27,13 @@ function sha256d(data: Uint8Array): Uint8Array {
   return sha256(sha256(data));
 }
 
-<<<<<<< HEAD
 export function bip143Sighash(tx: ParsedTx, inputIndex: number, prevAmountSats: number, scriptCode: Uint8Array): Uint8Array {
-=======
-/**
- * Préimage BIP 143 pour une entrée P2WPKH (scriptCode = 0x1976a914{pkh}88ac).
- * Les quatre hachages agrégés sont calculés intégralement à chaque appel :
- * en regtest les transactions sont minuscules, la simplicité prime.
- */
-/** Exposé pour les tests de calibration (vecteur BIP 143 officiel). */
-export function bip143Sighash(
-  tx: ParsedTx,
-  inputIndex: number,
-  prevAmountSats: number,
-  scriptCode: Uint8Array,
-): Uint8Array {
->>>>>>> 92c54ba (style: prettier-format repo)
   const hashPrevouts = sha256d(
     concat(
-      tx.inputs.map((i) =>
-        concat([hex.decode(reverseHex(i.txid)), new Uint8Array(u32leBytes(i.vout >>> 0))]),
-      ),
+      tx.inputs.map((i) => concat([hex.decode(reverseHex(i.txid)), new Uint8Array(u32leBytes(i.vout >>> 0))])),
     ),
   );
-  const hashSequence = sha256d(
-    concat(tx.inputs.map((i) => new Uint8Array(u32leBytes(i.sequence)))),
-  );
+  const hashSequence = sha256d(concat(tx.inputs.map((i) => new Uint8Array(u32leBytes(i.sequence)))));
   const hashOutputs = sha256d(
     concat(
       tx.outputs.map((o) => {
@@ -201,9 +175,7 @@ function legacySighash(tx: ParsedTx, inputIndex: number, prevScript: Uint8Array)
     inputs: tx.inputs,
     outputs: tx.outputs,
     locktime: tx.locktime,
-    scriptSigOverrides: new Map(
-      tx.inputs.map((_, i) => [i, i === inputIndex ? prevScript : new Uint8Array()]),
-    ),
+    scriptSigOverrides: new Map(tx.inputs.map((_, i) => [i, i === inputIndex ? prevScript : new Uint8Array()])),
     appendHashType: SIGHASH_ALL,
   });
   return sha256d(serialized);
@@ -220,21 +192,7 @@ export interface VerifyResult {
   reason?: string;
 }
 
-<<<<<<< HEAD
 export function verifyInput(tx: ParsedTx, inputIndex: number, prevouts: VerifyPrevout[]): VerifyResult {
-=======
-/**
- * Vérifie les signatures de l'entrée `inputIndex` contre les prevouts de la
- * transaction. Le tableau `prevouts` doit couvrir TOUTES les entrées (BIP 341
- * agrège montants et scripts de toutes les entrées dans le sighash) ;
- * `prevouts[inputIndex]` est celui de l'entrée vérifiée.
- */
-export function verifyInput(
-  tx: ParsedTx,
-  inputIndex: number,
-  prevouts: VerifyPrevout[],
-): VerifyResult {
->>>>>>> 92c54ba (style: prettier-format repo)
   const prevout = prevouts[inputIndex];
   if (!prevout) return { ok: false, kind: 'other', reason: 'prevout manquant' };
   const kind = classifyScript(prevout.script);
@@ -295,9 +253,7 @@ export function verifyInput(
   }
 }
 
-function parseP2pkhScriptSig(
-  scriptSig: Uint8Array,
-): { sigDer: Uint8Array; pubkey: Uint8Array } | null {
+function parseP2pkhScriptSig(scriptSig: Uint8Array): { sigDer: Uint8Array; pubkey: Uint8Array } | null {
   try {
     if (scriptSig.length < 40 || scriptSig[0] < 9 || scriptSig[0] > 74) return null;
     const sigLen = scriptSig[0];

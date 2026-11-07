@@ -53,17 +53,7 @@ export default function BitLabPage() {
           <LabHeader onOpenMobileNav={() => setMobileNavOpen(true)} />
         </div>
 
-<<<<<<< HEAD
         <div className={cn('flex flex-1 flex-col transition-[padding] duration-200 ease-out', sidebarCollapsed ? 'lg:pl-[68px]' : 'lg:pl-64')}>
-=======
-        <div
-          className={cn(
-            'flex flex-1 flex-col transition-[padding] duration-200 ease-out',
-            sidebarCollapsed ? 'lg:pl-[68px]' : 'lg:pl-64',
-          )}
-        >
-          {/* Content */}
->>>>>>> 92c54ba (style: prettier-format repo)
           <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
             {tab === 'dashboard' ? <Dashboard onNavigate={(t) => setTab(t as TabId)} /> : null}
             {tab === 'portefeuille' ? <WalletModule /> : null}
@@ -73,21 +63,9 @@ export default function BitLabPage() {
             {tab === 'explorateur' ? <ExplorerModule /> : null}
           </main>
 
-<<<<<<< HEAD
           <footer className="mt-auto border-t border-border/70 bg-card/40 py-3.5">
             <div className="mx-auto flex max-w-5xl justify-center px-4 text-[11px] text-muted-foreground sm:px-6">
               <span className={cn('text-muted-foreground/70', realFunds && 'text-amber-600 dark:text-amber-500/90')}>
-=======
-          {/* Discreet footer - only a reminder of the active network */}
-          <footer className="border-border/70 bg-card/40 mt-auto border-t py-3.5">
-            <div className="text-muted-foreground mx-auto flex max-w-5xl justify-center px-4 text-[11px] sm:px-6">
-              <span
-                className={cn(
-                  'text-muted-foreground/70',
-                  realFunds && 'text-amber-600 dark:text-amber-500/90',
-                )}
-              >
->>>>>>> 92c54ba (style: prettier-format repo)
                 {t('{net} · clés 100 % locales', { net: netLabel })}
               </span>
             </div>

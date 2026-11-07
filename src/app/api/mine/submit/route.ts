@@ -42,10 +42,7 @@ const POST_SEND_GRACE_MS = 3_000;
 const MAX_PEERS = 3;
 
 function checksum(payload: Buffer): Buffer {
-  return createHash('sha256')
-    .update(createHash('sha256').update(payload).digest())
-    .digest()
-    .subarray(0, 4);
+  return createHash('sha256').update(createHash('sha256').update(payload).digest()).digest().subarray(0, 4);
 }
 
 function message(net: NetSpec, command: string, payload: Buffer): Buffer {
@@ -60,7 +57,6 @@ function message(net: NetSpec, command: string, payload: Buffer): Buffer {
 function versionPayload(): Buffer {
   const p = Buffer.alloc(85);
   let o = 0;
-<<<<<<< HEAD
   p.writeInt32LE(70016, o); o += 4;
   p.writeBigUInt64LE(0n, o); o += 8;
   p.writeBigInt64LE(BigInt(Math.floor(Date.now() / 1000)), o); o += 8;
@@ -70,46 +66,13 @@ function versionPayload(): Buffer {
   p.writeBigUInt64LE(0n, o); o += 8;
   o += 16;
   p.writeUInt16LE(0, o); o += 2;
-=======
-  p.writeInt32LE(70016, o);
-  o += 4; // version protocole
-  p.writeBigUInt64LE(0n, o);
-  o += 8; // services
-  p.writeBigInt64LE(BigInt(Math.floor(Date.now() / 1000)), o);
-  o += 8;
-  p.writeBigUInt64LE(0n, o);
-  o += 8; // addr_recv.services
-  // addr_recv.ip : 10×00 + 0xff 0xff + 127.0.0.1 (IPv4-mappé) = 16 octets.
-  o += 10;
-  p.writeUInt16BE(0xffff, o);
-  o += 2;
-  p.writeUInt8(127, o);
-  o += 3;
-  p.writeUInt8(1, o);
-  o += 1;
-  p.writeUInt16LE(0, o);
-  o += 2; // addr_recv.port
-  p.writeBigUInt64LE(0n, o);
-  o += 8; // addr_from.services
-  o += 16; // addr_from.ip (::)
-  p.writeUInt16LE(0, o);
-  o += 2; // addr_from.port
->>>>>>> 92c54ba (style: prettier-format repo)
   const nonce = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-  p.writeBigUInt64LE(BigInt('0x' + nonce), o);
-  o += 8;
+  p.writeBigUInt64LE(BigInt('0x' + nonce), o); o += 8;
   const ua = Buffer.from(USER_AGENT, 'ascii');
   const rest = Buffer.concat([
-<<<<<<< HEAD
     Buffer.from([ua.length]), ua,
     Buffer.from([0, 0, 0, 0]),
     Buffer.from([0]),
-=======
-    Buffer.from([ua.length]),
-    ua,
-    Buffer.from([0, 0, 0, 0]), // start_height (non contraignant)
-    Buffer.from([0]), // relay = false
->>>>>>> 92c54ba (style: prettier-format repo)
   ]);
   return Buffer.concat([p.subarray(0, o), rest]);
 }
@@ -130,10 +93,7 @@ function parseMessages(net: NetSpec, buf: Buffer): ParsedMessage[] {
     const length = buf.readUInt32LE(pos + 16);
     if (length > 4_000_000) break;
     if (buf.length - pos < 24 + length) break;
-    const command = buf
-      .subarray(pos + 4, pos + 16)
-      .toString('ascii')
-      .replace(/\0+$/, '');
+    const command = buf.subarray(pos + 4, pos + 16).toString('ascii').replace(/\0+$/, '');
     out.push({ command, payload: buf.subarray(pos + 24, pos + 24 + length) });
     pos += 24 + length;
   }
@@ -151,15 +111,7 @@ function targetFromBits(bits: number): Buffer {
   return t;
 }
 
-<<<<<<< HEAD
 function validateBlockHex(blockHex: string, spec: NetSpec): { ok: true; block: Buffer } | { ok: false; reason: string } {
-=======
-/** Vérifie qu'un en-tête 80 octets est un candidat plausible pour ce réseau. */
-function validateBlockHex(
-  blockHex: string,
-  spec: NetSpec,
-): { ok: true; block: Buffer } | { ok: false; reason: string } {
->>>>>>> 92c54ba (style: prettier-format repo)
   if (!/^[0-9a-f]+$/i.test(blockHex) || blockHex.length % 2 !== 0) {
     return { ok: false, reason: 'bloc illisible (hex)' };
   }
@@ -173,10 +125,7 @@ function validateBlockHex(
   const header = block.subarray(0, 80);
   const bits = header.readUInt32LE(72);
   if (spec.minDiffBits !== null && bits !== spec.minDiffBits) {
-    return {
-      ok: false,
-      reason: `nBits ${bits.toString(16)} ≠ difficulté minimale — hors périmètre BitLab`,
-    };
+    return { ok: false, reason: `nBits ${bits.toString(16)} ≠ difficulté minimale — hors périmètre BitLab` };
   }
   const time = header.readUInt32LE(68);
   const now = Math.floor(Date.now() / 1000);
@@ -214,18 +163,7 @@ function shufflePeers(items: string[]): string[] {
   return items;
 }
 
-<<<<<<< HEAD
 function submitToPeer(spec: NetSpec, ip: string, block: Buffer): Promise<'sent' | 'rejected' | 'error'> {
-=======
-/* ───────────────────────── Diffusion P2P ───────────────────────── */
-
-/** Handshake version/verack puis message `block` vers un pair. */
-function submitToPeer(
-  spec: NetSpec,
-  ip: string,
-  block: Buffer,
-): Promise<'sent' | 'rejected' | 'error'> {
->>>>>>> 92c54ba (style: prettier-format repo)
   return new Promise((resolve) => {
     const socket = net.createConnection({ host: ip, port: spec.port });
     let buffer = Buffer.alloc(0);
@@ -323,9 +261,5 @@ export async function POST(req: NextRequest) {
       { status: 502 },
     );
   }
-  return Response.json({
-    ok: true,
-    peers: reached,
-    detail: `bloc relayé vers ${reached.length} pair(s)`,
-  });
+  return Response.json({ ok: true, peers: reached, detail: `bloc relayé vers ${reached.length} pair(s)` });
 }

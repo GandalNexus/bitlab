@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { hex } from '@scure/base';
-import { RegtestChain, addressToScriptBcrt } from '../src/lib/regtest-engine/chain';
+import {
+  RegtestChain,
+  addressToScriptBcrt,
+} from '../src/lib/regtest-engine/chain';
 import { registerNetGetter } from '../src/lib/networks';
 import { deriveForType, type AddrType } from '../src/lib/bitcoin/keys';
 import { buildSignedTx, estimateVsize, type Utxo } from '../src/lib/bitcoin/tx';
@@ -204,17 +207,7 @@ describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
     const utxos = chain.addressUtxos(sender.address);
     const totalIn = utxos.reduce((s, u) => s + u.value, 0);
 
-<<<<<<< HEAD
     const est = estimateVsize('segwit', utxos.length, [{ address: dest.address, amountSats: totalIn }], true);
-=======
-    // Montant = total − 300 sats : le change (300 − frais réels) tombe sous 546.
-    const est = estimateVsize(
-      'segwit',
-      utxos.length,
-      [{ address: dest.address, amountSats: totalIn }],
-      true,
-    );
->>>>>>> 92c54ba (style: prettier-format repo)
     const feeEst = Math.ceil(est * 1);
     const amount = totalIn - 300;
     expect(300 - feeEst).toBeLessThan(546);
@@ -281,15 +274,12 @@ describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
     fund(sender.address);
     const dest = makeWallet(0x1d, 'legacy').address;
 
-    expect(() => spend(sender, [{ address: dest, amountSats: FUNDING + 1 }])).toThrow(/dépasse/);
+    expect(() =>
+      spend(sender, [{ address: dest, amountSats: FUNDING + 1 }]),
+    ).toThrow(/dépasse/);
 
-<<<<<<< HEAD
     expect(() =>
       spend(sender, [{ address: dest, amountSats: 100 }]),
-=======
-    expect(
-      () => spend(sender, [{ address: dest, amountSats: 100 }]), // < 546 sats
->>>>>>> 92c54ba (style: prettier-format repo)
     ).toThrow(/poussière/);
   });
 
