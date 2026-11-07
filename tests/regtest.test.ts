@@ -16,7 +16,13 @@ import {
   scantxoutsetToUtxos,
 } from '../src/lib/bitcoin/regtest-translate';
 import { decodeRegtestHeader, isLocalHost } from '../src/lib/regtest';
-import { NETWORKS, NET_ORDER, REGTEST_NETWORK, pathForNetwork, signerNetwork } from '../src/lib/networks';
+import {
+  NETWORKS,
+  NET_ORDER,
+  REGTEST_NETWORK,
+  pathForNetwork,
+  signerNetwork,
+} from '../src/lib/networks';
 import { deriveForType } from '../src/lib/bitcoin/keys';
 import {
   REGTEST_MIN_BITS,
@@ -34,11 +40,22 @@ const PRIV = hex.decode('1111111111111111111111111111111111111111111111111111111
 describe('registre des réseaux (regtest ajouté sans rupture)', () => {
   it('expose le regtest dans l’ordre et l’ordre existant est intact', () => {
     expect(NET_ORDER).toEqual(['testnet4', 'testnet3', 'signet', 'regtest', 'mainnet']);
-    expect(Object.keys(NETWORKS).sort()).toEqual(['mainnet', 'regtest', 'signet', 'testnet3', 'testnet4']);
+    expect(Object.keys(NETWORKS).sort()).toEqual([
+      'mainnet',
+      'regtest',
+      'signet',
+      'testnet3',
+      'testnet4',
+    ]);
   });
 
   it('marque le regtest local et minable, les autres inchangés', () => {
-    expect(NETWORKS.regtest).toMatchObject({ local: true, mineable: 'local', realFunds: false, coinType: 1 });
+    expect(NETWORKS.regtest).toMatchObject({
+      local: true,
+      mineable: 'local',
+      realFunds: false,
+      coinType: 1,
+    });
     expect(NETWORKS.testnet4.mineable).toBe('bip94');
     expect(NETWORKS.testnet3.mineable).toBe('none');
     expect(NETWORKS.signet.mineable).toBe('none');
@@ -47,7 +64,12 @@ describe('registre des réseaux (regtest ajouté sans rupture)', () => {
   });
 
   it('paramètres regtest : HRP bcrt, préfixes Base58 testnet, WIF 0xEF', () => {
-    expect(REGTEST_NETWORK).toEqual({ bech32: 'bcrt', pubKeyHash: 111, scriptHash: 196, wif: 0xef });
+    expect(REGTEST_NETWORK).toEqual({
+      bech32: 'bcrt',
+      pubKeyHash: 111,
+      scriptHash: 196,
+      wif: 0xef,
+    });
     expect(signerNetwork('regtest')).toBe(REGTEST_NETWORK);
     expect(signerNetwork('testnet4')).not.toBe(REGTEST_NETWORK);
   });
@@ -144,7 +166,11 @@ describe('regtest-translate : transactions et UTXOs', () => {
     expect(tx.txid).toBe('b'.repeat(64));
     expect(tx.version).toBe(2);
     expect(tx.vin[0]).toMatchObject({ txid: 'c'.repeat(64), vout: 1, is_coinbase: false });
-    expect(tx.vin[0].prevout).toMatchObject({ scriptpubkey: '0014abcd', scriptpubkey_address: 'bcrt1qxy', value: 5_000_000_000 });
+    expect(tx.vin[0].prevout).toMatchObject({
+      scriptpubkey: '0014abcd',
+      scriptpubkey_address: 'bcrt1qxy',
+      value: 5_000_000_000,
+    });
     expect(tx.vin[1].is_coinbase).toBe(true);
     expect(tx.vout[0]).toEqual({ scriptpubkey_address: 'bcrt1qaa', value: 4_999_990_000 });
     expect(tx.vout[1]).toEqual({ scriptpubkey_address: 'n1legacy', value: 10_000 });
@@ -156,13 +182,32 @@ describe('regtest-translate : transactions et UTXOs', () => {
       success: true,
       total_amount: 62.5,
       unspents: [
-        { txid: 'd'.repeat(64), vout: 0, amount: 50.0, height: 101, desc: 'addr(bcrt1q)#x', scriptPubKey: '0014aa' },
-        { txid: 'e'.repeat(64), vout: 2, amount: 12.5, height: 103, desc: 'addr(bcrt1q)#y', scriptPubKey: '0014bb' },
+        {
+          txid: 'd'.repeat(64),
+          vout: 0,
+          amount: 50.0,
+          height: 101,
+          desc: 'addr(bcrt1q)#x',
+          scriptPubKey: '0014aa',
+        },
+        {
+          txid: 'e'.repeat(64),
+          vout: 2,
+          amount: 12.5,
+          height: 103,
+          desc: 'addr(bcrt1q)#y',
+          scriptPubKey: '0014bb',
+        },
       ],
     };
     const utxos = scantxoutsetToUtxos(res);
     expect(utxos).toHaveLength(2);
-    expect(utxos[0]).toMatchObject({ txid: 'd'.repeat(64), vout: 0, value: 5_000_000_000, status: { confirmed: true, block_height: 101 } });
+    expect(utxos[0]).toMatchObject({
+      txid: 'd'.repeat(64),
+      vout: 0,
+      value: 5_000_000_000,
+      status: { confirmed: true, block_height: 101 },
+    });
     const info = scantxoutsetToAddressInfo(res, 'bcrt1qtest');
     expect(info.address).toBe('bcrt1qtest');
     expect(info.chain_stats.funded_txo_sum).toBe(6_250_000_000);
@@ -191,8 +236,20 @@ describe('regtest-translate : mempool et blocs', () => {
   });
 
   it('coreBlockToSummary → résumé de liste', () => {
-    const b = coreBlockToSummary({ hash: 'f'.repeat(64), height: 42, time: 1_700_000_000, size: 900, tx: [{}, {}] });
-    expect(b).toEqual({ id: 'f'.repeat(64), height: 42, timestamp: 1_700_000_000, tx_count: 2, size: 900 });
+    const b = coreBlockToSummary({
+      hash: 'f'.repeat(64),
+      height: 42,
+      time: 1_700_000_000,
+      size: 900,
+      tx: [{}, {}],
+    });
+    expect(b).toEqual({
+      id: 'f'.repeat(64),
+      height: 42,
+      timestamp: 1_700_000_000,
+      tx_count: 2,
+      size: 900,
+    });
     expect(coreBlockToSummary({ height: 1 })).toBeNull();
   });
 });
@@ -209,40 +266,113 @@ describe('planRegtestRequest : routage des chemins Esplora', () => {
   });
 
   it('RPC scantxoutset pour le solde et les UTXOs', () => {
-    expect(planRegtestRequest('address/bcrt1qxyz')).toEqual({ kind: 'rpc', method: 'scantxoutset', address: 'bcrt1qxyz' });
-    expect(planRegtestRequest('address/bcrt1qxyz/utxo')).toEqual({ kind: 'rpc', method: 'scantxoutset', address: 'bcrt1qxyz' });
+    expect(planRegtestRequest('address/bcrt1qxyz')).toEqual({
+      kind: 'rpc',
+      method: 'scantxoutset',
+      address: 'bcrt1qxyz',
+    });
+    expect(planRegtestRequest('address/bcrt1qxyz/utxo')).toEqual({
+      kind: 'rpc',
+      method: 'scantxoutset',
+      address: 'bcrt1qxyz',
+    });
   });
 
   it('REST pour tip, tx, blocs et mempool', () => {
-    expect(planRegtestRequest('blocks/tip/height')).toEqual({ kind: 'rest', upstream: 'chaininfo.json', accept: 'json' });
-    expect(planRegtestRequest('blocks/tip/hash')).toEqual({ kind: 'rest', upstream: 'chaininfo.json', accept: 'json' });
-    expect(planRegtestRequest(`tx/${'a'.repeat(64)}`)).toEqual({ kind: 'rest', upstream: `tx/${'a'.repeat(64)}.json`, accept: 'json' });
-    expect(planRegtestRequest(`tx/${'a'.repeat(64)}/hex`)).toEqual({ kind: 'rest', upstream: `tx/${'a'.repeat(64)}.hex`, accept: 'hex' });
-    expect(planRegtestRequest(`block/${'b'.repeat(64)}/raw`)).toEqual({ kind: 'rest', upstream: `block/${'b'.repeat(64)}.bin`, accept: 'bin' });
-    expect(planRegtestRequest(`block/${'b'.repeat(64)}/header`)).toEqual({ kind: 'rest', upstream: `headers/1/${'b'.repeat(64)}.json`, accept: 'json' });
-    expect(planRegtestRequest('block-height/150')).toEqual({ kind: 'rest', upstream: 'blockhashbyheight/150.json', accept: 'json' });
-    expect(planRegtestRequest('mempool')).toEqual({ kind: 'rest', upstream: 'mempool/info.json', accept: 'json' });
-    expect(planRegtestRequest('mempool/recent')).toEqual({ kind: 'rest', upstream: 'mempool/contents.json', accept: 'json' });
-    expect(planRegtestRequest('v1/blocks')).toEqual({ kind: 'rest', upstream: 'chaininfo.json', accept: 'json' });
+    expect(planRegtestRequest('blocks/tip/height')).toEqual({
+      kind: 'rest',
+      upstream: 'chaininfo.json',
+      accept: 'json',
+    });
+    expect(planRegtestRequest('blocks/tip/hash')).toEqual({
+      kind: 'rest',
+      upstream: 'chaininfo.json',
+      accept: 'json',
+    });
+    expect(planRegtestRequest(`tx/${'a'.repeat(64)}`)).toEqual({
+      kind: 'rest',
+      upstream: `tx/${'a'.repeat(64)}.json`,
+      accept: 'json',
+    });
+    expect(planRegtestRequest(`tx/${'a'.repeat(64)}/hex`)).toEqual({
+      kind: 'rest',
+      upstream: `tx/${'a'.repeat(64)}.hex`,
+      accept: 'hex',
+    });
+    expect(planRegtestRequest(`block/${'b'.repeat(64)}/raw`)).toEqual({
+      kind: 'rest',
+      upstream: `block/${'b'.repeat(64)}.bin`,
+      accept: 'bin',
+    });
+    expect(planRegtestRequest(`block/${'b'.repeat(64)}/header`)).toEqual({
+      kind: 'rest',
+      upstream: `headers/1/${'b'.repeat(64)}.json`,
+      accept: 'json',
+    });
+    expect(planRegtestRequest('block-height/150')).toEqual({
+      kind: 'rest',
+      upstream: 'blockhashbyheight/150.json',
+      accept: 'json',
+    });
+    expect(planRegtestRequest('mempool')).toEqual({
+      kind: 'rest',
+      upstream: 'mempool/info.json',
+      accept: 'json',
+    });
+    expect(planRegtestRequest('mempool/recent')).toEqual({
+      kind: 'rest',
+      upstream: 'mempool/contents.json',
+      accept: 'json',
+    });
+    expect(planRegtestRequest('v1/blocks')).toEqual({
+      kind: 'rest',
+      upstream: 'chaininfo.json',
+      accept: 'json',
+    });
   });
 });
 
 describe('config du nœud local (garde anti-SSRF)', () => {
   it('isLocalHost : boucle locale et LAN seulement', () => {
-    for (const h of ['127.0.0.1', 'localhost', '::1', '10.0.0.5', '192.168.1.20', '172.16.0.1', '172.31.255.255']) {
+    for (const h of [
+      '127.0.0.1',
+      'localhost',
+      '::1',
+      '10.0.0.5',
+      '192.168.1.20',
+      '172.16.0.1',
+      '172.31.255.255',
+    ]) {
       expect(isLocalHost(h)).toBe(true);
     }
-    for (const h of ['mempool.space', '8.8.8.8', '11.0.0.1', '172.32.0.1', '192.169.1.1', '', 'example.com']) {
+    for (const h of [
+      'mempool.space',
+      '8.8.8.8',
+      '11.0.0.1',
+      '172.32.0.1',
+      '192.169.1.1',
+      '',
+      'example.com',
+    ]) {
       expect(isLocalHost(h)).toBe(false);
     }
   });
 
   it('decodeRegtestHeader : aller-retour JSON base64 + rejets propres', () => {
-    const payload = Buffer.from(JSON.stringify({ host: '127.0.0.1', port: 18443, user: 'u', pass: 'p' })).toString('base64');
-    expect(decodeRegtestHeader(payload)).toEqual({ host: '127.0.0.1', port: 18443, user: 'u', pass: 'p' });
+    const payload = Buffer.from(
+      JSON.stringify({ host: '127.0.0.1', port: 18443, user: 'u', pass: 'p' }),
+    ).toString('base64');
+    expect(decodeRegtestHeader(payload)).toEqual({
+      host: '127.0.0.1',
+      port: 18443,
+      user: 'u',
+      pass: 'p',
+    });
     expect(decodeRegtestHeader(null)).toBeNull();
     expect(decodeRegtestHeader('pas-du-base64!')).toBeNull();
-    const badPort = Buffer.from(JSON.stringify({ host: '127.0.0.1', port: 99_999 })).toString('base64');
+    const badPort = Buffer.from(JSON.stringify({ host: '127.0.0.1', port: 99_999 })).toString(
+      'base64',
+    );
     expect(decodeRegtestHeader(badPort)).toBeNull();
   });
 });

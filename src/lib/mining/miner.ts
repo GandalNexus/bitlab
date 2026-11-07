@@ -85,7 +85,14 @@ class MinerController {
   private sessions: WorkerSession[] = [];
   private jobIdSeq = 0;
   private net: NetId = 'testnet4';
-  private template: { header76Hex: string; txHex: string; tipHash: string; height: number; target: Uint8Array; subsidySats: number } | null = null;
+  private template: {
+    header76Hex: string;
+    txHex: string;
+    tipHash: string;
+    height: number;
+    target: Uint8Array;
+    subsidySats: number;
+  } | null = null;
   private hashrateWindow: { at: number; hashes: number } = { at: 0, hashes: 0 };
 
   getStatus = (): MinerStatus => this.status;
@@ -250,7 +257,8 @@ class MinerController {
       crypto.getRandomValues(fullTag.subarray(tagText.length));
 
       const subsidySats = blockSubsidy(nextHeight, this.net);
-      if (subsidySats <= 0) return this.fail(`subvention nulle à la hauteur ${nextHeight} — plus rien à miner`);
+      if (subsidySats <= 0)
+        return this.fail(`subvention nulle à la hauteur ${nextHeight} — plus rien à miner`);
       const { txHex, txid } = buildCoinbase({
         height: nextHeight,
         scriptPubKey: addressToScript(address),
@@ -363,7 +371,10 @@ class MinerController {
     try {
       const res = await fetch('/api/mine/submit', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', ...(this.net === 'regtest' ? regtestHeaders() : {}) },
+        headers: {
+          'content-type': 'application/json',
+          ...(this.net === 'regtest' ? regtestHeaders() : {}),
+        },
         body: JSON.stringify({ net: this.net, block: blockHex }),
       });
       const body = (await res.json().catch(() => ({}))) as { ok?: boolean; detail?: string };

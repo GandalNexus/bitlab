@@ -99,7 +99,14 @@ const MAX_EVENTS = 60;
 const MAX_LOGS = 200;
 
 class LnLabController {
-  private status: LnLabStatus = { ...initialStatus, channelsA: [], channelsB: [], events: [], logs: [], broadcasts: [] };
+  private status: LnLabStatus = {
+    ...initialStatus,
+    channelsA: [],
+    channelsB: [],
+    events: [],
+    logs: [],
+    broadcasts: [],
+  };
   private listeners = new Set<() => void>();
   private worker: Worker | null = null;
   private network: LnNetId | null = null;
@@ -147,7 +154,15 @@ class LnLabController {
   async activate(network: LnNetId): Promise<void> {
     if (this.status.phase === 'booting' || this.status.phase === 'ready') return;
     this.network = network;
-    this.patch({ phase: 'booting', network, error: null, logs: [], events: [], broadcasts: [], pendingFunding: null });
+    this.patch({
+      phase: 'booting',
+      network,
+      error: null,
+      logs: [],
+      events: [],
+      broadcasts: [],
+      pendingFunding: null,
+    });
     try {
       const seeds = await this.loadOrCreateSeeds(network);
       const kvA = await this.loadKvMap(network, 'A');
@@ -200,7 +215,15 @@ class LnLabController {
         mode: restore ? 'restore' : 'fresh',
         seeds: { a: new Uint8Array(seeds.a), b: new Uint8Array(seeds.b) },
         kv: { a: this.kvToArray(kvA), b: this.kvToArray(kvB) },
+<<<<<<< HEAD
         regtestHeader: network === 'regtest' && regtestMode() === 'external' ? regtestHeaderValue() : '',
+=======
+        // Regtest : en mode externe uniquement, la config du nœud local
+        // (hôte + identifiants RPC) voyage pré-encodée — le worker n'a pas
+        // accès à localStorage. Mode embarqué : chaîne du serveur BitLab.
+        regtestHeader:
+          network === 'regtest' && regtestMode() === 'external' ? regtestHeaderValue() : '',
+>>>>>>> 92c54ba (style: prettier-format repo)
       });
     } catch (err) {
       this.patch({ phase: 'off', error: `activation: ${(err as Error).message}` });
@@ -272,14 +295,25 @@ class LnLabController {
   private kvToArray(map: KvMap): Array<[string, string, string, Uint8Array]> {
     return Object.entries(map).map(([composite, value]) => {
       const sep = composite.indexOf('|');
-      return [composite.slice(0, sep), composite.slice(sep + 1, composite.indexOf('|', sep + 1)), composite.slice(composite.indexOf('|', sep + 1) + 1), value] as [string, string, string, Uint8Array];
+      return [
+        composite.slice(0, sep),
+        composite.slice(sep + 1, composite.indexOf('|', sep + 1)),
+        composite.slice(composite.indexOf('|', sep + 1) + 1),
+        value,
+      ] as [string, string, string, Uint8Array];
     });
   }
 
+<<<<<<< HEAD
   private onWorkerMessage(msg: {
     type: string;
     [field: string]: unknown;
   }) {
+=======
+  /* ─────────────────── Messages du worker ─────────────────── */
+
+  private onWorkerMessage(msg: { type: string; [field: string]: unknown }) {
+>>>>>>> 92c54ba (style: prettier-format repo)
     switch (msg.type) {
       case 'ready':
         this.patch({
@@ -295,8 +329,8 @@ class LnLabController {
         this.patch({
           connected: Boolean(msg.connected),
           best: (msg.best as { height: number; hash: string }) ?? this.status.best,
-          channelsA: (msg.channelsA as unknown[]) as LnChannelView[],
-          channelsB: (msg.channelsB as unknown[]) as LnChannelView[],
+          channelsA: msg.channelsA as unknown[] as LnChannelView[],
+          channelsB: msg.channelsB as unknown[] as LnChannelView[],
         });
         break;
       }
@@ -307,6 +341,7 @@ class LnLabController {
         this.pushLog(msg.node as string, msg.line as string);
         break;
       case 'kv': {
+<<<<<<< HEAD
         const network = this.network;
         if (!network) break;
         const epoch = this.kvEpoch;
@@ -316,10 +351,26 @@ class LnLabController {
             if (epoch === this.kvEpoch) return this.flushKv(network, entries);
           })
           .catch((err) => this.pushLog('sys', `kv: ${(err as Error).message}`));
+=======
+        if (!this.network) break;
+        const entries = (msg.entries ?? []) as [
+          string,
+          string,
+          string,
+          string,
+          Uint8Array | null,
+        ][];
+        this.flushKv(this.network, entries).catch((err) =>
+          this.pushLog('sys', `kv: ${(err as Error).message}`),
+        );
+>>>>>>> 92c54ba (style: prettier-format repo)
         break;
       }
       case 'broadcast': {
-        const broadcasts = [{ ok: Boolean(msg.ok), detail: String(msg.detail ?? ''), at: Date.now() }, ...this.status.broadcasts].slice(0, 20);
+        const broadcasts = [
+          { ok: Boolean(msg.ok), detail: String(msg.detail ?? ''), at: Date.now() },
+          ...this.status.broadcasts,
+        ].slice(0, 20);
         this.patch({ broadcasts });
         break;
       }
@@ -344,7 +395,10 @@ class LnLabController {
     }
   }
 
-  private async flushKv(network: LnNetId, entries: [string, string, string, string, Uint8Array | null][]) {
+  private async flushKv(
+    network: LnNetId,
+    entries: [string, string, string, string, Uint8Array | null][],
+  ) {
     const perNode: Partial<Record<NodeKey, KvMap>> = {
       A: await this.loadKvMap(network, 'A'),
       B: await this.loadKvMap(network, 'B'),
@@ -417,6 +471,7 @@ class LnLabController {
     this.send({ type: 'fundingTx', hex: hexTx, userChannelId });
   }
 
+<<<<<<< HEAD
   createInvoice(node: NodeKey, amountMsat: number | null, description: string, expirySecs: number): Promise<string> {
     const id = `inv-${Date.now()}`;
     return this.request<string>(
@@ -424,6 +479,42 @@ class LnLabController {
       (data) => (data.type === 'invoice' && data.id === id ? (data.bolt11 as string) : undefined),
       'délai de création de facture dépassé',
     );
+=======
+  createInvoice(
+    node: NodeKey,
+    amountMsat: number | null,
+    description: string,
+    expirySecs: number,
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const id = `inv-${Date.now()}`;
+      const worker = this.worker;
+      if (!worker) return reject(new Error('laboratoire inactif'));
+      const onMessage = (event: MessageEvent) => {
+        const data = event.data;
+        if (data?.type === 'invoice' && data.id === id) {
+          worker.removeEventListener('message', onMessage);
+          resolve(data.bolt11 as string);
+        } else if (data?.type === 'error' && (data.message as string)?.startsWith('facture:')) {
+          worker.removeEventListener('message', onMessage);
+          reject(new Error(String(data.message).replace(/^facture:\s*/, '')));
+        }
+      };
+      worker.addEventListener('message', onMessage);
+      this.send({
+        type: 'createInvoice',
+        id,
+        node: node === 'A' ? 0 : 1,
+        amountMsat,
+        description,
+        expirySecs,
+      });
+      setTimeout(() => {
+        worker.removeEventListener('message', onMessage);
+        reject(new Error('délai de création de facture dépassé'));
+      }, 15000);
+    });
+>>>>>>> 92c54ba (style: prettier-format repo)
   }
 
   payInvoice(node: NodeKey, invoice: string, amountMsat: number | null): void {
@@ -439,7 +530,17 @@ class LnLabController {
     );
   }
 
+<<<<<<< HEAD
   payOffer(node: NodeKey, offer: string, amountMsat: number | null, payerNote: string | null): void {
+=======
+  /** Paie une offer BOLT12 : demande de facture via onion messages puis HTLC. */
+  payOffer(
+    node: NodeKey,
+    offer: string,
+    amountMsat: number | null,
+    payerNote: string | null,
+  ): void {
+>>>>>>> 92c54ba (style: prettier-format repo)
     this.send({ type: 'payOffer', node: node === 'A' ? 0 : 1, offer, amountMsat, payerNote });
   }
 

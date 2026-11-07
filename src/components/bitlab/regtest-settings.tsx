@@ -8,11 +8,25 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useActiveWallet, useLabStore } from '@/lib/store';
 import { api } from '@/lib/mempool';
-import { loadRegtestCfg, isLocalHost, regtestMode, saveRegtestCfg, setRegtestMode, REGTEST_DEFAULTS, type RegtestCfg } from '@/lib/regtest';
+import {
+  loadRegtestCfg,
+  isLocalHost,
+  regtestMode,
+  saveRegtestCfg,
+  setRegtestMode,
+  REGTEST_DEFAULTS,
+  type RegtestCfg,
+} from '@/lib/regtest';
 import { satsToBtc } from '@/lib/bitcoin/utils';
 import { useT } from '@/lib/i18n';
 
@@ -46,30 +60,32 @@ export function RegtestSettingsCard() {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Server className="h-4 w-4 text-primary" /> {t('Chaîne regtest — laboratoire local')}
+          <Server className="text-primary h-4 w-4" /> {t('Chaîne regtest — laboratoire local')}
         </CardTitle>
         <CardDescription>
           {mode === 'embedded'
-            ? t('La chaîne privée est embarquée dans BitLab : rien à installer, ni Docker, ni machine virtuelle.')
-            : t('Mode avancé : BitLab dialogue avec votre Bitcoin Core local (-regtest -rest=1) au lieu du moteur embarqué.')}
+            ? t(
+                'La chaîne privée est embarquée dans BitLab : rien à installer, ni Docker, ni machine virtuelle.',
+              )
+            : t(
+                'Mode avancé : BitLab dialogue avec votre Bitcoin Core local (-regtest -rest=1) au lieu du moteur embarqué.',
+              )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+        <div className="border-border bg-muted/30 flex items-center justify-between gap-3 rounded-md border px-3 py-2.5">
           <div className="space-y-0.5">
             <p className="text-[13px] font-medium">{t('Nœud externe (Bitcoin Core)')}</p>
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              {t('Désactivé : le moteur embarqué de BitLab sert la chaîne. Activé : votre Core local fait foi.')}
+            <p className="text-muted-foreground text-[11px] leading-snug">
+              {t(
+                'Désactivé : le moteur embarqué de BitLab sert la chaîne. Activé : votre Core local fait foi.',
+              )}
             </p>
           </div>
           <Switch checked={mode === 'external'} onCheckedChange={switchMode} />
         </div>
 
-        {mode === 'embedded' ? (
-          <EmbeddedPanel />
-        ) : (
-          <ExternalPanel />
-        )}
+        {mode === 'embedded' ? <EmbeddedPanel /> : <ExternalPanel />}
       </CardContent>
     </Card>
   );
@@ -95,7 +111,8 @@ function EmbeddedPanel() {
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['regtest-info'] });
-    if (active) void queryClient.invalidateQueries({ queryKey: ['address', 'regtest', active.address] });
+    if (active)
+      void queryClient.invalidateQueries({ queryKey: ['address', 'regtest', active.address] });
   };
 
   const runFaucet = async () => {
@@ -108,9 +125,20 @@ function EmbeddedPanel() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ address: active.address, sats: Number(amount) }),
       });
-      const body = (await res.json()) as { ok?: boolean; detail?: string; txid?: string; blockHeight?: number };
+      const body = (await res.json()) as {
+        ok?: boolean;
+        detail?: string;
+        txid?: string;
+        blockHeight?: number;
+      };
       if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
-      setFeedback({ ok: true, text: t('{sats} sats envoyés — confirmés au bloc #{h}.', { sats: Number(amount).toLocaleString('fr-FR'), h: body.blockHeight ?? '?' }) });
+      setFeedback({
+        ok: true,
+        text: t('{sats} sats envoyés — confirmés au bloc #{h}.', {
+          sats: Number(amount).toLocaleString('fr-FR'),
+          h: body.blockHeight ?? '?',
+        }),
+      });
       invalidate();
     } catch (err) {
       setFeedback({ ok: false, text: (err as Error).message });
@@ -128,9 +156,18 @@ function EmbeddedPanel() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ blocks: 10, address: active?.address }),
       });
-      const body = (await res.json()) as { ok?: boolean; detail?: string; tip?: { height: number } };
+      const body = (await res.json()) as {
+        ok?: boolean;
+        detail?: string;
+        tip?: { height: number };
+      };
       if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
-      setFeedback({ ok: true, text: t('10 blocs minés — hauteur {h}. La récompense mûrit après 100 blocs.', { h: body.tip?.height ?? '?' }) });
+      setFeedback({
+        ok: true,
+        text: t('10 blocs minés — hauteur {h}. La récompense mûrit après 100 blocs.', {
+          h: body.tip?.height ?? '?',
+        }),
+      });
       invalidate();
     } catch (err) {
       setFeedback({ ok: false, text: (err as Error).message });
@@ -144,7 +181,10 @@ function EmbeddedPanel() {
     setFeedback(null);
     try {
       await fetch('/api/regtest/reset', { method: 'POST' });
-      setFeedback({ ok: true, text: t('Chaîne réinitialisée — genèse neuf, pool faucet reconstitué.') });
+      setFeedback({
+        ok: true,
+        text: t('Chaîne réinitialisée — genèse neuf, pool faucet reconstitué.'),
+      });
       invalidate();
     } catch (err) {
       setFeedback({ ok: false, text: (err as Error).message });
@@ -157,23 +197,34 @@ function EmbeddedPanel() {
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat label={t('Hauteur')} value={info.data ? String(info.data.height) : '…'} />
-        <Stat label={t('Subvention / bloc')} value={info.data ? `${satsToBtc(info.data.subsidyNextSats)} BTC` : '…'} />
-        <Stat label={t('Halving dans')} value={info.data ? t('{n} blocs', { n: info.data.halvingInBlocks }) : '…'} />
+        <Stat
+          label={t('Subvention / bloc')}
+          value={info.data ? `${satsToBtc(info.data.subsidyNextSats)} BTC` : '…'}
+        />
+        <Stat
+          label={t('Halving dans')}
+          value={info.data ? t('{n} blocs', { n: info.data.halvingInBlocks }) : '…'}
+        />
         <Stat label={t('Mempool')} value={info.data ? String(info.data.mempoolCount) : '…'} />
       </div>
 
-      <div className="space-y-2 rounded-md border border-border p-3">
+      <div className="border-border space-y-2 rounded-md border p-3">
         <div className="flex items-center gap-2 text-[13px] font-medium">
-          <Coins className="h-3.5 w-3.5 text-primary" /> {t('Faucet intégré — sats de test instantanés')}
+          <Coins className="text-primary h-3.5 w-3.5" />{' '}
+          {t('Faucet intégré — sats de test instantanés')}
         </div>
-        <p className="text-[11px] leading-snug text-muted-foreground">
-          {t('Le serveur signe une vraie transaction depuis son pool préminé puis mine 1 bloc : le solde est dépensable immédiatement.')}
+        <p className="text-muted-foreground text-[11px] leading-snug">
+          {t(
+            'Le serveur signe une vraie transaction depuis son pool préminé puis mine 1 bloc : le solde est dépensable immédiatement.',
+          )}
         </p>
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-40 flex-1 space-y-1">
             <Label className="text-xs">{t('Montant')}</Label>
             <Select value={amount} onValueChange={setAmount}>
-              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {FAUCET_AMOUNTS.map((s) => (
                   <SelectItem key={s} value={String(s)} className="text-xs">
@@ -183,15 +234,29 @@ function EmbeddedPanel() {
               </SelectContent>
             </Select>
           </div>
-          <Button size="sm" className="gap-1.5" disabled={!active || busy !== null} onClick={() => void runFaucet()}>
-            <Coins className="h-3.5 w-3.5" /> {t('Recevoir sur {a}', { a: active ? `${active.address.slice(0, 10)}…` : '—' })}
+          <Button
+            size="sm"
+            className="gap-1.5"
+            disabled={!active || busy !== null}
+            onClick={() => void runFaucet()}
+          >
+            <Coins className="h-3.5 w-3.5" />{' '}
+            {t('Recevoir sur {a}', { a: active ? `${active.address.slice(0, 10)}…` : '—' })}
           </Button>
-          <Button size="sm" variant="outline" className="gap-1.5" disabled={busy !== null} onClick={() => void runMine()}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            disabled={busy !== null}
+            onClick={() => void runMine()}
+          >
             <Hammer className="h-3.5 w-3.5" /> {t('Miner 10 blocs')}
           </Button>
         </div>
         {!active ? (
-          <p className="text-[11px] text-amber-600 dark:text-amber-400">{t('Générez et sélectionnez un portefeuille pour recevoir des sats.')}</p>
+          <p className="text-[11px] text-amber-600 dark:text-amber-400">
+            {t('Générez et sélectionnez un portefeuille pour recevoir des sats.')}
+          </p>
         ) : null}
       </div>
 
@@ -208,8 +273,19 @@ function EmbeddedPanel() {
       ) : null}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-        <p className="text-[11px] leading-snug text-muted-foreground">{t('Pool faucet : {m} BTC mûrs · {i} BTC en maturation.', { m: info.data ? satsToBtc(info.data.faucet.matureSats) : '…', i: info.data ? satsToBtc(info.data.faucet.immatureSats) : '…' })}</p>
-        <Button size="sm" variant="ghost" className="gap-1.5 self-start text-muted-foreground sm:self-auto" disabled={busy !== null} onClick={() => void runReset()}>
+        <p className="text-muted-foreground text-[11px] leading-snug">
+          {t('Pool faucet : {m} BTC mûrs · {i} BTC en maturation.', {
+            m: info.data ? satsToBtc(info.data.faucet.matureSats) : '…',
+            i: info.data ? satsToBtc(info.data.faucet.immatureSats) : '…',
+          })}
+        </p>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-muted-foreground gap-1.5 self-start sm:self-auto"
+          disabled={busy !== null}
+          onClick={() => void runReset()}
+        >
           <RotateCcw className="h-3.5 w-3.5" /> {t('Réinitialiser la chaîne')}
         </Button>
       </div>
@@ -219,8 +295,8 @@ function EmbeddedPanel() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-border bg-muted/20 px-2.5 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+    <div className="border-border bg-muted/20 rounded-md border px-2.5 py-2">
+      <p className="text-muted-foreground text-[10px] tracking-wide uppercase">{label}</p>
       <p className="truncate text-[13px] font-semibold">{value}</p>
     </div>
   );
@@ -265,7 +341,9 @@ function ExternalPanel() {
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="regtest-host" className="text-xs">{t('Hôte du nœud')}</Label>
+          <Label htmlFor="regtest-host" className="text-xs">
+            {t('Hôte du nœud')}
+          </Label>
           <Input
             id="regtest-host"
             value={cfg.host}
@@ -276,18 +354,24 @@ function ExternalPanel() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="regtest-port" className="text-xs">{t('Port RPC/REST')}</Label>
+          <Label htmlFor="regtest-port" className="text-xs">
+            {t('Port RPC/REST')}
+          </Label>
           <Input
             id="regtest-port"
             type="number"
             value={cfg.port}
-            onChange={(e) => setCfg({ ...cfg, port: Number(e.target.value) || REGTEST_DEFAULTS.port })}
+            onChange={(e) =>
+              setCfg({ ...cfg, port: Number(e.target.value) || REGTEST_DEFAULTS.port })
+            }
             placeholder="18443"
             className="h-8 font-mono text-xs"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="regtest-user" className="text-xs">{t('rpcuser (bitcoin.conf)')}</Label>
+          <Label htmlFor="regtest-user" className="text-xs">
+            {t('rpcuser (bitcoin.conf)')}
+          </Label>
           <Input
             id="regtest-user"
             value={cfg.user}
@@ -297,7 +381,9 @@ function ExternalPanel() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="regtest-pass" className="text-xs">{t('rpcpass / rpcauth')}</Label>
+          <Label htmlFor="regtest-pass" className="text-xs">
+            {t('rpcpass / rpcauth')}
+          </Label>
           <Input
             id="regtest-pass"
             type="password"
@@ -311,38 +397,58 @@ function ExternalPanel() {
 
       {hostWarning ? (
         <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
-          {t('Hôte hors boucle locale : le serveur BitLab n’accepte que les adresses locales ou privées (127.0.0.1, LAN).')}
+          {t(
+            'Hôte hors boucle locale : le serveur BitLab n’accepte que les adresses locales ou privées (127.0.0.1, LAN).',
+          )}
         </p>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button size="sm" onClick={() => void test()} disabled={probe === 'running'} className="gap-1.5">
+        <Button
+          size="sm"
+          onClick={() => void test()}
+          disabled={probe === 'running'}
+          className="gap-1.5"
+        >
           {t('Enregistrer et tester')}
         </Button>
         {probe === 'ok' ? (
-          <Badge variant="outline" className="gap-1 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+          <Badge
+            variant="outline"
+            className="gap-1 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+          >
             <CheckCircle2 className="h-3 w-3" /> {t('Nœud connecté')}
           </Badge>
         ) : null}
         {probe === 'rest-fail' ? (
-          <Badge variant="outline" className="gap-1 border-red-500/40 text-red-600 dark:text-red-400">
-            <XCircle className="h-3 w-3" /> {t('Nœud injoignable — Core tourne-t-il avec -regtest -rest=1 ?')}
+          <Badge
+            variant="outline"
+            className="gap-1 border-red-500/40 text-red-600 dark:text-red-400"
+          >
+            <XCircle className="h-3 w-3" />{' '}
+            {t('Nœud injoignable — Core tourne-t-il avec -regtest -rest=1 ?')}
           </Badge>
         ) : null}
         {probe === 'rpc-fail' ? (
-          <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400">
-            <XCircle className="h-3 w-3" /> {t('REST OK mais RPC refusé — vérifiez rpcuser/rpcpass')}
+          <Badge
+            variant="outline"
+            className="gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400"
+          >
+            <XCircle className="h-3 w-3" />{' '}
+            {t('REST OK mais RPC refusé — vérifiez rpcuser/rpcpass')}
           </Badge>
         ) : null}
       </div>
 
-      <div className="rounded-md border border-border bg-muted/30 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+      <div className="border-border bg-muted/30 text-muted-foreground rounded-md border px-3 py-2 font-mono text-[11px] leading-relaxed">
         <p>bitcoind -regtest -rest=1 -rpcuser=&lt;user&gt; -rpcpassword=&lt;pass&gt;</p>
         <p>bitcoin-cli -regtest generatetoaddress 1 &lt;adresse&gt;</p>
       </div>
 
-      <p className="text-[11px] leading-snug text-muted-foreground">
-        {t('Identifiants stockés uniquement dans votre navigateur et transmis au serveur BitLab local, qui ne cible jamais d’hôte public.')}
+      <p className="text-muted-foreground text-[11px] leading-snug">
+        {t(
+          'Identifiants stockés uniquement dans votre navigateur et transmis au serveur BitLab local, qui ne cible jamais d’hôte public.',
+        )}
       </p>
     </div>
   );

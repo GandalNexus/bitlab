@@ -23,7 +23,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -105,7 +111,7 @@ function EventLine({ e }: { e: LnEventView }) {
         ? 'text-rose-400'
         : 'text-primary';
   return (
-    <div className="flex items-center gap-2 border-b border-border/40 py-1.5 text-xs last:border-0">
+    <div className="border-border/40 flex items-center gap-2 border-b py-1.5 text-xs last:border-0">
       <Bolt className={cn('h-3 w-3 shrink-0', iconCls)} aria-hidden />
       <Badge
         variant="outline"
@@ -121,12 +127,26 @@ function EventLine({ e }: { e: LnEventView }) {
         {e.node}
       </Badge>
       <span className="flex-1 truncate">{label}</span>
-      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{detail}</span>
+      <span className="text-muted-foreground shrink-0 font-mono text-[10px]">{detail}</span>
     </div>
   );
 }
 
+<<<<<<< HEAD
 function NodeSummaryCard({ label, nodeId, channels }: { label: string; nodeId: string | null; channels: LnChannelView[] }) {
+=======
+/* ─────────────────────────  Vue état des nœuds  ───────────────────────── */
+
+function NodeSummaryCard({
+  label,
+  nodeId,
+  channels,
+}: {
+  label: string;
+  nodeId: string | null;
+  channels: LnChannelView[];
+}) {
+>>>>>>> 92c54ba (style: prettier-format repo)
   const { t } = useT();
   const totalOut = channels.reduce((s, c) => s + msatToSats(c.outboundMsat), 0);
   const totalIn = channels.reduce((s, c) => s + msatToSats(c.inboundMsat), 0);
@@ -134,11 +154,13 @@ function NodeSummaryCard({ label, nodeId, channels }: { label: string; nodeId: s
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm">
-          <Server className="h-4 w-4 text-primary" /> {t('Nœud {n}', { n: label })}
+          <Server className="text-primary h-4 w-4" /> {t('Nœud {n}', { n: label })}
         </CardTitle>
-        <CardDescription className="font-mono text-[10px] break-all">{nodeId ?? '…'}</CardDescription>
+        <CardDescription className="font-mono text-[10px] break-all">
+          {nodeId ?? '…'}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-1 text-xs text-muted-foreground">
+      <CardContent className="text-muted-foreground space-y-1 text-xs">
         <div className="flex justify-between">
           <span>{t('Canaux')}</span>
           <span className="font-mono">{channels.length}</span>
@@ -156,7 +178,19 @@ function NodeSummaryCard({ label, nodeId, channels }: { label: string; nodeId: s
   );
 }
 
+<<<<<<< HEAD
 function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSubmit: (hex: string, ucid: string) => void }) {
+=======
+/* ─────────────────────────  Pont de financement  ───────────────────────── */
+
+function FundingBridge({
+  pending,
+  onSubmit,
+}: {
+  pending: LnPendingFunding;
+  onSubmit: (hex: string, ucid: string) => void;
+}) {
+>>>>>>> 92c54ba (style: prettier-format repo)
   const { t } = useT();
   const { toast } = useToast();
   const wallets = useLabStore((s) => s.wallets);
@@ -230,10 +264,16 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
       }
       toast({
         title: t('Financement diffusé'),
-        description: t('La transaction de financement est sur la chaîne — attendez les confirmations.') + minedNote,
+        description:
+          t('La transaction de financement est sur la chaîne — attendez les confirmations.') +
+          minedNote,
       });
     } catch (e) {
-      toast({ title: t('Échec du financement'), description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+      toast({
+        title: t('Échec du financement'),
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      });
     } finally {
       setBusy(false);
     }
@@ -253,10 +293,12 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {pending.address ? <Copyable value={pending.address} label={t('Adresse de financement')} /> : null}
+        {pending.address ? (
+          <Copyable value={pending.address} label={t('Adresse de financement')} />
+        ) : null}
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-52 flex-1 space-y-1">
-            <Label htmlFor="funding-wallet" className="text-[10px] uppercase text-muted-foreground">
+            <Label htmlFor="funding-wallet" className="text-muted-foreground text-[10px] uppercase">
               {t('Portefeuille source')}
             </Label>
             <Select value={walletId || wallet?.id} onValueChange={setWalletId}>
@@ -273,12 +315,27 @@ function FundingBridge({ pending, onSubmit }: { pending: LnPendingFunding; onSub
             </Select>
           </div>
           <Button size="sm" className="gap-1" disabled={busy || !wallet} onClick={buildAndSubmit}>
+<<<<<<< HEAD
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
             {t('Financer le canal')}
           </Button>
         </div>
         {usable.length === 0 ? (
           <p className="text-xs text-amber-400">{t('Créez et alimentez d’abord un portefeuille sur ce réseau (module Bitcoin, robinet).')}</p>
+=======
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Zap className="h-3.5 w-3.5" />
+            )}
+            {t('Construire, signer et diffuser')}
+          </Button>
+        </div>
+        {wallets.length === 0 ? (
+          <p className="text-xs text-amber-400">
+            {t('Créez et alimentez d’abord un portefeuille (module Bitcoin, robinet testnet).')}
+          </p>
+>>>>>>> 92c54ba (style: prettier-format repo)
         ) : null}
       </CardContent>
     </Card>
@@ -297,11 +354,19 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
     const cap = parseInt(capacity, 10);
     const pushMs = parseInt(push, 10) || 0;
     if (!Number.isInteger(cap) || cap < 1000) {
-      toast({ title: t('Capacité invalide'), description: t('1000 sats minimum.'), variant: 'destructive' });
+      toast({
+        title: t('Capacité invalide'),
+        description: t('1000 sats minimum.'),
+        variant: 'destructive',
+      });
       return;
     }
     if (pushMs > cap * 1000) {
-      toast({ title: t('Montant poussé trop élevé'), description: t('Le push ne peut pas dépasser la capacité.'), variant: 'destructive' });
+      toast({
+        title: t('Montant poussé trop élevé'),
+        description: t('Le push ne peut pas dépasser la capacité.'),
+        variant: 'destructive',
+      });
       return;
     }
     setOpening(true);
@@ -320,7 +385,10 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
 
   const close = async (ch: LnChannelView) => {
     lnLab.closeChannel('A', ch.channelId);
-    toast({ title: t('Fermeture demandée'), description: t('La transaction de fermeture sera diffusée on-chain.') });
+    toast({
+      title: t('Fermeture demandée'),
+      description: t('La transaction de fermeture sera diffusée on-chain.'),
+    });
   };
 
   return (
@@ -328,7 +396,7 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <Link2 className="h-4 w-4 text-primary" /> {t('Ouvrir un canal A → B')}
+            <Link2 className="text-primary h-4 w-4" /> {t('Ouvrir un canal A → B')}
           </CardTitle>
           <CardDescription>
             {t(
@@ -338,16 +406,26 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="w-40 space-y-1">
-            <Label htmlFor="cap" className="text-[10px] uppercase text-muted-foreground">
+            <Label htmlFor="cap" className="text-muted-foreground text-[10px] uppercase">
               {t('Capacité (sats)')}
             </Label>
-            <Input id="cap" value={capacity} onChange={(e) => setCapacity(e.target.value)} className="h-8 font-mono text-xs" />
+            <Input
+              id="cap"
+              value={capacity}
+              onChange={(e) => setCapacity(e.target.value)}
+              className="h-8 font-mono text-xs"
+            />
           </div>
           <div className="w-40 space-y-1">
-            <Label htmlFor="push" className="text-[10px] uppercase text-muted-foreground">
+            <Label htmlFor="push" className="text-muted-foreground text-[10px] uppercase">
               {t('Push vers B (msat)')}
             </Label>
-            <Input id="push" value={push} onChange={(e) => setPush(e.target.value)} className="h-8 font-mono text-xs" />
+            <Input
+              id="push"
+              value={push}
+              onChange={(e) => setPush(e.target.value)}
+              className="h-8 font-mono text-xs"
+            />
           </div>
           <Button size="sm" onClick={open} disabled={!st.connected || opening}>
             {opening ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
@@ -356,7 +434,12 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
         </CardContent>
       </Card>
 
-      {st.pendingFunding ? <FundingBridge pending={st.pendingFunding} onSubmit={(hex, ucid) => lnLab.submitFundingTx(hex, ucid)} /> : null}
+      {st.pendingFunding ? (
+        <FundingBridge
+          pending={st.pendingFunding}
+          onSubmit={(hex, ucid) => lnLab.submitFundingTx(hex, ucid)}
+        />
+      ) : null}
 
       <Card>
         <CardHeader className="pb-2">
@@ -364,40 +447,55 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
         </CardHeader>
         <CardContent className="space-y-2">
           {channels.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t('Aucun canal pour le moment.')}</p>
+            <p className="text-muted-foreground text-xs">{t('Aucun canal pour le moment.')}</p>
           ) : null}
           {channels.map((ch) => {
             const ready = ch.isReady || ch.isUsable;
             const conf = ch.confirmations ?? '0';
             const required = ch.confirmationsRequired ?? '6';
             return (
-              <div key={ch.channelId} className="rounded-md border border-border/60 p-3 text-xs">
+              <div key={ch.channelId} className="border-border/60 rounded-md border p-3 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-mono text-[10px] text-muted-foreground">{ch.channelId.slice(0, 24)}…</span>
-                  <Badge variant="outline" className={cn('text-[9px]', ready ? 'border-emerald-500/40 text-emerald-400' : 'border-amber-500/40 text-amber-400')}>
+                  <span className="text-muted-foreground font-mono text-[10px]">
+                    {ch.channelId.slice(0, 24)}…
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      'text-[9px]',
+                      ready
+                        ? 'border-emerald-500/40 text-emerald-400'
+                        : 'border-amber-500/40 text-amber-400',
+                    )}
+                  >
                     {ready ? t('prêt') : t('{c}/{r} confirmations', { c: conf, r: required })}
                   </Badge>
                 </div>
                 <div className="mt-2 grid grid-cols-3 gap-2">
                   <div>
-                    <p className="text-[10px] uppercase text-muted-foreground">{t('Capacité')}</p>
+                    <p className="text-muted-foreground text-[10px] uppercase">{t('Capacité')}</p>
                     <p className="font-mono">{fmtInt(Number(ch.valueSats))} sats</p>
                   </div>
                   <div>
-                    <p className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground">
+                    <p className="text-muted-foreground flex items-center gap-1 text-[10px] uppercase">
                       <ArrowUpRight className="h-3 w-3" /> {t('Sortant')}
                     </p>
                     <p className="font-mono">{fmtInt(msatToSats(ch.outboundMsat))} sats</p>
                   </div>
                   <div>
-                    <p className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground">
+                    <p className="text-muted-foreground flex items-center gap-1 text-[10px] uppercase">
                       <ArrowDownLeft className="h-3 w-3" /> {t('Entrant')}
                     </p>
                     <p className="font-mono">{fmtInt(msatToSats(ch.inboundMsat))} sats</p>
                   </div>
                 </div>
                 <div className="mt-2 flex justify-end">
-                  <Button size="sm" variant="outline" className="h-7 gap-1 text-[10px]" onClick={() => close(ch)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-[10px]"
+                    onClick={() => close(ch)}
+                  >
                     <Unplug className="h-3 w-3" /> {t('Fermer')}
                   </Button>
                 </div>
@@ -427,9 +525,16 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
       if (!Number.isInteger(sats) || sats <= 0) throw new Error(t('Montant invalide.'));
       const bolt11 = await lnLab.createInvoice('B', sats * 1000, memo, 3600);
       setInvoice(bolt11);
-      toast({ title: t('Facture créée'), description: t('Signée par le nœud B — faites-la payer par A.') });
+      toast({
+        title: t('Facture créée'),
+        description: t('Signée par le nœud B — faites-la payer par A.'),
+      });
     } catch (e) {
-      toast({ title: t('Création impossible'), description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+      toast({
+        title: t('Création impossible'),
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      });
     } finally {
       setBusy(false);
     }
@@ -449,28 +554,44 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
           <CardTitle className="flex items-center gap-2 text-sm">
             <QrCode className="h-4 w-4 text-amber-400" /> {t('Créer une facture BOLT11 (nœud B)')}
           </CardTitle>
-          <CardDescription>{t('Une facture neuve à chaque paiement : montant verrouillé, expiration d’une heure.')}</CardDescription>
+          <CardDescription>
+            {t('Une facture neuve à chaque paiement : montant verrouillé, expiration d’une heure.')}
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="w-36 space-y-1">
-            <Label htmlFor="amt" className="text-[10px] uppercase text-muted-foreground">
+            <Label htmlFor="amt" className="text-muted-foreground text-[10px] uppercase">
               {t('Montant (sats)')}
             </Label>
-            <Input id="amt" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-8 font-mono text-xs" />
+            <Input
+              id="amt"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="h-8 font-mono text-xs"
+            />
           </div>
           <div className="w-52 flex-1 space-y-1">
-            <Label htmlFor="memo" className="text-[10px] uppercase text-muted-foreground">
+            <Label htmlFor="memo" className="text-muted-foreground text-[10px] uppercase">
               {t('Description')}
             </Label>
-            <Input id="memo" value={memo} onChange={(e) => setMemo(e.target.value)} className="h-8 text-xs" />
+            <Input
+              id="memo"
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              className="h-8 text-xs"
+            />
           </div>
           <Button size="sm" onClick={create} disabled={busy || !st.connected}>
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Zap className="h-3.5 w-3.5" />
+            )}
             {t('Créer')}
           </Button>
         </CardContent>
         {invoice ? (
-          <CardContent className="space-y-2 border-t border-border/40 pt-3">
+          <CardContent className="border-border/40 space-y-2 border-t pt-3">
             <div className="mx-auto w-fit rounded-lg bg-white p-2">
               <QRCode value={invoice} size={148} />
             </div>
@@ -484,11 +605,17 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
           <CardTitle className="flex items-center gap-2 text-sm">
             <ArrowUpRight className="h-4 w-4 text-amber-400" /> {t('Payer une facture (nœud A)')}
           </CardTitle>
+<<<<<<< HEAD
           <CardDescription>{t('Collez une facture Lightning (lntb…, lntbs…, lnbcrt…) : le montant est déjà inscrit dedans.')}</CardDescription>
+=======
+          <CardDescription>
+            {t('Collez une facture lntb…/lntbs… : le montant est déjà inscrit dedans.')}
+          </CardDescription>
+>>>>>>> 92c54ba (style: prettier-format repo)
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="min-w-64 flex-1 space-y-1">
-            <Label htmlFor="b11" className="text-[10px] uppercase text-muted-foreground">
+            <Label htmlFor="b11" className="text-muted-foreground text-[10px] uppercase">
               BOLT11
             </Label>
             <Input
@@ -539,7 +666,7 @@ function ProtocolLegend() {
             <p className="text-xs font-semibold">
               {it.name} · {t(it.title)}
             </p>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{t(it.desc)}</p>
+            <p className="text-muted-foreground mt-0.5 text-[11px] leading-relaxed">{t(it.desc)}</p>
           </div>
         </div>
       ))}
@@ -567,9 +694,16 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
       if (!Number.isInteger(sats) || sats < 0) throw new Error(t('Montant invalide.'));
       const lno = await lnLab.createOffer('B', sats > 0 ? sats * 1000 : null, memo);
       setOffer(lno);
-      toast({ title: t('Offer créée'), description: t('Signée par le nœud B — réutilisable autant de fois que voulu.') });
+      toast({
+        title: t('Offer créée'),
+        description: t('Signée par le nœud B — réutilisable autant de fois que voulu.'),
+      });
     } catch (e) {
-      toast({ title: t('Création impossible'), description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+      toast({
+        title: t('Création impossible'),
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      });
     } finally {
       setBusy(false);
     }
@@ -582,7 +716,11 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
       setDecoded(await lnLab.decodeOffer(raw));
     } catch (e) {
       setDecoded(null);
-      toast({ title: t('Offer illisible'), description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+      toast({
+        title: t('Offer illisible'),
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      });
     }
   };
 
@@ -608,7 +746,12 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
     setPayAmount('');
     setPayNote('');
     setDecoded(null);
-    toast({ title: t('Demande de facture envoyée'), description: t('A interroge B via messages onion chiffrés, puis paie la facture retournée. Suivez le journal.') });
+    toast({
+      title: t('Demande de facture envoyée'),
+      description: t(
+        'A interroge B via messages onion chiffrés, puis paie la facture retournée. Suivez le journal.',
+      ),
+    });
   };
 
   const freeAmount = !decoded || decoded.amountMsat === '';
@@ -618,30 +761,49 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <InfinityIcon className="h-4 w-4 text-violet-400" /> {t('Créer une offer BOLT12 (nœud B)')}
+            <InfinityIcon className="h-4 w-4 text-violet-400" />{' '}
+            {t('Créer une offer BOLT12 (nœud B)')}
           </CardTitle>
-          <CardDescription>{t('Un même code lno1… pour un nombre illimité de paiements. Montant facultatif : laissez 0 pour un paiement libre.')}</CardDescription>
+          <CardDescription>
+            {t(
+              'Un même code lno1… pour un nombre illimité de paiements. Montant facultatif : laissez 0 pour un paiement libre.',
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="w-44 space-y-1">
-            <Label htmlFor="oamt" className="text-[10px] uppercase text-muted-foreground">
+            <Label htmlFor="oamt" className="text-muted-foreground text-[10px] uppercase">
               {t('Montant (sats, 0 = libre)')}
             </Label>
-            <Input id="oamt" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-8 font-mono text-xs" />
+            <Input
+              id="oamt"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="h-8 font-mono text-xs"
+            />
           </div>
           <div className="w-52 flex-1 space-y-1">
-            <Label htmlFor="omemo" className="text-[10px] uppercase text-muted-foreground">
+            <Label htmlFor="omemo" className="text-muted-foreground text-[10px] uppercase">
               {t('Description')}
             </Label>
-            <Input id="omemo" value={memo} onChange={(e) => setMemo(e.target.value)} className="h-8 text-xs" />
+            <Input
+              id="omemo"
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              className="h-8 text-xs"
+            />
           </div>
           <Button size="sm" onClick={create} disabled={busy || !st.connected}>
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <InfinityIcon className="h-3.5 w-3.5" />}
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <InfinityIcon className="h-3.5 w-3.5" />
+            )}
             {t('Créer l’offer')}
           </Button>
         </CardContent>
         {offer ? (
-          <CardContent className="space-y-2 border-t border-border/40 pt-3">
+          <CardContent className="border-border/40 space-y-2 border-t pt-3">
             <div className="mx-auto w-fit rounded-lg bg-white p-2">
               <QRCode value={offer} size={148} />
             </div>
@@ -655,12 +817,16 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
           <CardTitle className="flex items-center gap-2 text-sm">
             <ArrowUpRight className="h-4 w-4 text-violet-400" /> {t('Payer une offer (nœud A)')}
           </CardTitle>
-          <CardDescription>{t('Le nœud A demande d’abord une facture au destinataire via messages onion chiffrés, puis la paie sur le canal.')}</CardDescription>
+          <CardDescription>
+            {t(
+              'Le nœud A demande d’abord une facture au destinataire via messages onion chiffrés, puis la paie sur le canal.',
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-64 flex-1 space-y-1">
-              <Label htmlFor="b12" className="text-[10px] uppercase text-muted-foreground">
+              <Label htmlFor="b12" className="text-muted-foreground text-[10px] uppercase">
                 BOLT12
               </Label>
               <Input
@@ -674,7 +840,12 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
                 className="h-8 font-mono text-xs"
               />
             </div>
-            <Button size="sm" variant="outline" onClick={decode} disabled={!st.connected || !payInput.trim()}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={decode}
+              disabled={!st.connected || !payInput.trim()}
+            >
               {t('Vérifier')}
             </Button>
           </div>
@@ -687,13 +858,17 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">{t('Montant')}</span>
                 <span className="font-mono">
-                  {decoded.amountMsat ? `${fmtInt(msatToSats(decoded.amountMsat))} sats` : t('montant libre')}
+                  {decoded.amountMsat
+                    ? `${fmtInt(msatToSats(decoded.amountMsat))} sats`
+                    : t('montant libre')}
                 </span>
               </div>
               {decoded.signingPubkey ? (
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">{t('Émetteur')}</span>
-                  <span className="truncate font-mono text-[10px]">{decoded.signingPubkey.slice(0, 24)}…</span>
+                  <span className="truncate font-mono text-[10px]">
+                    {decoded.signingPubkey.slice(0, 24)}…
+                  </span>
                 </div>
               ) : null}
             </div>
@@ -701,19 +876,33 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
           <div className="flex flex-wrap items-end gap-3">
             {freeAmount ? (
               <div className="w-40 space-y-1">
-                <Label htmlFor="payamt" className="text-[10px] uppercase text-muted-foreground">
+                <Label htmlFor="payamt" className="text-muted-foreground text-[10px] uppercase">
                   {t('Montant (sats)')}
                 </Label>
-                <Input id="payamt" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} className="h-8 font-mono text-xs" />
+                <Input
+                  id="payamt"
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  className="h-8 font-mono text-xs"
+                />
               </div>
             ) : null}
             <div className="min-w-48 flex-1 space-y-1">
-              <Label htmlFor="paynote" className="text-[10px] uppercase text-muted-foreground">
+              <Label htmlFor="paynote" className="text-muted-foreground text-[10px] uppercase">
                 {t('Note au payeur (facultatif)')}
               </Label>
-              <Input id="paynote" value={payNote} onChange={(e) => setPayNote(e.target.value)} className="h-8 text-xs" />
+              <Input
+                id="paynote"
+                value={payNote}
+                onChange={(e) => setPayNote(e.target.value)}
+                className="h-8 text-xs"
+              />
             </div>
-            <Button size="sm" onClick={pay} disabled={!st.connected || !payInput.trim() || (freeAmount && !payAmount.trim())}>
+            <Button
+              size="sm"
+              onClick={pay}
+              disabled={!st.connected || !payInput.trim() || (freeAmount && !payAmount.trim())}
+            >
               {t('Demander et payer')}
             </Button>
           </div>
@@ -757,7 +946,9 @@ function JournalView({ st }: { st: LnLabStatus }) {
           <CardTitle className="text-sm">{t('Événements Lightning')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {st.events.length === 0 ? <p className="text-xs text-muted-foreground">{t('Aucun événement pour le moment.')}</p> : null}
+          {st.events.length === 0 ? (
+            <p className="text-muted-foreground text-xs">{t('Aucun événement pour le moment.')}</p>
+          ) : null}
           {st.events.map((e, i) => (
             <EventLine key={eventId(e, i)} e={e} />
           ))}
@@ -766,16 +957,29 @@ function JournalView({ st }: { st: LnLabStatus }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <ShieldCheck className="h-4 w-4 text-primary" /> {t('Diffusions on-chain')}
+            <ShieldCheck className="text-primary h-4 w-4" /> {t('Diffusions on-chain')}
           </CardTitle>
-          <CardDescription>{t('Transactions émises par les nœuds (financement, fermeture, sanctions).')}</CardDescription>
+          <CardDescription>
+            {t('Transactions émises par les nœuds (financement, fermeture, sanctions).')}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {st.broadcasts.length === 0 ? <p className="text-xs text-muted-foreground">{t('Aucune diffusion pour le moment.')}</p> : null}
+          {st.broadcasts.length === 0 ? (
+            <p className="text-muted-foreground text-xs">{t('Aucune diffusion pour le moment.')}</p>
+          ) : null}
           {st.broadcasts.map((b, i) => (
-            <div key={`${b.at}-${i}`} className="flex items-center gap-2 border-b border-border/40 py-1.5 text-xs last:border-0">
-              {b.ok ? <CheckCircle2 className="h-3 w-3 text-emerald-400" /> : <AlertTriangle className="h-3 w-3 text-red-400" />}
-              <span className="font-mono text-[10px] text-muted-foreground">{new Date(b.at).toLocaleTimeString()}</span>
+            <div
+              key={`${b.at}-${i}`}
+              className="border-border/40 flex items-center gap-2 border-b py-1.5 text-xs last:border-0"
+            >
+              {b.ok ? (
+                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+              ) : (
+                <AlertTriangle className="h-3 w-3 text-red-400" />
+              )}
+              <span className="text-muted-foreground font-mono text-[10px]">
+                {new Date(b.at).toLocaleTimeString()}
+              </span>
               <span className="flex-1 truncate font-mono text-[10px]">{b.detail}</span>
             </div>
           ))}
@@ -784,9 +988,13 @@ function JournalView({ st }: { st: LnLabStatus }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">{t('Journal LDK')}</CardTitle>
-          <CardDescription>{t('Sorties brutes des nœuds (niveau LDK) : A en émeraude, B en violet, messages système en bleu.')}</CardDescription>
+          <CardDescription>
+            {t(
+              'Sorties brutes des nœuds (niveau LDK) : A en émeraude, B en violet, messages système en bleu.',
+            )}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="max-h-72 space-y-0.5 overflow-y-auto rounded-md bg-muted/30 p-3 font-mono text-[10px] leading-relaxed scrollbar-thin">
+        <CardContent className="bg-muted/30 max-h-72 scrollbar-thin space-y-0.5 overflow-y-auto rounded-md p-3 font-mono text-[10px] leading-relaxed">
           {st.logs.slice(0, 80).map((l, i) => (
             <p key={`${i}-${l.line.slice(0, 12)}`} className="flex gap-2">
               <span
@@ -801,7 +1009,7 @@ function JournalView({ st }: { st: LnLabStatus }) {
               >
                 {l.node}
               </span>
-              <span className="min-w-0 break-all text-muted-foreground">{l.line}</span>
+              <span className="text-muted-foreground min-w-0 break-all">{l.line}</span>
             </p>
           ))}
         </CardContent>
@@ -853,7 +1061,7 @@ export function LightningModule() {
               <Switch checked={active && onSameNetwork} onCheckedChange={toggle} />
               <div>
                 <p className="text-sm font-medium">{t('Activer le laboratoire')}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {t(
                     'Démarre deux nœuds Lightning dans ce navigateur ({net}). Désactivé, aucune ressource n’est consommée.',
                     { net: NETWORKS[lnNet].label },
@@ -863,10 +1071,41 @@ export function LightningModule() {
             </div>
             <div className="flex items-center gap-2">
               {st.phase === 'ready' && onSameNetwork ? (
+<<<<<<< HEAD
                 <Badge variant="outline" className={cn('gap-1 text-[9px]', st.connected ? 'border-emerald-500/40 text-emerald-400' : 'border-amber-500/40 text-amber-400')}>
                   {st.connected ? <Link2 className="h-2.5 w-2.5" /> : <Unplug className="h-2.5 w-2.5" />}
                   {st.connected ? t('A connecté à B') : t('pairs déconnectés')}
                 </Badge>
+=======
+                <>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      'gap-1 text-[9px]',
+                      st.connected
+                        ? 'border-emerald-500/40 text-emerald-400'
+                        : 'border-amber-500/40 text-amber-400',
+                    )}
+                  >
+                    {st.connected ? (
+                      <Link2 className="h-2.5 w-2.5" />
+                    ) : (
+                      <Unplug className="h-2.5 w-2.5" />
+                    )}
+                    {st.connected ? t('A connecté à B') : t('pairs déconnectés')}
+                  </Badge>
+                  {!st.connected ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[10px]"
+                      onClick={() => lnLab.connectPeers()}
+                    >
+                      {t('Reconnecter')}
+                    </Button>
+                  ) : null}
+                </>
+>>>>>>> 92c54ba (style: prettier-format repo)
               ) : null}
             </div>
           </CardContent>
@@ -900,8 +1139,8 @@ export function LightningModule() {
           </>
         ) : (
           <Card>
-            <CardContent className="flex items-center gap-3 py-8 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <CardContent className="text-muted-foreground flex items-center gap-3 py-8 text-sm">
+              <Loader2 className="text-primary h-4 w-4 animate-spin" />
               {t('Chargement du module WASM et synchronisation initiale…')}
             </CardContent>
           </Card>
@@ -931,8 +1170,10 @@ function ResetCard({ network }: { network: LnNetId }) {
           <p className="flex items-center gap-2 text-sm font-medium">
             <RotateCcw className="h-4 w-4 text-red-400" /> {t('Réinitialiser le laboratoire')}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {t('Efface les graines, canaux et données locales des deux nœuds sur ce réseau. Les fonds on-chain du canal seront perdus si des canaux sont ouverts.')}
+          <p className="text-muted-foreground text-xs">
+            {t(
+              'Efface les graines, canaux et données locales des deux nœuds sur ce réseau. Les fonds on-chain du canal seront perdus si des canaux sont ouverts.',
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -945,17 +1186,30 @@ function ResetCard({ network }: { network: LnNetId }) {
                 onClick={async () => {
                   setConfirming(false);
                   await lnLab.reset(network);
-                  toast({ title: t('Laboratoire réinitialisé'), description: t('Toutes les données Lightning locales ont été supprimées.') });
+                  toast({
+                    title: t('Laboratoire réinitialisé'),
+                    description: t('Toutes les données Lightning locales ont été supprimées.'),
+                  });
                 }}
               >
                 {t('Confirmer la suppression')}
               </Button>
-              <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setConfirming(false)}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px]"
+                onClick={() => setConfirming(false)}
+              >
                 {t('Annuler')}
               </Button>
             </>
           ) : (
-            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setConfirming(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[10px]"
+              onClick={() => setConfirming(true)}
+            >
               {t('Réinitialiser…')}
             </Button>
           )}

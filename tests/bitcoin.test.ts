@@ -32,8 +32,7 @@ describe('1. Génération de portefeuilles (3 types)', () => {
   for (const t of ['legacy', 'segwit', 'taproot'] as const) {
     it(`dérive une adresse ${TYPE_INFO[t].label} (${TYPE_INFO[t].tech}) valide`, () => {
       const w = wallets[t];
-      const expectedPrefix =
-        t === 'legacy' ? /^[mn2]/ : t === 'segwit' ? /^tb1q/ : /^tb1p/;
+      const expectedPrefix = t === 'legacy' ? /^[mn2]/ : t === 'segwit' ? /^tb1q/ : /^tb1p/;
       expect(w.address).toMatch(expectedPrefix);
       expect(w.mnemonic!.split(' ')).toHaveLength(24);
       expect(w.wif[0]).toMatch(/^[cKLT9]/);

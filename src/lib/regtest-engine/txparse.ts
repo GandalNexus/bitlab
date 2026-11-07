@@ -45,7 +45,11 @@ class Reader {
 
   u32le(): number {
     this.need(4);
-    const v = this.buf[this.pos] | (this.buf[this.pos + 1] << 8) | (this.buf[this.pos + 2] << 16) | (this.buf[this.pos + 3] << 24);
+    const v =
+      this.buf[this.pos] |
+      (this.buf[this.pos + 1] << 8) |
+      (this.buf[this.pos + 2] << 16) |
+      (this.buf[this.pos + 3] << 24);
     this.pos += 4;
     return v >>> 0;
   }
@@ -84,7 +88,8 @@ class Reader {
 export function writeVarint(n: number): number[] {
   if (n < 0xfd) return [n];
   if (n <= 0xffff) return [0xfd, n & 0xff, (n >>> 8) & 0xff];
-  if (n <= 0xffff_ffff) return [0xfe, n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff];
+  if (n <= 0xffff_ffff)
+    return [0xfe, n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff];
   throw new TxParseError('varint 8 octets non pris en charge');
 }
 
@@ -113,7 +118,8 @@ export function parseTx(raw: Uint8Array): ParsedTx {
 
 export function parseTxSlice(buf: Uint8Array, offset: number): { tx: ParsedTx; end: number } {
   const raw = buf.slice(offset);
-  if (raw.length < 10 || raw.length > MAX_TX_BYTES) throw new TxParseError(`taille de transaction absurde (${raw.length})`);
+  if (raw.length < 10 || raw.length > MAX_TX_BYTES)
+    throw new TxParseError(`taille de transaction absurde (${raw.length})`);
   const r = new Reader(raw);
   const version = r.u32le();
 
@@ -148,7 +154,8 @@ export function parseTxSlice(buf: Uint8Array, offset: number): { tx: ParsedTx; e
   const outputs: ParsedTxOut[] = [];
   for (let i = 0; i < nOut; i++) {
     const valueSats = r.u64le();
-    if (valueSats > 21_000_000 * 100_000_000) throw new TxParseError('valeur de sortie excédant la masse monétaire');
+    if (valueSats > 21_000_000 * 100_000_000)
+      throw new TxParseError('valeur de sortie excédant la masse monétaire');
     const scriptLen = r.varint(1_000_000);
     outputs.push({ valueSats, script: r.bytes(scriptLen) });
   }
@@ -225,7 +232,12 @@ export function serializeLegacy(parts: {
 
 export function serializeTx(tx: ParsedTx): Uint8Array {
   if (!tx.isSegwit) {
-    return serializeLegacy({ version: tx.version, inputs: tx.inputs, outputs: tx.outputs, locktime: tx.locktime });
+    return serializeLegacy({
+      version: tx.version,
+      inputs: tx.inputs,
+      outputs: tx.outputs,
+      locktime: tx.locktime,
+    });
   }
   const chunks: number[] = [];
   chunks.push(...u32leBytes(tx.version >>> 0));
