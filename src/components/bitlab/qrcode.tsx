@@ -4,7 +4,15 @@ import { useEffect, useState } from 'react';
 import QRCodeLib from 'qrcode';
 import { tSync } from '@/lib/i18n';
 
-export function QRCode({ value, size = 140, caption }: { value: string; size?: number; caption?: string }) {
+export function QRCode({
+  value,
+  size = 140,
+  caption,
+}: {
+  value: string;
+  size?: number;
+  caption?: string;
+}) {
   const [dataUrl, setDataUrl] = useState<string>('');
 
   useEffect(() => {
@@ -29,11 +37,25 @@ export function QRCode({ value, size = 140, caption }: { value: string; size?: n
   return (
     <figure className="flex flex-col items-center gap-1.5">
       {dataUrl ? (
-        <img src={dataUrl} alt={tSync('Code QR : {v}', { v: caption ?? value.slice(0, 40) })} width={size} height={size} className="rounded-md" />
+        <img
+          src={dataUrl}
+          alt={tSync('Code QR : {v}', { v: caption ?? value.slice(0, 40) })}
+          width={size}
+          height={size}
+          className="rounded-md"
+        />
       ) : (
-        <div style={{ width: size, height: size }} className="animate-pulse rounded-md bg-muted" aria-label={tSync('Génération du code QR…')} />
+        <div
+          style={{ width: size, height: size }}
+          className="bg-muted animate-pulse rounded-md"
+          aria-label={tSync('Génération du code QR…')}
+        />
       )}
-      {caption ? <figcaption className="max-w-[180px] truncate font-mono text-[10px] text-muted-foreground">{caption}</figcaption> : null}
+      {caption ? (
+        <figcaption className="text-muted-foreground max-w-[180px] truncate font-mono text-[10px]">
+          {caption}
+        </figcaption>
+      ) : null}
     </figure>
   );
 }

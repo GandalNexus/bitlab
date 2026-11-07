@@ -133,7 +133,18 @@ function concatBytes(...chunks: Uint8Array[]): Uint8Array {
   return out;
 }
 
+<<<<<<< HEAD
 function buildCoinbaseTx(height: number, scriptSig: Uint8Array, valueSats: number, payoutScript: Uint8Array): string {
+=======
+/** Transaction coinbase canonique : version 2, entrée unique (scriptSig
+ * BIP 34 + tag), sortie unique = subvention + frais, locktime 0. */
+function buildCoinbaseTx(
+  height: number,
+  scriptSig: Uint8Array,
+  valueSats: number,
+  payoutScript: Uint8Array,
+): string {
+>>>>>>> 92c54ba (style: prettier-format repo)
   const chunks: number[] = [];
   chunks.push(...u32leBytes(2));
   chunks.push(0x01);
@@ -242,6 +253,7 @@ export class RegtestChain {
     return this.blocks.get(hash.toLowerCase())?.raw ?? null;
   }
 
+<<<<<<< HEAD
   consensusBlockByHash(hash: string): string | null {
     const rec = this.blocks.get(hash.toLowerCase());
     if (!rec || rec.raw === null) return null;
@@ -259,6 +271,14 @@ export class RegtestChain {
 
   recentBlocks(n = 10): { id: string; height: number; timestamp: number; tx_count: number; size: number }[] {
     const out: { id: string; height: number; timestamp: number; tx_count: number; size: number }[] = [];
+=======
+  /** Résumés des `n` derniers blocs (plus récent d'abord — forme Esplora). */
+  recentBlocks(
+    n = 10,
+  ): { id: string; height: number; timestamp: number; tx_count: number; size: number }[] {
+    const out: { id: string; height: number; timestamp: number; tx_count: number; size: number }[] =
+      [];
+>>>>>>> 92c54ba (style: prettier-format repo)
     for (let h = this.tipHeight(); h >= 1 && out.length < n; h--) {
       const b = this.blockAt(h);
       if (!b) continue;
@@ -469,7 +489,18 @@ export class RegtestChain {
     return { matureSats: mature, immatureSats: immature };
   }
 
+<<<<<<< HEAD
   faucetSend(address: string, sats = FAUCET_DEFAULT_SATS): {
+=======
+  /**
+   * Distribue `sats` à `address` depuis le pool faucet (vraie transaction
+   * P2WPKH signée côté serveur) puis mine 1 bloc pour la confirmer.
+   */
+  faucetSend(
+    address: string,
+    sats = FAUCET_DEFAULT_SATS,
+  ): {
+>>>>>>> 92c54ba (style: prettier-format repo)
     txid: string;
     feeSats: number;
     blockHash: string;
@@ -479,7 +510,9 @@ export class RegtestChain {
     const amount = Math.floor(sats);
     if (!Number.isInteger(amount) || amount <= 0) throw new ChainError('montant invalide');
     if (amount > FAUCET_MAX_SATS) {
-      throw new ChainError(`montant plafonné à ${Math.floor(FAUCET_MAX_SATS / 1e8)} BTC de test par distribution`);
+      throw new ChainError(
+        `montant plafonné à ${Math.floor(FAUCET_MAX_SATS / 1e8)} BTC de test par distribution`,
+      );
     }
     const destScript = addressToScriptBcrt(address);
     const spendHeight = this.tipHeight() + 1;
@@ -501,14 +534,20 @@ export class RegtestChain {
       totalIn += c.value;
     }
     if (totalIn < amount + feeEstimate) {
-      throw new ChainError('pool faucet insuffisant — minez des blocs supplémentaires (onglet Mineur)');
+      throw new ChainError(
+        'pool faucet insuffisant — minez des blocs supplémentaires (onglet Mineur)',
+      );
     }
 
     const faucetScript = hex.decode(this.faucetScriptHex);
     const tx = new Transaction();
     for (const p of picked) {
       const sep = p.key.lastIndexOf(':');
-      tx.addInput({ txid: p.key.slice(0, sep), index: Number(p.key.slice(sep + 1)), witnessUtxo: { script: faucetScript, amount: BigInt(p.value) } });
+      tx.addInput({
+        txid: p.key.slice(0, sep),
+        index: Number(p.key.slice(sep + 1)),
+        witnessUtxo: { script: faucetScript, amount: BigInt(p.value) },
+      });
     }
     tx.addOutput({ script: destScript, amount: BigInt(amount) });
     const change = totalIn - amount - feeEstimate;
@@ -534,14 +573,17 @@ export class RegtestChain {
     try {
       parsed = parseTx(hex.decode(clean));
     } catch (err) {
-      if (err instanceof TxParseError) throw new ChainError(`transaction illisible : ${err.message}`);
+      if (err instanceof TxParseError)
+        throw new ChainError(`transaction illisible : ${err.message}`);
       throw err;
     }
-    if (parsed.isCoinbase) throw new ChainError('une coinbase ne peut pas être diffusée comme transaction');
+    if (parsed.isCoinbase)
+      throw new ChainError('une coinbase ne peut pas être diffusée comme transaction');
     if (this.txs.has(parsed.txid) || this.mempool.has(parsed.txid)) {
       throw new ChainError('transaction déjà connue');
     }
-    if (parsed.weight > MAX_STD_TX_WEIGHT) throw new ChainError(`poids ${parsed.weight} > norme standard ${MAX_STD_TX_WEIGHT}`);
+    if (parsed.weight > MAX_STD_TX_WEIGHT)
+      throw new ChainError(`poids ${parsed.weight} > norme standard ${MAX_STD_TX_WEIGHT}`);
 
     const feeSats = this.validateTxInputs(parsed, this.tipHeight() + 1, null, 'mempool');
 
@@ -620,7 +662,9 @@ export class RegtestChain {
       if (spentInBlock?.has(op)) throw new ChainError(`double-dépense intra-bloc (entrée ${i})`);
       if (utxo.isCoinbase && spendHeight - utxo.height < COINBASE_MATURITY) {
         const wait = COINBASE_MATURITY - (spendHeight - utxo.height);
-        throw new ChainError(`coinbase immature — encore ${Math.max(1, wait)} bloc(s) avant dépense`);
+        throw new ChainError(
+          `coinbase immature — encore ${Math.max(1, wait)} bloc(s) avant dépense`,
+        );
       }
       prevouts.push({ script: hex.decode(utxo.script), valueSats: utxo.valueSats });
       totalIn += utxo.valueSats;
@@ -628,13 +672,16 @@ export class RegtestChain {
     }
     for (let i = 0; i < tx.inputs.length; i++) {
       const verdict = verifyInput(tx, i, prevouts);
-      if (!verdict.ok) throw new ChainError(`entrée ${i} refusée : ${verdict.reason ?? 'signature invalide'}`);
+      if (!verdict.ok)
+        throw new ChainError(`entrée ${i} refusée : ${verdict.reason ?? 'signature invalide'}`);
     }
     const totalOut = tx.outputs.reduce((s, o) => s + o.valueSats, 0);
-    if (totalOut > totalIn) throw new ChainError(`sorties (${totalOut}) supérieures aux entrées (${totalIn})`);
+    if (totalOut > totalIn)
+      throw new ChainError(`sorties (${totalOut}) supérieures aux entrées (${totalIn})`);
     const fee = totalIn - totalOut;
     const minFee = minRelayFee(tx.weight);
-    if (fee < minFee) throw new ChainError(`frais insuffisants (${fee} < ${minFee} sats — min-relay 1 sat/vB)`);
+    if (fee < minFee)
+      throw new ChainError(`frais insuffisants (${fee} < ${minFee} sats — min-relay 1 sat/vB)`);
     return fee;
   }
 
@@ -692,7 +739,8 @@ export class RegtestChain {
       view.setUint32(76, nonce, true);
       if (meetsTarget(sha256d(header), target)) break;
     }
-    if (nonce >= 0xffff_ffff) throw new ChainError('aucun nonce trouvé (impossible à difficulté 1)');
+    if (nonce >= 0xffff_ffff)
+      throw new ChainError('aucun nonce trouvé (impossible à difficulté 1)');
     const headerHex = hex.encode(header);
     const hash = hex.encode(sha256d(header).reverse());
 
@@ -701,7 +749,8 @@ export class RegtestChain {
 
   connectRawBlock(blockHex: string): MinedBlock {
     const bytes = hex.decode(blockHex.trim().toLowerCase());
-    if (bytes.length < 80 + 60) throw new ChainError('bloc trop court (en-tête + coinbase attendus)');
+    if (bytes.length < 80 + 60)
+      throw new ChainError('bloc trop court (en-tête + coinbase attendus)');
     if (bytes.length > 4_000_000) throw new ChainError('bloc trop volumineux');
 
     const txHexes: string[] = [];
@@ -735,7 +784,8 @@ export class RegtestChain {
       throw new ChainError('hash précédent ≠ tip courant (branche orpheline refusée)');
     }
     const bits = view.getUint32(72, true);
-    if (bits !== REGTEST_BITS) throw new ChainError(`nBits ${bits.toString(16)} ≠ difficulté regtest`);
+    if (bits !== REGTEST_BITS)
+      throw new ChainError(`nBits ${bits.toString(16)} ≠ difficulté regtest`);
     if (!meetsTarget(sha256d(header), compactBitsToTarget(bits))) {
       throw new ChainError('hash au-dessus de la cible — PoW insuffisante');
     }
@@ -750,14 +800,16 @@ export class RegtestChain {
       if (!prev) throw new ChainError('état interne incohérent : historique de blocs troué');
       lastTimes.push(prev.time);
     }
-    if (time <= median(lastTimes)) throw new ChainError('horodatage ≤ médiane MTP des 11 derniers blocs');
+    if (time <= median(lastTimes))
+      throw new ChainError('horodatage ≤ médiane MTP des 11 derniers blocs');
 
     if (txHexes.length === 0) throw new ChainError('bloc sans transaction');
     const parsedTxs: ParsedTx[] = txHexes.map((h) => {
       try {
         return parseTx(hex.decode(h));
       } catch (err) {
-        if (err instanceof TxParseError) throw new ChainError(`bloc contient une transaction illisible : ${err.message}`);
+        if (err instanceof TxParseError)
+          throw new ChainError(`bloc contient une transaction illisible : ${err.message}`);
         throw err;
       }
     });
@@ -772,16 +824,19 @@ export class RegtestChain {
 
     const heightPush = bip34Script(height);
     const scriptSig = parsedTxs[0].inputs[0].scriptSig;
-    if (scriptSig.length < heightPush.length) throw new ChainError('scriptSig coinbase trop court (BIP 34)');
+    if (scriptSig.length < heightPush.length)
+      throw new ChainError('scriptSig coinbase trop court (BIP 34)');
     for (let i = 0; i < heightPush.length; i++) {
-      if (scriptSig[i] !== heightPush[i]) throw new ChainError('préfixe BIP 34 absent de la coinbase');
+      if (scriptSig[i] !== heightPush[i])
+        throw new ChainError('préfixe BIP 34 absent de la coinbase');
     }
 
     const spentInBlock = new Set<string>();
     const evict = new Set<string>();
     const fees: number[] = [0];
     for (let i = 1; i < parsedTxs.length; i++) {
-      if (parsedTxs[i].weight > MAX_STD_TX_WEIGHT) throw new ChainError(`tx ${i} : poids hors norme`);
+      if (parsedTxs[i].weight > MAX_STD_TX_WEIGHT)
+        throw new ChainError(`tx ${i} : poids hors norme`);
       fees.push(this.validateTxInputs(parsedTxs[i], height, spentInBlock, 'block', evict));
     }
     let feesTotal = 0;
@@ -791,7 +846,9 @@ export class RegtestChain {
     for (const out of parsedTxs[0].outputs) payout += out.valueSats;
     const subsidy = blockSubsidy(height);
     if (payout > subsidy + feesTotal) {
-      throw new ChainError(`coinbase excessive (${payout} > subvention ${subsidy} + frais ${feesTotal})`);
+      throw new ChainError(
+        `coinbase excessive (${payout} > subvention ${subsidy} + frais ${feesTotal})`,
+      );
     }
 
     this.blocks.set(hash, {
@@ -820,7 +877,12 @@ export class RegtestChain {
       for (let v = 0; v < tx.outputs.length; v++) {
         const out = tx.outputs[v];
         const scriptHex = hex.encode(out.script);
-        this.utxos.set(`${tx.txid}:${v}`, { valueSats: out.valueSats, script: scriptHex, height, isCoinbase: i === 0 });
+        this.utxos.set(`${tx.txid}:${v}`, {
+          valueSats: out.valueSats,
+          script: scriptHex,
+          height,
+          isCoinbase: i === 0,
+        });
         let set = this.scriptUtxos.get(scriptHex);
         if (!set) {
           set = new Set();
@@ -901,7 +963,11 @@ export class RegtestChain {
       subsidyNextSats: blockSubsidy(height + 1),
       halvingInBlocks: 150 - (height % 150),
       mempoolCount: this.mempool.size,
-      faucet: { address: this.faucetAddress(), matureSats: bal.matureSats, immatureSats: bal.immatureSats },
+      faucet: {
+        address: this.faucetAddress(),
+        matureSats: bal.matureSats,
+        immatureSats: bal.immatureSats,
+      },
       genesisHash: REGTEST_GENESIS_HASH,
     };
   }
@@ -918,14 +984,20 @@ export class RegtestChain {
   }
 
   private hydrate(data: SerializedChain): void {
-    if (data.version !== 1) throw new Error(`sérialisation inconnue v${String((data as { version?: number }).version)}`);
+    if (data.version !== 1)
+      throw new Error(`sérialisation inconnue v${String((data as { version?: number }).version)}`);
     this.faucetPrivHex = data.faucet.privHex;
     this.faucetScriptHex = data.faucet.scriptHex;
     for (const b of data.blocks) this.blocks.set(b.hash, b);
     this.heightHash = data.blocks.map((b) => b.hash);
     for (const t of data.txs) this.txs.set(t.txid, t);
     for (const u of data.utxos) {
-      this.utxos.set(u.key, { valueSats: u.valueSats, script: u.script, height: u.height, isCoinbase: u.isCoinbase });
+      this.utxos.set(u.key, {
+        valueSats: u.valueSats,
+        script: u.script,
+        height: u.height,
+        isCoinbase: u.isCoinbase,
+      });
       let set = this.scriptUtxos.get(u.script);
       if (!set) {
         set = new Set();

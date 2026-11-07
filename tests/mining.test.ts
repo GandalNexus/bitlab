@@ -108,7 +108,9 @@ describe('buildCoinbase', () => {
   it('produit une tx décodable : version 2, prevout nul, sortie 50 tBTC', () => {
     const decoded = decodeRawTx(cb.txHex);
     expect(decoded.version).toBe(2);
-    expect(decoded.inputs[0].txid).toBe('0000000000000000000000000000000000000000000000000000000000000000');
+    expect(decoded.inputs[0].txid).toBe(
+      '0000000000000000000000000000000000000000000000000000000000000000',
+    );
     expect(decoded.inputs[0].vout).toBe(0xffffffff);
     expect(decoded.outputs[0].valueSats).toBe(5_000_000_000);
     expect(decoded.outputs[0].scriptHex).toBe(hex.encode(script));
@@ -215,6 +217,8 @@ describe('moteur JS de secours (public/miner/js-engine.js)', () => {
     expect(mineBatchJS(header76, target, GENESIS_NONCE, 1)).toBe(GENESIS_NONCE);
     expect(mineBatchJS(header76, target, 0, 500_000)).toBe(-1);
     const digest = sha256dJS(hex.decode(GENESIS_HEADER));
-    expect(hex.encode(new Uint8Array(digest))).toBe(hex.encode(sha256d(hex.decode(GENESIS_HEADER))));
+    expect(hex.encode(new Uint8Array(digest))).toBe(
+      hex.encode(sha256d(hex.decode(GENESIS_HEADER))),
+    );
   });
 });

@@ -2,20 +2,18 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  AlertTriangle,
-  ExternalLink,
-  Hourglass,
-  Info,
-  Pickaxe,
-  Square,
-  Zap,
-} from 'lucide-react';
+import { AlertTriangle, ExternalLink, Hourglass, Info, Pickaxe, Square, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Copyable } from './bits';
 import { useLabStore } from '@/lib/store';
@@ -69,14 +67,19 @@ export function MiningModule() {
 
   const cfg = NETWORKS[net];
   const mineable = cfg.mineable !== 'none';
-  const busy = status.phase === 'mining' || status.phase === 'submitting' || status.phase === 'watching';
+  const busy =
+    status.phase === 'mining' || status.phase === 'submitting' || status.phase === 'watching';
 
   const netWallets = useMemo(
     () => wallets.filter((w) => (w.network ?? DEFAULT_NET) === net),
     [wallets, net],
   );
   const payout = useMemo(
-    () => netWallets.find((w) => w.id === payoutId) ?? netWallets.find((w) => w.id === activeWalletId) ?? netWallets[0] ?? null,
+    () =>
+      netWallets.find((w) => w.id === payoutId) ??
+      netWallets.find((w) => w.id === activeWalletId) ??
+      netWallets[0] ??
+      null,
     [netWallets, payoutId, activeWalletId],
   );
 
@@ -84,7 +87,10 @@ export function MiningModule() {
     () => (Object.keys(NETWORKS) as NetId[]).filter((n) => NETWORKS[n].mineable !== 'none'),
     [],
   );
-  const blockedNets = useMemo(() => (Object.keys(NETWORKS) as NetId[]).filter((n) => NETWORKS[n].mineable === 'none'), []);
+  const blockedNets = useMemo(
+    () => (Object.keys(NETWORKS) as NetId[]).filter((n) => NETWORKS[n].mineable === 'none'),
+    [],
+  );
 
   const pickNetwork = (next: NetId) => {
     if (next === net) return;
@@ -119,10 +125,13 @@ export function MiningModule() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Pickaxe className="h-4 w-4 text-primary" /> {t('Mineur — PoW réel dans votre navigateur')}
+            <Pickaxe className="text-primary h-4 w-4" />{' '}
+            {t('Mineur — PoW réel dans votre navigateur')}
           </CardTitle>
           <CardDescription>
-            {t('Choisissez le réseau à miner, le portefeuille qui recevra les récompenses, puis démarrez : le hachage SHA-256d est réel, seule la difficulté est jouable.')}
+            {t(
+              'Choisissez le réseau à miner, le portefeuille qui recevra les récompenses, puis démarrez : le hachage SHA-256d est réel, seule la difficulté est jouable.',
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -140,17 +149,25 @@ export function MiningModule() {
                     aria-pressed={active}
                     className={cn(
                       'rounded-md border px-3 py-2.5 text-left transition-colors',
-                      active ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40',
+                      active
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/40',
                       busy && !active && 'pointer-events-none opacity-50',
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-semibold">{c.label}</span>
-                      {active ? <Badge variant="outline" className="text-[10px]">{t('actif')}</Badge> : null}
+                      {active ? (
+                        <Badge variant="outline" className="text-[10px]">
+                          {t('actif')}
+                        </Badge>
+                      ) : null}
                     </div>
-                    <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                    <p className="text-muted-foreground mt-1 text-[11px] leading-snug">
                       {c.mineable === 'bip94'
-                        ? t('Testnet4 — fenêtres BIP 94 à difficulté minimale, diffusion P2P aux nœuds publics.')
+                        ? t(
+                            'Testnet4 — fenêtres BIP 94 à difficulté minimale, diffusion P2P aux nœuds publics.',
+                          )
                         : t('Regtest — difficulté 1 en continu sur la chaîne embarquée de BitLab.')}
                     </p>
                   </button>
@@ -162,7 +179,7 @@ export function MiningModule() {
                 <span
                   key={n}
                   title={t(MINING_BLOCKED[n] ?? '')}
-                  className="flex cursor-help items-center gap-1.5 rounded-md border border-border bg-muted/30 px-2 py-1 text-[11px] text-muted-foreground"
+                  className="border-border bg-muted/30 text-muted-foreground flex cursor-help items-center gap-1.5 rounded-md border px-2 py-1 text-[11px]"
                 >
                   <AlertTriangle className="h-3 w-3" /> {NETWORKS[n].label}
                 </span>
@@ -185,7 +202,9 @@ export function MiningModule() {
                         }}
                         disabled={busy}
                       >
-                        <SelectTrigger className="h-9 font-mono text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-9 font-mono text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           {netWallets.map((w) => (
                             <SelectItem key={w.id} value={w.id} className="font-mono text-xs">
@@ -195,13 +214,18 @@ export function MiningModule() {
                         </SelectContent>
                       </Select>
                     </div>
-                    {payout ? <Copyable label={t('Adresse récompensée')} value={payout.address} /> : null}
+                    {payout ? (
+                      <Copyable label={t('Adresse récompensée')} value={payout.address} />
+                    ) : null}
                   </div>
                 ) : (
                   <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>
-                      {t('Aucun portefeuille {net} : créez-en un dans le module Portefeuille — il recevra la récompense de chaque bloc trouvé.', { net: cfg.label })}
+                      {t(
+                        'Aucun portefeuille {net} : créez-en un dans le module Portefeuille — il recevra la récompense de chaque bloc trouvé.',
+                        { net: cfg.label },
+                      )}
                     </span>
                   </div>
                 )}
@@ -232,7 +256,7 @@ export function MiningModule() {
                 ) : null}
               </div>
               {nextWindowLabel && status.phase === 'watching' ? (
-                <p className="text-xs text-muted-foreground">{nextWindowLabel}</p>
+                <p className="text-muted-foreground text-xs">{nextWindowLabel}</p>
               ) : null}
               {status.lastError ? (
                 <p className="text-xs text-red-600 dark:text-red-400">{status.lastError}</p>
@@ -242,16 +266,30 @@ export function MiningModule() {
                 <Button size="sm" disabled={!payout || busy} onClick={start} className="gap-1.5">
                   <Pickaxe className="h-3.5 w-3.5" /> {t('Démarrer le mineur')}
                 </Button>
-                <Button size="sm" variant="outline" disabled={!busy} onClick={() => miner.stop()} className="gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!busy}
+                  onClick={() => miner.stop()}
+                  className="gap-1.5"
+                >
                   <Square className="h-3.5 w-3.5" /> {t('Arrêter')}
                 </Button>
                 <div className="space-y-1">
                   <Label className="text-xs">{t('Threads')}</Label>
-                  <Select value={String(threads)} onValueChange={(v) => setThreads(Number(v))} disabled={busy}>
-                    <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                  <Select
+                    value={String(threads)}
+                    onValueChange={(v) => setThreads(Number(v))}
+                    disabled={busy}
+                  >
+                    <SelectTrigger className="h-8 w-24">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {[1, 2, 4, 6, 8].map((n) => (
-                        <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                        <SelectItem key={n} value={String(n)}>
+                          {n}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -271,27 +309,41 @@ export function MiningModule() {
 
               {status.blocks.length > 0 ? (
                 <div className="space-y-1.5">
-                  <div className="text-[13px] font-medium text-muted-foreground">
-                    {t('Blocs trouvés — récompense mûre après {n} confirmations :', { n: COINBASE_MATURITY })}
+                  <div className="text-muted-foreground text-[13px] font-medium">
+                    {t('Blocs trouvés — récompense mûre après {n} confirmations :', {
+                      n: COINBASE_MATURITY,
+                    })}
                   </div>
                   {status.blocks.map((b) => {
                     const inner = (
                       <>
                         <span className="truncate font-mono">{b.hash}</span>
-                        <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
+                        <span className="text-muted-foreground flex shrink-0 items-center gap-2">
                           {b.confirmations < COINBASE_MATURITY ? (
-                            <span>{t('{c}/{n} conf.', { c: b.confirmations, n: COINBASE_MATURITY })}</span>
+                            <span>
+                              {t('{c}/{n} conf.', { c: b.confirmations, n: COINBASE_MATURITY })}
+                            </span>
                           ) : (
-                            <span className="text-emerald-600 dark:text-emerald-400">{t('mûr')}</span>
+                            <span className="text-emerald-600 dark:text-emerald-400">
+                              {t('mûr')}
+                            </span>
                           )}
-                          {cfg.explorer ? <ExternalLink className="h-3 w-3 group-hover:text-primary" /> : null}
+                          {cfg.explorer ? (
+                            <ExternalLink className="group-hover:text-primary h-3 w-3" />
+                          ) : null}
                         </span>
                       </>
                     );
                     const cls =
                       'group flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-xs transition-colors hover:border-primary/50';
                     return cfg.explorer ? (
-                      <a key={b.hash} href={`${cfg.explorer}/block/${b.hash}`} target="_blank" rel="noreferrer" className={cls}>
+                      <a
+                        key={b.hash}
+                        href={`${cfg.explorer}/block/${b.hash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={cls}
+                      >
                         {inner}
                       </a>
                     ) : (
@@ -303,17 +355,26 @@ export function MiningModule() {
                 </div>
               ) : null}
 
+<<<<<<< HEAD
               {net === 'regtest' && netWallets.length > 0 ? <MaturationPanel wallets={netWallets} /> : null}
+=======
+              {/* Maturation des récompenses — regtest uniquement (champ isCoinbase du moteur embarqué) */}
+              {net === 'regtest' && netWallets.length > 0 ? (
+                <MaturationPanel wallets={netWallets} />
+              ) : null}
+>>>>>>> 92c54ba (style: prettier-format repo)
 
-              <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-[11px] leading-snug text-muted-foreground">
+              <div className="border-border bg-muted/30 text-muted-foreground flex items-start gap-2 rounded-md border px-3 py-2 text-[11px] leading-snug">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  {t('Pédagogie : le mineur construit un bloc vide (coinbase seule) vers votre adresse et balaie les nonces en SHA-256d — exactement le travail des mineurs Bitcoin, en version jouable. Les threads sont bornés pour rester doux avec votre machine.')}
+                  {t(
+                    'Pédagogie : le mineur construit un bloc vide (coinbase seule) vers votre adresse et balaie les nonces en SHA-256d — exactement le travail des mineurs Bitcoin, en version jouable. Les threads sont bornés pour rester doux avec votre machine.',
+                  )}
                 </span>
               </div>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground">{t(MINING_BLOCKED[net] ?? '')}</p>
+            <p className="text-muted-foreground text-xs">{t(MINING_BLOCKED[net] ?? '')}</p>
           )}
         </CardContent>
       </Card>
@@ -373,7 +434,11 @@ function MaturationPanel({ wallets }: { wallets: LabWallet[] }) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ blocks: k }),
       });
-      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; detail?: string; tip?: { height: number } };
+      const body = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        detail?: string;
+        tip?: { height: number };
+      };
       if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
       addLog({
         kind: 'op',
@@ -402,22 +467,41 @@ function MaturationPanel({ wallets }: { wallets: LabWallet[] }) {
       <div className="flex items-center gap-1.5 text-[13px] font-medium text-amber-600 dark:text-amber-400">
         <Hourglass className="h-3.5 w-3.5" /> {t('Maturation des récompenses')}
       </div>
-      <p className="text-[11px] leading-snug text-muted-foreground">
-        {t('Une récompense de minage attend {n} blocs avant d’être dépensable (consensus Bitcoin). Les blocs minés ici alimentent le pool du faucet — vos récompenses déjà en chaîne mûrissent avec eux.', { n: COINBASE_MATURITY })}
+      <p className="text-muted-foreground text-[11px] leading-snug">
+        {t(
+          'Une récompense de minage attend {n} blocs avant d’être dépensable (consensus Bitcoin). Les blocs minés ici alimentent le pool du faucet — vos récompenses déjà en chaîne mûrissent avec eux.',
+          { n: COINBASE_MATURITY },
+        )}
       </p>
       <div className="space-y-1">
         {data.rows.map((r) => (
           <div key={r.id} className="flex items-center justify-between gap-2 text-[11px]">
-            <span className="truncate font-mono text-foreground/80">{r.label}</span>
-            <span className="shrink-0 font-mono text-muted-foreground">
+            <span className="text-foreground/80 truncate font-mono">{r.label}</span>
+            <span className="text-muted-foreground shrink-0 font-mono">
               {fmtInt(r.sats)} sats · {t('mûr dans {k} bloc(s)', { k: r.wait })}
             </span>
           </div>
         ))}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
+<<<<<<< HEAD
         <span className="text-xs font-medium">{t('{s} sats en maturation', { s: fmtInt(total) })}</span>
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void matureNow()} className="gap-1.5 whitespace-normal text-left shrink">
+=======
+        <span className="text-xs font-medium">
+          {t('{s} sats en maturation', { s: fmtInt(total) })}
+        </span>
+        {/* whitespace-normal + shrink : l'intitulé long (« Miner N bloc(s) pour tout
+            débloquer ») doit pouvoir se replier sur deux lignes au lieu de pousser la
+            carte hors écran — le shrink-0 par défaut du Button l'en empêche. */}
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => void matureNow()}
+          className="shrink gap-1.5 text-left whitespace-normal"
+        >
+>>>>>>> 92c54ba (style: prettier-format repo)
           <Pickaxe className="h-3.5 w-3.5 shrink-0" />
           {busy ? t('minage des blocs…') : t('Miner {k} bloc(s) pour tout débloquer', { k })}
         </Button>

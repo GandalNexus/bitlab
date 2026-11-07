@@ -47,7 +47,8 @@ export function loadRegtestCfg(): RegtestCfg {
     const cfg = JSON.parse(raw) as Partial<RegtestCfg>;
     const port = Number(cfg.port);
     return {
-      host: typeof cfg.host === 'string' && cfg.host.trim() ? cfg.host.trim() : REGTEST_DEFAULTS.host,
+      host:
+        typeof cfg.host === 'string' && cfg.host.trim() ? cfg.host.trim() : REGTEST_DEFAULTS.host,
       port: Number.isInteger(port) && port > 0 && port < 65_536 ? port : REGTEST_DEFAULTS.port,
       user: typeof cfg.user === 'string' ? cfg.user : '',
       pass: typeof cfg.pass === 'string' ? cfg.pass : '',
@@ -103,7 +104,9 @@ function base64ToUtf8(value: string): string {
     const bytes = Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
     return new TextDecoder().decode(bytes);
   }
-  const globals = globalThis as { Buffer?: { from(s: string, enc: string): { toString(enc: string): string } } };
+  const globals = globalThis as {
+    Buffer?: { from(s: string, enc: string): { toString(enc: string): string } };
+  };
   if (globals.Buffer) return globals.Buffer.from(value, 'base64').toString('utf8');
   throw new Error('base64 indisponible');
 }

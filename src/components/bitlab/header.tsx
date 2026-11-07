@@ -25,7 +25,12 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
   const qc = useQueryClient();
   const { t } = useT();
   const cfg = NETWORKS[net];
-  const tip = useQuery({ queryKey: ['tip', net], queryFn: api.tipHeight, refetchInterval: 30_000, retry: 1 });
+  const tip = useQuery({
+    queryKey: ['tip', net],
+    queryFn: api.tipHeight,
+    refetchInterval: 30_000,
+    retry: 1,
+  });
 
   const pick = (id: NetId) => {
     if (id === net) return;
@@ -34,12 +39,12 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="border-border bg-background/90 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
       <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
         <button
           onClick={onOpenMobileNav}
           aria-label={t('Ouvrir la navigation')}
-          className="flex h-9 w-9 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:hidden"
+          className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-primary/40 flex h-9 w-9 items-center justify-center rounded-[6px] transition-colors focus-visible:ring-2 focus-visible:outline-none lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -50,18 +55,18 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
-                'flex items-center gap-2 rounded-[6px] border border-border bg-card px-2.5 py-1.5 text-sm font-medium transition-colors hover:bg-accent/60',
-                'outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                'border-border bg-card hover:bg-accent/60 flex items-center gap-2 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors',
+                'focus-visible:ring-primary/40 outline-none focus-visible:ring-2',
               )}
               title={t('Changer de réseau Bitcoin')}
               aria-label={t('Sélecteur de réseau Bitcoin')}
             >
               <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dotCls)} />
               <span className="hidden sm:inline">{cfg.label}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronDown className="text-muted-foreground h-3.5 w-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              <DropdownMenuLabel className="text-muted-foreground text-[11px] tracking-wider uppercase">
                 {t('Réseau Bitcoin')}
               </DropdownMenuLabel>
               {NET_ORDER.map((id) => {
@@ -71,38 +76,54 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
                   <DropdownMenuItem
                     key={id}
                     onSelect={() => pick(id)}
-                    className={cn('cursor-pointer gap-2.5 rounded-[4px]', active && 'bg-primary/10')}
+                    className={cn(
+                      'cursor-pointer gap-2.5 rounded-[4px]',
+                      active && 'bg-primary/10',
+                    )}
                   >
                     <span className={cn('h-2 w-2 shrink-0 rounded-full', c.dotCls)} />
                     <span className="flex-1">
                       <span className="flex items-center gap-1.5 text-sm font-medium">
                         {c.label}
-                        {c.realFunds ? <ShieldAlert className="h-3.5 w-3.5 text-amber-500" aria-label={t('Fonds réels')} /> : null}
+                        {c.realFunds ? (
+                          <ShieldAlert
+                            className="h-3.5 w-3.5 text-amber-500"
+                            aria-label={t('Fonds réels')}
+                          />
+                        ) : null}
                       </span>
-                      <span className="block text-[11px] text-muted-foreground">
+                      <span className="text-muted-foreground block text-[11px]">
                         {c.realFunds ? t('Fonds réels — prudence') : t('Sans risque financier')}
                       </span>
                     </span>
-                    {active ? <Check className="h-4 w-4 shrink-0 text-primary" /> : null}
+                    {active ? <Check className="text-primary h-4 w-4 shrink-0" /> : null}
                   </DropdownMenuItem>
                 );
               })}
               <DropdownMenuSeparator />
-              <div className="px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
-                {t('Données via les nœuds publics mempool.space — l’explorateur et les liens suivent le réseau choisi.')}
+              <div className="text-muted-foreground px-2 py-1.5 text-[10px] leading-relaxed">
+                {t(
+                  'Données via les nœuds publics mempool.space — l’explorateur et les liens suivent le réseau choisi.',
+                )}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
 
           <div
-            className="hidden items-center gap-2 rounded-[6px] border border-border bg-card px-2.5 py-1.5 md:flex"
+            className="border-border bg-card hidden items-center gap-2 rounded-[6px] border px-2.5 py-1.5 md:flex"
             title={t('Hauteur du dernier bloc {net}', { net: cfg.label })}
           >
-            <Blocks className="h-3.5 w-3.5 text-primary" />
+            <Blocks className="text-primary h-3.5 w-3.5" />
             <span className="font-mono text-xs tabular-nums">
-              {tip.isError ? '—' : tip.isLoading ? '…' : t('bloc {n}', { n: fmtInt(tip.data ?? 0) })}
+              {tip.isError
+                ? '—'
+                : tip.isLoading
+                  ? '…'
+                  : t('bloc {n}', { n: fmtInt(tip.data ?? 0) })}
             </span>
-            {!tip.isError && !tip.isLoading ? <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> : null}
+            {!tip.isError && !tip.isLoading ? (
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            ) : null}
           </div>
 
           <LangToggle />

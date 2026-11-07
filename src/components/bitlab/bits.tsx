@@ -7,12 +7,27 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { tSync } from '@/lib/i18n';
 
+<<<<<<< HEAD
 export function PageIntro({ title, desc, actions }: { title: string; desc?: string; actions?: ReactNode }) {
+=======
+/** En-tête de page façon Stellar Lab : titre 20px/600 + description grise. */
+export function PageIntro({
+  title,
+  desc,
+  actions,
+}: {
+  title: string;
+  desc?: string;
+  actions?: ReactNode;
+}) {
+>>>>>>> 92c54ba (style: prettier-format repo)
   return (
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
         <h1 className="text-xl font-semibold tracking-tight sm:text-[22px]">{title}</h1>
-        {desc ? <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{desc}</p> : null}
+        {desc ? (
+          <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">{desc}</p>
+        ) : null}
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
@@ -40,10 +55,12 @@ export function Copyable({
   }, [copied]);
   return (
     <div className={cn('min-w-0', className)}>
-      {label ? <div className="mb-1.5 text-[13px] font-medium text-muted-foreground">{label}</div> : null}
-      <div className="flex items-stretch overflow-hidden rounded-[6px] border border-border bg-input/30">
+      {label ? (
+        <div className="text-muted-foreground mb-1.5 text-[13px] font-medium">{label}</div>
+      ) : null}
+      <div className="border-border bg-input/30 flex items-stretch overflow-hidden rounded-[6px] border">
         <div className="flex-1 overflow-hidden px-3 py-2.5">
-          <div className={cn('text-xs truncate', mono && 'font-mono')} title={display ?? value}>
+          <div className={cn('truncate text-xs', mono && 'font-mono')} title={display ?? value}>
             {display ?? value}
           </div>
         </div>
@@ -59,7 +76,7 @@ export function Copyable({
             }
           }}
           className={cn(
-            'flex w-10 shrink-0 items-center justify-center border-l border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
+            'border-border text-muted-foreground hover:bg-accent hover:text-foreground flex w-10 shrink-0 items-center justify-center border-l transition-colors',
             copied && 'text-emerald-500',
           )}
         >
@@ -89,13 +106,17 @@ export function StatCard({
     <Card className={cn('border-border/80', accent && 'border-primary/40')}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-[13px] font-medium text-muted-foreground">{title}</div>
-          {icon ? <div className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-border bg-card text-primary">{icon}</div> : null}
+          <div className="text-muted-foreground text-[13px] font-medium">{title}</div>
+          {icon ? (
+            <div className="border-border bg-card text-primary flex h-7 w-7 items-center justify-center rounded-[6px] border">
+              {icon}
+            </div>
+          ) : null}
         </div>
-        <div className="mt-2.5 text-2xl font-semibold font-mono tabular-nums">
+        <div className="mt-2.5 font-mono text-2xl font-semibold tabular-nums">
           {loading ? <Skeleton className="h-7 w-24" /> : value}
         </div>
-        {sub ? <div className="mt-1 text-xs text-muted-foreground">{sub}</div> : null}
+        {sub ? <div className="text-muted-foreground mt-1 text-xs">{sub}</div> : null}
       </CardContent>
     </Card>
   );
@@ -103,9 +124,9 @@ export function StatCard({
 
 export function JsonBlock({ data, maxH = 'max-h-72' }: { data: unknown; maxH?: string }) {
   return (
-      <pre
+    <pre
       className={cn(
-        'overflow-auto rounded-[6px] border border-border bg-black/40 p-3 text-[11px] leading-relaxed font-mono text-emerald-200/90 scrollbar-thin',
+        'border-border scrollbar-thin overflow-auto rounded-[6px] border bg-black/40 p-3 font-mono text-[11px] leading-relaxed text-emerald-200/90',
         maxH,
       )}
     >
@@ -125,7 +146,12 @@ export function TypeBadge({ type }: { type: string }) {
     wsh: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   };
   return (
-    <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide', colors[type] ?? colors.unknown)}>
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase',
+        colors[type] ?? colors.unknown,
+      )}
+    >
       {type}
     </span>
   );
@@ -133,13 +159,14 @@ export function TypeBadge({ type }: { type: string }) {
 
 export function SecurityNote({ children }: { children?: ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-[6px] border border-primary/25 bg-primary/5 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
-      <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+    <div className="border-primary/25 bg-primary/5 text-muted-foreground flex items-start gap-2 rounded-[6px] border px-3 py-2.5 text-xs leading-relaxed">
+      <KeyRound className="text-primary mt-0.5 h-3.5 w-3.5 shrink-0" />
       <div>
         {children ?? (
           <>
-            <span className="font-medium text-foreground">Sandbox Zero-Knowledge :</span> les clés privées sont générées et
-            utilisées exclusivement dans votre navigateur (stockage IndexedDB local). Aucune clé ne quitte jamais cet appareil.
+            <span className="text-foreground font-medium">Sandbox Zero-Knowledge :</span> les clés
+            privées sont générées et utilisées exclusivement dans votre navigateur (stockage
+            IndexedDB local). Aucune clé ne quitte jamais cet appareil.
           </>
         )}
       </div>

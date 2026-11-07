@@ -72,7 +72,10 @@ async function regtestRpc(cfg: RegtestCfg, method: string, params: unknown[]): P
     cache: 'no-store',
     signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
   });
-  const body = (await res.json().catch(() => null)) as { result?: unknown; error?: { message?: string } } | null;
+  const body = (await res.json().catch(() => null)) as {
+    result?: unknown;
+    error?: { message?: string };
+  } | null;
   if (!body) throw new Error(`réponse RPC illisible (${res.status})`);
   if (body.error) throw new Error(body.error.message ?? 'erreur RPC');
   return body.result;
@@ -86,7 +89,10 @@ function jsonRes(body: unknown, status = 200): NextResponse {
 }
 
 function textRes(body: string, status = 200): NextResponse {
-  return new NextResponse(body, { status, headers: { 'content-type': 'text/plain', 'x-network': 'regtest' } });
+  return new NextResponse(body, {
+    status,
+    headers: { 'content-type': 'text/plain', 'x-network': 'regtest' },
+  });
 }
 
 async function regtestRest(
@@ -102,12 +108,19 @@ async function regtestRest(
     signal: AbortSignal.timeout(REST_TIMEOUT_MS),
   });
   if (!res.ok) {
-    const detail = accept === 'bin' ? 'bloc indisponible' : (await res.text().catch(() => '')).slice(0, 160);
-    return jsonRes({ erreur: `Nœud regtest : ${detail || `REST ${res.status}`}` }, res.status === 404 ? 404 : 502);
+    const detail =
+      accept === 'bin' ? 'bloc indisponible' : (await res.text().catch(() => '')).slice(0, 160);
+    return jsonRes(
+      { erreur: `Nœud regtest : ${detail || `REST ${res.status}`}` },
+      res.status === 404 ? 404 : 502,
+    );
   }
   if (accept === 'bin') {
     const bytes = new Uint8Array(await res.arrayBuffer());
-    return new NextResponse(bytes, { status: 200, headers: { 'content-type': 'application/octet-stream', 'x-network': 'regtest' } });
+    return new NextResponse(bytes, {
+      status: 200,
+      headers: { 'content-type': 'application/octet-stream', 'x-network': 'regtest' },
+    });
   }
   const text = (await res.text()).trim();
   if (accept === 'hex') return textRes(text);
@@ -149,7 +162,9 @@ async function regtestRest(
         signal: AbortSignal.timeout(REST_TIMEOUT_MS),
       });
       if (!blockRes.ok) break;
-      const block = (await blockRes.json().catch(() => null)) as { previousblockhash?: unknown } | null;
+      const block = (await blockRes.json().catch(() => null)) as {
+        previousblockhash?: unknown;
+      } | null;
       const summary = coreBlockToSummary(block);
       if (!summary) break;
       summaries.push(summary);
@@ -172,13 +187,30 @@ async function regtestGet(path: string, cfg: RegtestCfg | null): Promise<NextRes
     case 'unsupported':
       return jsonRes({ erreur: 'Chemin API non autorisé.' }, 400);
     case 'rest':
-      if (!cfg) return jsonRes({ erreur: 'Regtest : hôte du nœud local non configuré (carte Réglages du module Portefeuille).' }, 400);
+      if (!cfg)
+        return jsonRes(
+          {
+            erreur:
+              'Regtest : hôte du nœud local non configuré (carte Réglages du module Portefeuille).',
+          },
+          400,
+        );
       return regtestRest(cfg, plan.upstream, plan.accept, path);
     case 'rpc':
-      if (!cfg) return jsonRes({ erreur: 'Regtest : hôte du nœud local non configuré (carte Réglages du module Portefeuille).' }, 400);
+      if (!cfg)
+        return jsonRes(
+          {
+            erreur:
+              'Regtest : hôte du nœud local non configuré (carte Réglages du module Portefeuille).',
+          },
+          400,
+        );
       if (!cfg.user) {
         return jsonRes(
-          { erreur: 'Regtest : identifiants RPC requis (rpcuser/rpcpass de bitcoin.conf — carte Réglages du module Portefeuille).' },
+          {
+            erreur:
+              'Regtest : identifiants RPC requis (rpcuser/rpcpass de bitcoin.conf — carte Réglages du module Portefeuille).',
+          },
           400,
         );
       }
@@ -223,7 +255,10 @@ export async function GET(req: NextRequest) {
       try {
         return await regtestGet(path, cfg);
       } catch {
-        return NextResponse.json({ erreur: 'Nœud regtest injoignable — vérifiez que Bitcoin Core tourne avec -rest=1.' }, { status: 502 });
+        return NextResponse.json(
+          { erreur: 'Nœud regtest injoignable — vérifiez que Bitcoin Core tourne avec -rest=1.' },
+          { status: 502 },
+        );
       }
     }
     try {
@@ -232,16 +267,27 @@ export async function GET(req: NextRequest) {
       if (result.type === 'bin') {
         return new NextResponse(result.body as unknown as BodyInit, {
           status: result.status,
-          headers: { 'content-type': 'application/octet-stream', 'x-network': 'regtest', 'x-engine': 'embedded' },
+          headers: {
+            'content-type': 'application/octet-stream',
+            'x-network': 'regtest',
+            'x-engine': 'embedded',
+          },
         });
       }
       const textBody = result.type === 'json' ? JSON.stringify(result.body) : String(result.body);
       return new NextResponse(textBody, {
         status: result.status,
-        headers: { 'content-type': result.type === 'json' ? 'application/json' : 'text/plain', 'x-network': 'regtest', 'x-engine': 'embedded' },
+        headers: {
+          'content-type': result.type === 'json' ? 'application/json' : 'text/plain',
+          'x-network': 'regtest',
+          'x-engine': 'embedded',
+        },
       });
     } catch (err) {
-      return NextResponse.json({ erreur: `Moteur regtest embarqué : ${(err as Error).message}` }, { status: 500 });
+      return NextResponse.json(
+        { erreur: `Moteur regtest embarqué : ${(err as Error).message}` },
+        { status: 500 },
+      );
     }
   }
 
@@ -261,7 +307,10 @@ export async function GET(req: NextRequest) {
         signal: AbortSignal.timeout(30_000),
       });
       if (!upstream.ok) {
-        return NextResponse.json({ erreur: `Bloc indisponible sur ${net}.` }, { status: upstream.status });
+        return NextResponse.json(
+          { erreur: `Bloc indisponible sur ${net}.` },
+          { status: upstream.status },
+        );
       }
       const bytes = new Uint8Array(await upstream.arrayBuffer());
       return new NextResponse(bytes, {
@@ -288,41 +337,66 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch {
-    return NextResponse.json({ erreur: `Nœud ${net} injoignable depuis le proxy.` }, { status: 502 });
+    return NextResponse.json(
+      { erreur: `Nœud ${net} injoignable depuis le proxy.` },
+      { status: 502 },
+    );
   }
 }
 
 export async function POST(req: NextRequest) {
   const path = req.nextUrl.searchParams.get('path');
   if (path !== 'tx') {
-    return NextResponse.json({ erreur: 'Seule la diffusion de transaction (path=tx) est autorisée.' }, { status: 400 });
+    return NextResponse.json(
+      { erreur: 'Seule la diffusion de transaction (path=tx) est autorisée.' },
+      { status: 400 },
+    );
   }
   const net = sanitizeNet(req.nextUrl.searchParams.get('network'));
   const raw = (await req.text()).trim();
   if (!/^[0-9a-fA-F]{120,}$/.test(raw)) {
-    return NextResponse.json({ erreur: 'Transaction brute hexadécimale invalide.' }, { status: 400 });
+    return NextResponse.json(
+      { erreur: 'Transaction brute hexadécimale invalide.' },
+      { status: 400 },
+    );
   }
 
   if (net === 'regtest') {
     const cfg = safeRegtestCfg(req);
     if (cfg) {
-      if (!cfg.user) return NextResponse.json({ erreur: 'Regtest : identifiants RPC requis pour diffuser une transaction.' }, { status: 400 });
+      if (!cfg.user)
+        return NextResponse.json(
+          { erreur: 'Regtest : identifiants RPC requis pour diffuser une transaction.' },
+          { status: 400 },
+        );
       try {
         const txid = await regtestRpc(cfg, 'sendrawtransaction', [raw]);
         const id = typeof txid === 'string' ? txid.replace(/"/g, '').trim() : '';
         if (!/^[0-9a-f]{64}$/i.test(id)) throw new Error('réponse inattendue');
-        return new NextResponse(id, { status: 200, headers: { 'content-type': 'text/plain', 'x-network': net } });
+        return new NextResponse(id, {
+          status: 200,
+          headers: { 'content-type': 'text/plain', 'x-network': net },
+        });
       } catch (err) {
-        return NextResponse.json({ erreur: `Diffusion regtest refusée : ${(err as Error).message}` }, { status: 400 });
+        return NextResponse.json(
+          { erreur: `Diffusion regtest refusée : ${(err as Error).message}` },
+          { status: 400 },
+        );
       }
     }
     try {
       const chain = await getRegtestChain();
       const { txid } = chain.acceptTx(raw);
       await persist(chain);
-      return new NextResponse(txid, { status: 200, headers: { 'content-type': 'text/plain', 'x-network': net, 'x-engine': 'embedded' } });
+      return new NextResponse(txid, {
+        status: 200,
+        headers: { 'content-type': 'text/plain', 'x-network': net, 'x-engine': 'embedded' },
+      });
     } catch (err) {
-      return NextResponse.json({ erreur: `Diffusion regtest refusée : ${(err as Error).message}` }, { status: 400 });
+      return NextResponse.json(
+        { erreur: `Diffusion regtest refusée : ${(err as Error).message}` },
+        { status: 400 },
+      );
     }
   }
 
@@ -335,8 +409,14 @@ export async function POST(req: NextRequest) {
       signal: AbortSignal.timeout(15_000),
     });
     const body = await upstream.text();
-    return new NextResponse(body, { status: upstream.status, headers: { 'content-type': 'text/plain', 'x-network': net } });
+    return new NextResponse(body, {
+      status: upstream.status,
+      headers: { 'content-type': 'text/plain', 'x-network': net },
+    });
   } catch {
-    return NextResponse.json({ erreur: `Nœud ${net} injoignable pour la diffusion.` }, { status: 502 });
+    return NextResponse.json(
+      { erreur: `Nœud ${net} injoignable pour la diffusion.` },
+      { status: 502 },
+    );
   }
 }

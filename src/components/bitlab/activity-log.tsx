@@ -46,16 +46,18 @@ export function ActivityLog() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
-              <ScrollText className="h-4 w-4 text-primary" /> {t('Journal d’activité')}
+              <ScrollText className="text-primary h-4 w-4" /> {t('Journal d’activité')}
             </CardTitle>
             <CardDescription>
-              {t('Opérations du laboratoire : réseau, portefeuilles, transactions, minage. Aucun secret n’y figure — les clés restent dans votre navigateur.')}
+              {t(
+                'Opérations du laboratoire : réseau, portefeuilles, transactions, minage. Aucun secret n’y figure — les clés restent dans votre navigateur.',
+              )}
             </CardDescription>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 text-muted-foreground"
+            className="text-muted-foreground h-7 gap-1.5"
             disabled={logs.length === 0}
             onClick={clearLogs}
           >
@@ -72,7 +74,7 @@ export function ActivityLog() {
               className={cn(
                 'rounded-full border px-2.5 py-0.5 text-[11px] transition-colors',
                 filter === m.id
-                  ? 'border-primary bg-primary/10 font-medium text-primary'
+                  ? 'border-primary bg-primary/10 text-primary font-medium'
                   : 'border-border text-muted-foreground hover:border-primary/40',
               )}
             >
@@ -83,33 +85,44 @@ export function ActivityLog() {
       </CardHeader>
       <CardContent>
         {shown.length === 0 ? (
-          <p className="py-6 text-center text-xs text-muted-foreground">{t('Aucune entrée pour ce module pour le moment.')}</p>
+          <p className="text-muted-foreground py-6 text-center text-xs">
+            {t('Aucune entrée pour ce module pour le moment.')}
+          </p>
         ) : (
-          <div className="max-h-80 space-y-0.5 overflow-y-auto pr-1 scrollbar-thin">
+          <div className="max-h-80 scrollbar-thin space-y-0.5 overflow-y-auto pr-1">
             {shown.map((l) => {
               const kind = KIND_STYLE[l.kind] ?? KIND_STYLE.op;
               const Icon = kind.icon;
-              const detail = Object.entries(l.detail).filter(([, v]) => v !== undefined && v !== '');
+              const detail = Object.entries(l.detail).filter(
+                ([, v]) => v !== undefined && v !== '',
+              );
               return (
                 <div
                   key={l.id}
-                  className="group flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40"
+                  className="group hover:bg-muted/40 flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors"
                 >
-                  <span className="mt-0.5 shrink-0 font-mono text-[10px] leading-4 text-muted-foreground/80">
+                  <span className="text-muted-foreground/80 mt-0.5 shrink-0 font-mono text-[10px] leading-4">
                     {timeOf(l.ts)}
                   </span>
                   <Icon className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', kind.cls)} aria-hidden />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <Badge variant="outline" className="h-4 px-1.5 text-[9px] uppercase tracking-wide text-muted-foreground">
+                      <Badge
+                        variant="outline"
+                        className="text-muted-foreground h-4 px-1.5 text-[9px] tracking-wide uppercase"
+                      >
                         {l.module}
                       </Badge>
-                      <span className="min-w-0 break-all text-xs font-medium">{l.label}</span>
+                      <span className="min-w-0 text-xs font-medium break-all">{l.label}</span>
                     </div>
                     {detail.length > 0 ? (
-                      <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-muted-foreground">
+                      <div className="text-muted-foreground mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px]">
                         {detail.slice(0, 12).map(([k, v]) => (
-                          <span key={k} className="max-w-full min-w-0 truncate sm:max-w-80" title={`${k} = ${String(v)}`}>
+                          <span
+                            key={k}
+                            className="max-w-full min-w-0 truncate sm:max-w-80"
+                            title={`${k} = ${String(v)}`}
+                          >
                             {k}=<span className="text-foreground/70">{String(v)}</span>
                           </span>
                         ))}

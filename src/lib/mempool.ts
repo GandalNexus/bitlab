@@ -99,16 +99,30 @@ export async function mpGet<T>(path: string): Promise<T> {
     const duration = Math.round(performance.now() - t0);
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      log('error', `GET [${net}] /${path}`, { status: res.status, duration, erreur: text.slice(0, 200) });
-      throw new Error(`API ${NETWORKS[net].label} ${res.status} : ${text.slice(0, 140) || res.statusText}`);
+      log('error', `GET [${net}] /${path}`, {
+        status: res.status,
+        duration,
+        erreur: text.slice(0, 200),
+      });
+      throw new Error(
+        `API ${NETWORKS[net].label} ${res.status} : ${text.slice(0, 140) || res.statusText}`,
+      );
     }
     const data = (await res.json()) as T;
-    log('http', `GET [${net}] /${path}`, { status: res.status, duration, type: Array.isArray(data) ? `tableau[${data.length}]` : typeof data });
+    log('http', `GET [${net}] /${path}`, {
+      status: res.status,
+      duration,
+      type: Array.isArray(data) ? `tableau[${data.length}]` : typeof data,
+    });
     return data;
   } catch (e) {
     if (!(e instanceof TypeError)) throw e;
     log('error', `GET [${net}] /${path}`, { erreur: 'réseau indisponible' });
-    throw new Error(tSync('Nœud {net} indisponible. Vérifiez la connexion puis réessayez.', { net: NETWORKS[net].label }));
+    throw new Error(
+      tSync('Nœud {net} indisponible. Vérifiez la connexion puis réessayez.', {
+        net: NETWORKS[net].label,
+      }),
+    );
   }
 }
 
@@ -124,8 +138,14 @@ export async function mpGetText(path: string): Promise<string> {
     const duration = Math.round(performance.now() - t0);
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      log('error', `GET [${net}] /${path}`, { status: res.status, duration, erreur: errText.slice(0, 200) });
-      throw new Error(`API ${NETWORKS[net].label} ${res.status} : ${errText.slice(0, 140) || res.statusText}`);
+      log('error', `GET [${net}] /${path}`, {
+        status: res.status,
+        duration,
+        erreur: errText.slice(0, 200),
+      });
+      throw new Error(
+        `API ${NETWORKS[net].label} ${res.status} : ${errText.slice(0, 140) || res.statusText}`,
+      );
     }
     const data = (await res.text()).trim();
     log('http', `GET [${net}] /${path}`, { status: res.status, duration, taille: data.length });
@@ -133,12 +153,18 @@ export async function mpGetText(path: string): Promise<string> {
   } catch (e) {
     if (!(e instanceof TypeError)) throw e;
     log('error', `GET [${net}] /${path}`, { erreur: 'réseau indisponible' });
-    throw new Error(tSync('Nœud {net} indisponible. Vérifiez la connexion puis réessayez.', { net: NETWORKS[net].label }));
+    throw new Error(
+      tSync('Nœud {net} indisponible. Vérifiez la connexion puis réessayez.', {
+        net: NETWORKS[net].label,
+      }),
+    );
   }
 }
 
 export async function mpGetOn<T>(net: string, path: string): Promise<T> {
-  const res = await fetch(`/api/bitcoin?path=${encodeURIComponent(path)}&network=${net}`, { cache: 'no-store' });
+  const res = await fetch(`/api/bitcoin?path=${encodeURIComponent(path)}&network=${net}`, {
+    cache: 'no-store',
+  });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`API ${net} ${res.status} : ${text.slice(0, 140) || res.statusText}`);
@@ -158,8 +184,17 @@ export async function mpBroadcast(rawHex: string): Promise<string> {
   const duration = Math.round(performance.now() - t0);
   const text = await res.text();
   if (!res.ok) {
-    log('error', `POST [${net}] /tx (diffusion)`, { status: res.status, duration, erreur: text.slice(0, 300) });
-    throw new Error(tSync('Diffusion refusée par le nœud {net} : {err}', { net: NETWORKS[net].label, err: text.slice(0, 200) }));
+    log('error', `POST [${net}] /tx (diffusion)`, {
+      status: res.status,
+      duration,
+      erreur: text.slice(0, 300),
+    });
+    throw new Error(
+      tSync('Diffusion refusée par le nœud {net} : {err}', {
+        net: NETWORKS[net].label,
+        err: text.slice(0, 200),
+      }),
+    );
   }
   const txid = text.trim();
   log('http', `POST [${net}] /tx (diffusion)`, { status: res.status, duration, txid });

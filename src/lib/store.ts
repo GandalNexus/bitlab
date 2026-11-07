@@ -22,7 +22,12 @@ export interface LabState {
   network: NetId;
   mineOnKeyGen: boolean;
   hydrated: boolean;
-  addLog: (l: { kind: DevLog['kind']; module: string; label: string; detail: Record<string, unknown> }) => void;
+  addLog: (l: {
+    kind: DevLog['kind'];
+    module: string;
+    label: string;
+    detail: Record<string, unknown>;
+  }) => void;
   clearLogs: () => void;
   setNetwork: (n: NetId) => void;
   setMineOnKeyGen: (v: boolean) => void;
@@ -42,8 +47,15 @@ interface PersistedLab {
   mineOnKeyGen?: boolean;
 }
 
-function snap(s: Pick<LabState, 'wallets' | 'activeWalletId' | 'network' | 'mineOnKeyGen'>): PersistedLab {
-  return { wallets: s.wallets, activeWalletId: s.activeWalletId, network: s.network, mineOnKeyGen: s.mineOnKeyGen };
+function snap(
+  s: Pick<LabState, 'wallets' | 'activeWalletId' | 'network' | 'mineOnKeyGen'>,
+): PersistedLab {
+  return {
+    wallets: s.wallets,
+    activeWalletId: s.activeWalletId,
+    network: s.network,
+    mineOnKeyGen: s.mineOnKeyGen,
+  };
 }
 
 async function persist(s: PersistedLab): Promise<void> {
@@ -63,7 +75,10 @@ export const useLabStore = create<LabState>((set, get) => ({
 
   addLog: ({ kind, module, label, detail }) =>
     set((s) => ({
-      logs: [{ id: uid('log'), ts: Date.now(), kind, module, label, detail }, ...s.logs].slice(0, 250),
+      logs: [{ id: uid('log'), ts: Date.now(), kind, module, label, detail }, ...s.logs].slice(
+        0,
+        250,
+      ),
     })),
 
   clearLogs: () => set({ logs: [] }),
@@ -73,7 +88,12 @@ export const useLabStore = create<LabState>((set, get) => ({
       void persist(snap(s));
       return { network };
     });
-    get().addLog({ kind: 'op', module: 'portefeuille', label: 'réseau changé', detail: { réseau: network } });
+    get().addLog({
+      kind: 'op',
+      module: 'portefeuille',
+      label: 'réseau changé',
+      detail: { réseau: network },
+    });
   },
 
   setMineOnKeyGen: (mineOnKeyGen) =>
@@ -89,7 +109,12 @@ export const useLabStore = create<LabState>((set, get) => ({
       void persist(snap({ ...s, wallets, activeWalletId }));
       return { wallets, activeWalletId };
     });
-    get().addLog({ kind: 'op', module: 'portefeuille', label: 'portefeuille ajouté', detail: { adresse: w.address, type: w.type, source: w.source, réseau: w.network } });
+    get().addLog({
+      kind: 'op',
+      module: 'portefeuille',
+      label: 'portefeuille ajouté',
+      detail: { adresse: w.address, type: w.type, source: w.source, réseau: w.network },
+    });
   },
 
   removeWallet: (id) => {
