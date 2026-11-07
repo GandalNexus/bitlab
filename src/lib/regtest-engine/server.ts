@@ -56,15 +56,7 @@ function scheduleFlush(chain: RegtestChain): void {
       globalRef.__bitlabRegtestFlush = undefined;
     });
   }, FLUSH_DELAY_MS);
-<<<<<<< HEAD
   if (typeof globalRef.__bitlabRegtestTimer === 'object' && 'unref' in globalRef.__bitlabRegtestTimer) {
-=======
-  // Ne jamais bloquer l'arrêt du process sur un flush.
-  if (
-    typeof globalRef.__bitlabRegtestTimer === 'object' &&
-    'unref' in globalRef.__bitlabRegtestTimer
-  ) {
->>>>>>> 92c54ba (style: prettier-format repo)
     (globalRef.__bitlabRegtestTimer as { unref(): void }).unref();
   }
 }

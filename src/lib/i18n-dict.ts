@@ -1,27 +1,22 @@
 export const EN: Record<string, string> = {
-<<<<<<< HEAD
   'Laboratoire': 'Laboratory',
-=======
-  /* ─────────────────────────── Sidebar ─────────────────────────── */
-  Laboratoire: 'Laboratory',
->>>>>>> 92c54ba (style: prettier-format repo)
   'Tableau de bord': 'Dashboard',
-  Portefeuille: 'Wallet',
-  Modules: 'Modules',
-  Transactions: 'Transactions',
-  Explorateur: 'Explorer',
-  Ressources: 'Resources',
+  'Portefeuille': 'Wallet',
+  'Modules': 'Modules',
+  'Transactions': 'Transactions',
+  'Explorateur': 'Explorer',
+  'Ressources': 'Resources',
   'mempool.space — explorateur': 'mempool.space — explorer',
   'ldk-node — référence': 'ldk-node — reference',
   'BOLT #11 — factures': 'BOLT #11 — invoices',
   'Navigation du laboratoire': 'Laboratory navigation',
   'Déplier la barre latérale': 'Expand sidebar',
   'Replier la barre latérale': 'Collapse sidebar',
-  Déplier: 'Expand',
-  Replier: 'Collapse',
+  'Déplier': 'Expand',
+  'Replier': 'Collapse',
 
   'Ouvrir la navigation': 'Open navigation',
-  Annonce: 'Announcement',
+  'Annonce': 'Announcement',
   'Fermer l’annonce': 'Close announcement',
   'BitLab est toujours en développement — des bugs sont possibles.':
     'BitLab is still under development — bugs are possible.',
@@ -44,9 +39,9 @@ export const EN: Record<string, string> = {
   'Créez des clés, envoyez des transactions, minez des blocs — pas à pas, Bitcoin n’aura plus de secret pour vous. Commencez par':
     'Create keys, send transactions, mine blocks — step by step, Bitcoin will hold no secrets from you. Start by',
   'créer un portefeuille,': 'creating a wallet,',
-  puis: 'then',
+  'puis': 'then',
   'signez votre première transaction': 'sign your first transaction',
-  ou: 'or',
+  'ou': 'or',
   'démarrez un nœud Lightning': 'start a Lightning node',
   'sur {net}.': 'on {net}.',
   'Créer mon premier portefeuille': 'Create my first wallet',
@@ -63,22 +58,22 @@ export const EN: Record<string, string> = {
   'Votre labo': 'Your lab',
   'portefeuille(s) — clés locales': 'wallet(s) — local keys',
   'Workflow pédagogique': 'Learning workflow',
-  Générer: 'Generate',
+  'Générer': 'Generate',
   'Créez des clés et adresses Legacy, SegWit ou Taproot depuis le module Portefeuille.':
     'Create Legacy, SegWit or Taproot keys and addresses from the Wallet module.',
-  Construire: 'Build',
+  'Construire': 'Build',
   'Sélectionnez vos UTXO, définissez sorties et frais en sat/vB dans le Constructeur.':
     'Select your UTXOs, set outputs and fees in sat/vB in the Builder.',
-  Signer: 'Sign',
+  'Signer': 'Sign',
   'Signature locale ECDSA/Schnorr — la clé privée ne quitte jamais le navigateur.':
     'Local ECDSA/Schnorr signing — the private key never leaves the browser.',
-  Diffuser: 'Broadcast',
+  'Diffuser': 'Broadcast',
   'Publiez la transaction signée sur le Testnet et suivez-la dans l’explorateur.':
     'Publish the signed transaction to the Testnet and follow it in the explorer.',
 
   'Générez des paires de clés {net} (Legacy, SegWit, Taproot), importez une phrase BIP39 ou une clé WIF, et pilotez votre bibliothèque locale.':
     'Generate {net} key pairs (Legacy, SegWit, Taproot), import a BIP39 phrase or a WIF key, and run your local library.',
-  Importer: 'Import',
+  'Importer': 'Import',
   'Mes portefeuilles': 'My wallets',
   'Créer une paire de clés {net}': 'Create a {net} key pair',
   'La clé privée est tirée d’un aléa cryptographique local, puis dérivée selon le chemin BIP du format choisi.':
@@ -90,7 +85,7 @@ export const EN: Record<string, string> = {
   'Aperçu du nouveau portefeuille': 'New wallet preview',
   'non enregistré': 'unsaved',
   'Enregistrer dans le lab': 'Save to the lab',
-  Annuler: 'Cancel',
+  'Annuler': 'Cancel',
   'Portefeuille généré': 'Wallet generated',
   'Adresse {tech} créée localement.': '{tech} address created locally.',
   'Erreur de génération': 'Generation error',
@@ -123,21 +118,21 @@ export const EN: Record<string, string> = {
     '{n} wallet(s) exist on other networks — switch networks to see them.',
   'Supprimer le portefeuille': 'Delete wallet',
   'Portefeuille supprimé du lab': 'Wallet removed from the lab',
-  généré: 'generated',
-  actif: 'active',
+  'généré': 'generated',
+  'actif': 'active',
   'Portefeuille actif': 'Active wallet',
-  Adresse: 'Address',
+  'Adresse': 'Address',
   'Clé publique': 'Public key',
-  Solde: 'Balance',
+  'Solde': 'Balance',
   'chargement…': 'loading…',
-  indisponible: 'unavailable',
+  'indisponible': 'unavailable',
   '{v} en attente': '{v} pending',
   'Type : ': 'Type: ',
   'Chemin de dérivation : ': 'Derivation path: ',
   'import WIF (sans chemin HD)': 'WIF import (no HD path)',
   'Secrets du laboratoire — ne jamais partager': 'Lab secrets — never share',
-  Masquer: 'Hide',
-  Révéler: 'Reveal',
+  'Masquer': 'Hide',
+  'Révéler': 'Reveal',
   'Phrase mnémonique BIP39 ({n} mots)': 'BIP39 mnemonic phrase ({n} words)',
   'Clé privée (hex)': 'Private key (hex)',
   'Clé privée (WIF)': 'Private key (WIF)',
@@ -167,19 +162,14 @@ export const EN: Record<string, string> = {
     'External faucets — copy the address above, paste it, receive:',
   'sans compte': 'no account',
   'connexion requise': 'login required',
-  'Faucet officiel de mempool.space, 0,01 BTC par demande.':
-    'Official mempool.space faucet, 0.01 BTC per request.',
+  'Faucet officiel de mempool.space, 0,01 BTC par demande.': 'Official mempool.space faucet, 0.01 BTC per request.',
   'Faucet Testnet4 simple, 0,01 BTC par demande.': 'Simple Testnet4 faucet, 0.01 BTC per request.',
   'Faucet communautaire Testnet4.': 'Community Testnet4 faucet.',
   'Faucet historique, retrait toutes les heures.': 'Long-standing faucet, hourly withdrawal.',
-  'Faucet Testnet3 historique, retrait toutes les heures.':
-    'Historic Testnet3 faucet, hourly withdrawal.',
-  'Faucet Testnet3 à grande capacité, sans inscription.':
-    'High-capacity Testnet3 faucet, no sign-up.',
-  'Faucet Signet communautaire — distribution rapide de sats.':
-    'Community Signet faucet — fast sats delivery.',
-  'Faucet Signet alternatif en cas d’indisponibilité du premier.':
-    'Alternative Signet faucet if the first is unavailable.',
+  'Faucet Testnet3 historique, retrait toutes les heures.': 'Historic Testnet3 faucet, hourly withdrawal.',
+  'Faucet Testnet3 à grande capacité, sans inscription.': 'High-capacity Testnet3 faucet, no sign-up.',
+  'Faucet Signet communautaire — distribution rapide de sats.': 'Community Signet faucet — fast sats delivery.',
+  'Faucet Signet alternatif en cas d’indisponibilité du premier.': 'Alternative Signet faucet if the first is unavailable.',
   'POST api.hiro.so/extended/v3/faucets/btc — sats Signet via API (selon disponibilité).':
     'POST api.hiro.so/extended/v3/faucets/btc — Signet sats via API (availability may vary).',
   'cN… / cS… (préfixe testnet 0xEF)': 'cN… / cS… (testnet prefix 0xEF)',
@@ -192,18 +182,13 @@ export const EN: Record<string, string> = {
   'il y a {n} min': '{n} min ago',
   'il y a {n} h': '{n} h ago',
   'il y a {n} j': '{n} d ago',
-  Mo: 'MB',
+  'Mo': 'MB',
 
-<<<<<<< HEAD
   'Sélectionner': 'Select',
-=======
-  /* ─────────────────────────── Tx builder ─────────────────────────── */
-  Sélectionner: 'Select',
->>>>>>> 92c54ba (style: prettier-format repo)
   'Constructeur de transactions': 'Transaction builder',
   'Sélection des UTXO, définition des sorties, frais en sat/vB, signature locale puis diffusion {net}.':
     'UTXO selection, output definition, sat/vB fees, local signing then broadcast on {net}.',
-  Réinitialiser: 'Reset',
+  'Réinitialiser': 'Reset',
   'Aucun portefeuille actif': 'No active wallet',
   'Créez un portefeuille dans le module « Portefeuille », obtenez des sats via un faucet, puis revenez construire votre transaction.':
     'Create a wallet in the “Wallet” module, get sats from a faucet, then come back to build your transaction.',
@@ -221,7 +206,7 @@ export const EN: Record<string, string> = {
   'Aucun UTXO sur cette adresse. Alimentez-la via le faucet intégré du module Portefeuille, ou choisissez un autre portefeuille ci-dessus.':
     'No UTXOs on this address. Fund it via the faucet in the Wallet module, or choose another wallet above.',
   'Sélectionner UTXO {id}': 'Select UTXO {id}',
-  confirmé: 'confirmed',
+  'confirmé': 'confirmed',
   'en attente': 'pending',
   'hauteur {n}': 'height {n}',
   'Sorties de la transaction': 'Transaction outputs',
@@ -253,31 +238,22 @@ export const EN: Record<string, string> = {
   'Script témoin (witness script)': 'Witness script',
   'Pour dépenser, chaque participant signe la transaction ; la dernière signature déclenche la finalisation du script.':
     'To spend, each participant signs the transaction; the last signature triggers script finalization.',
-  'Signature locale avec la clé privée du portefeuille actif':
-    'Local signing with the active wallet’s private key',
+  'Signature locale avec la clé privée du portefeuille actif': 'Local signing with the active wallet’s private key',
   'La signature ECDSA/Schnorr est calculée dans votre navigateur. La transaction est ensuite sérialisée en hexadécimal brut (Raw Transaction) prêt pour le réseau.':
     'The ECDSA/Schnorr signature is computed in your browser. The transaction is then serialized into raw hexadecimal ready for the network.',
   'Signer {n} UTXO → {m} sortie(s)': 'Sign {n} UTXO → {m} output(s)',
   'Signature impossible': 'Signing failed',
   'Aucun portefeuille actif.': 'No active wallet.',
-<<<<<<< HEAD
   'Renseignez au moins une sortie valide à l’étape Construire.': 'Provide at least one valid output in the Build step.',
-=======
-  'Renseignez au moins une sortie valide à l’étape Construire.':
-    'Provide at least one valid output in the Build step.',
-  // Maturité des coinbase (sorties de minage regtest) et diagnostics du constructeur.
->>>>>>> 92c54ba (style: prettier-format repo)
   'mûr dans {n} bloc(s) — non dépensable avant': 'matures in {n} block(s) — not spendable yet',
   'coinbase mûre (100 confirmations)': 'mature coinbase (100 confirmations)',
-  'Adresse invalide pour {net} — format attendu : {hint}':
-    'Invalid address for {net} — expected format: {hint}',
+  'Adresse invalide pour {net} — format attendu : {hint}': 'Invalid address for {net} — expected format: {hint}',
   'Montant en sats entiers requis (≥ 546).': 'Amount required in whole sats (≥ 546).',
   'sorties + frais supérieurs aux entrées': 'outputs + fees exceed inputs',
   'Sortie {i} : l’adresse « {a} » n’est pas valide pour {net} — format attendu : {hint}':
     'Output {i}: the address “{a}” is not valid for {net} — expected format: {hint}',
   'Sortie {i} : adresse destinataire manquante.': 'Output {i}: missing recipient address.',
-  'Sortie {i} : montant invalide (entiers en sats requis).':
-    'Output {i}: invalid amount (whole sats required).',
+  'Sortie {i} : montant invalide (entiers en sats requis).': 'Output {i}: invalid amount (whole sats required).',
   'Adresse de sortie « {a} » invalide pour le réseau {net} — format attendu : {hint}':
     'Output address “{a}” is invalid on the {net} network — expected format: {hint}',
   'Adresse de monnaie restante « {a} » invalide pour le réseau {net} — format attendu : {hint}':
@@ -290,8 +266,7 @@ export const EN: Record<string, string> = {
   'Monnaie rendue': 'Change returned',
   'pas de sortie de change': 'no change output',
   'Transaction brute signée (Raw Transaction hexadécimale)': 'Signed raw transaction (hexadecimal)',
-  'Contenu décodé de la transaction ({i} entrée(s), {o} sortie(s))':
-    'Decoded transaction content ({i} input(s), {o} output(s))',
+  'Contenu décodé de la transaction ({i} entrée(s), {o} sortie(s))': 'Decoded transaction content ({i} input(s), {o} output(s))',
   'Diffusion au réseau {net}': 'Broadcast to the {net} network',
   'Seul le corps de transaction signé est envoyé au nœud via le proxy Edge — la clé privée reste locale.':
     'Only the signed transaction body is sent to the node via the Edge proxy — the private key stays local.',
@@ -299,17 +274,15 @@ export const EN: Record<string, string> = {
   'Diffuser sur {net}': 'Broadcast on {net}',
   'Transaction acceptée par le réseau': 'Transaction accepted by the network',
   'Diffusion refusée': 'Broadcast rejected',
-  Précédent: 'Back',
-  Suivant: 'Next',
-  'Transaction diffusée — surveillez-la dans l’explorateur.':
-    'Transaction broadcast — watch it in the explorer.',
+  'Précédent': 'Back',
+  'Suivant': 'Next',
+  'Transaction diffusée — surveillez-la dans l’explorateur.': 'Transaction broadcast — watch it in the explorer.',
   'Nouvelle transaction': 'New transaction',
   'Transaction diffusée': 'Transaction broadcast',
   'La transaction a été modifiée depuis la dernière signature — signez à nouveau.':
     'The transaction was modified since it was last signed — sign it again.',
   'Transaction signée — prête pour la diffusion.': 'Transaction signed — ready to broadcast.',
-  'Appuyez sur « Suivant » pour passer à l’étape Diffuser.':
-    'Press “Next” to move on to the Broadcast step.',
+  'Appuyez sur « Suivant » pour passer à l’étape Diffuser.': 'Press “Next” to move on to the Broadcast step.',
   'Retrouvez-la dans l’Explorateur — cliquez la transaction pour son anatomie locale.':
     'Find it in the Explorer — click the transaction for its local anatomy.',
 
@@ -319,8 +292,7 @@ export const EN: Record<string, string> = {
   'cumul des frais de la file d’attente': 'queue fee total',
   'Flux récent': 'Recent flow',
   'échantillon des dernières transmissions': 'sample of the latest broadcasts',
-  'Dernières transactions observées (rafraîchi toutes les 15 s)':
-    'Latest observed transactions (refreshed every 15 s)',
+  'Dernières transactions observées (rafraîchi toutes les 15 s)': 'Latest observed transactions (refreshed every 15 s)',
   'Nœud {net} momentanément injoignable — nouvelle tentative automatique en cours.':
     '{net} node temporarily unreachable — automatic retry in progress.',
   'Derniers blocs minés': 'Latest mined blocks',
@@ -342,10 +314,10 @@ export const EN: Record<string, string> = {
   'Transaction décodée': 'Transaction decoded',
   '{i} entrée(s) · {o} sortie(s)': '{i} input(s) · {o} output(s)',
   'Résultat du décodage': 'Decoding result',
-  Taille: 'Size',
+  'Taille': 'Size',
   '{b} octets · {v} vB': '{b} bytes · {v} vB',
-  État: 'Status',
-  signée: 'signed',
+  'État': 'Status',
+  'signée': 'signed',
   'non signée': 'unsigned',
   'Entrées ({n})': 'Inputs ({n})',
   '(coinbase ou txid absent)': '(coinbase or missing txid)',
@@ -361,25 +333,23 @@ export const EN: Record<string, string> = {
   'hors service': 'offline',
   'démarrage…': 'starting…',
   'en course': 'running',
-  opérationnel: 'ready',
-  erreur: 'error',
+  'opérationnel': 'ready',
+  'erreur': 'error',
   'Lightning Network — nœud LDK réel': 'Lightning Network — real LDK node',
   'Deux vrais nœuds LDK (Lightning Dev Kit) tournent côté serveur, synchronisés sur la chaîne via Esplora. Canaux, factures BOLT11 et paiements HTLC sont réels — aucune simulation.':
     'Two real LDK nodes (Lightning Dev Kit) run server-side, synced to the chain via Esplora. Channels, BOLT11 invoices and HTLC payments are real — no simulation.',
   'Lightning indisponible sur {net}': 'Lightning unavailable on {net}',
-  'Le moteur LDK réel embarqué dans BitLab supporte Testnet3 et Signet.':
-    'The real LDK engine built into BitLab supports Testnet3 and Signet.',
+  'Le moteur LDK réel embarqué dans BitLab supporte Testnet3 et Signet.': 'The real LDK engine built into BitLab supports Testnet3 and Signet.',
   'Le mainnet est volontairement exclu du laboratoire pour éviter tout risque financier.':
     'Mainnet is deliberately excluded from the lab to avoid any financial risk.',
-  'Basculez de réseau via le sélecteur en haut à droite.':
-    'Switch networks with the selector at the top right.',
+  'Basculez de réseau via le sélecteur en haut à droite.': 'Switch networks with the selector at the top right.',
   'Passer sur Testnet3': 'Switch to Testnet3',
   'Passer sur Signet': 'Switch to Signet',
   'en ligne': 'online',
   'Nœud {alias}': 'Node {alias}',
-  Rafraîchir: 'Refresh',
+  'Rafraîchir': 'Refresh',
   ' · bloc {n}': ' · block {n}',
-  Échec: 'Failed',
+  'Échec': 'Failed',
   'on-chain dépensable': 'on-chain spendable',
   'solde Lightning': 'Lightning balance',
   'Nouvelle adresse': 'New address',
@@ -392,9 +362,9 @@ export const EN: Record<string, string> = {
   'paiement réclamable': 'payment claimable',
   'paiement routé': 'payment forwarded',
   'erreur de boucle': 'loop error',
-  réglé: 'settled',
+  'réglé': 'settled',
   'en cours': 'in progress',
-  échoué: 'failed',
+  'échoué': 'failed',
   'Ouvrir un canal réel': 'Open a real channel',
   'Le financement est une vraie transaction on-chain signée par le nœud A. Laissez le pair vide pour ouvrir vers BitLab-B (le second nœud du laboratoire, joignable en localhost).':
     'Funding is a real on-chain transaction signed by node A. Leave the peer empty to open towards BitLab-B (the lab’s second node, reachable on localhost).',
@@ -406,15 +376,12 @@ export const EN: Record<string, string> = {
   'Financer et ouvrir': 'Fund and open',
   'Le nœud A doit être opérationnel.': 'Node A must be ready.',
   'Connexion P2P établie': 'P2P connection established',
-  'Poignée de main Noise réelle entre les deux nœuds du laboratoire.':
-    'Real Noise handshake between the two lab nodes.',
+  'Poignée de main Noise réelle entre les deux nœuds du laboratoire.': 'Real Noise handshake between the two lab nodes.',
   'Connexion impossible': 'Connection failed',
   'Capacité insuffisante': 'Insufficient capacity',
-  'Un canal Lightning exige au moins 20 000 sats.':
-    'A Lightning channel requires at least 20,000 sats.',
+  'Un canal Lightning exige au moins 20 000 sats.': 'A Lightning channel requires at least 20,000 sats.',
   'Push invalide': 'Invalid push',
-  'Le montant poussé au pair doit être compris entre 0 et la capacité.':
-    'The pushed amount must be between 0 and the capacity.',
+  'Le montant poussé au pair doit être compris entre 0 et la capacité.': 'The pushed amount must be between 0 and the capacity.',
   'Pair incomplet': 'Incomplete peer',
   'Renseignez la clé publique et l’adresse du pair (ou laissez vide pour BitLab-B).':
     'Provide the peer’s public key and address (or leave empty for BitLab-B).',
@@ -424,21 +391,20 @@ export const EN: Record<string, string> = {
   'Ouverture impossible': 'Cannot open channel',
   'Fermeture forcée': 'Force close',
   'Fermeture coopérative': 'Cooperative close',
-  'Transaction de clôture réelle — suivez-la dans l’explorateur.':
-    'Real closing transaction — follow it in the explorer.',
+  'Transaction de clôture réelle — suivez-la dans l’explorateur.': 'Real closing transaction — follow it in the explorer.',
   'Échec de fermeture': 'Close failed',
   'Pair local BitLab-B : {s}': 'Local peer BitLab-B: {s}',
   'connecté (handshake réel)': 'connected (real handshake)',
   'non connecté': 'not connected',
   'Aucun canal. Financez le nœud A via son adresse on-chain (faucet), puis ouvrez un canal.':
     'No channels. Fund node A via its on-chain address (faucet), then open a channel.',
-  prêt: 'ready',
+  'prêt': 'ready',
   'en financement': 'funding',
   ' · {c}/{r} conf.': ' · {c}/{r} conf.',
   'sortant {n}': 'out {n}',
   'entrant {n}': 'in {n}',
   'financement {h}': 'funding {h}',
-  Fermer: 'Close',
+  'Fermer': 'Close',
   'Créer une facture BOLT11 réelle': 'Create a real BOLT11 invoice',
   'La facture est signée par la clé du nœud A (schnorr/secp256k1 via LDK). Un portefeuille testnet disposant d’un canal vers ce nœud pourrait la payer réellement.':
     'The invoice is signed by node A’s key (schnorr/secp256k1 via LDK). A testnet wallet with a channel to this node could actually pay it.',
@@ -446,38 +412,34 @@ export const EN: Record<string, string> = {
   'Café au bureau, mission BitQuest…': 'Office coffee, BitQuest mission…',
   'Générer la facture': 'Generate invoice',
   'Montant invalide': 'Invalid amount',
-  'Indiquez un montant en sats entre 1 et 4 294 967.':
-    'Enter an amount in sats between 1 and 4,294,967.',
+  'Indiquez un montant en sats entre 1 et 4 294 967.': 'Enter an amount in sats between 1 and 4,294,967.',
   'Facture BOLT11 signée': 'Signed BOLT11 invoice',
-  'Facture réelle émise par le nœud — valide 1 heure.':
-    'Real invoice issued by the node — valid for 1 hour.',
+  'Facture réelle émise par le nœud — valide 1 heure.': 'Real invoice issued by the node — valid for 1 hour.',
   'Facture BitLab': 'BitLab invoice',
   'hash de paiement : {h}': 'payment hash: {h}',
   'Décoder une facture (analyseur LDK réel)': 'Decode an invoice (real LDK parser)',
   'Collez une facture BOLT11 de testnet3 pour la décoder — signature, hash, expiration vérifiés par LDK.':
     'Paste a testnet3 BOLT11 invoice to decode it — signature, hash and expiry verified by LDK.',
-  Décoder: 'Decode',
+  'Décoder': 'Decode',
   'Payer une facture BOLT11': 'Pay a BOLT11 invoice',
   'Pathfinding réel par LDK (graph RGS/P2P + canaux locaux). Sans liquidité ou sans route vers le destinataire, le paiement échoue — l’erreur exacte du réseau est affichée.':
     'Real LDK pathfinding (RGS/P2P graph + local channels). Without liquidity or a route to the recipient, the payment fails — the exact network error is shown.',
   'Facture invalide': 'Invalid invoice',
-  'Une facture BOLT11 testnet commence par « lntb ».':
-    'A testnet BOLT11 invoice starts with “lntb”.',
+  'Une facture BOLT11 testnet commence par « lntb ».': 'A testnet BOLT11 invoice starts with “lntb”.',
   'Paiement HTLC envoyé': 'HTLC payment sent',
   'Montant {n} sats — le règlement final dépend du routage réel du réseau.':
     'Amount {n} sats — final settlement depends on real network routing.',
   'Paiement refusé': 'Payment rejected',
-  Payer: 'Pay',
+  'Payer': 'Pay',
   'Aucun paiement. Les règlements réels (entrants et sortants) apparaîtront ici.':
     'No payments yet. Real settlements (in and out) will appear here.',
   'Paiement sortant': 'Outgoing payment',
   'Paiement entrant': 'Incoming payment',
   'frais {n} sats': 'fee {n} sats',
   'Réseau Lightning mondial': 'Global Lightning network',
-  'Données réelles de mempool.space (exploration du mainnet).':
-    'Real data from mempool.space (mainnet exploration).',
-  nœuds: 'nodes',
-  canaux: 'channels',
+  'Données réelles de mempool.space (exploration du mainnet).': 'Real data from mempool.space (mainnet exploration).',
+  'nœuds': 'nodes',
+  'canaux': 'channels',
   'capacité totale': 'total capacity',
   'réseau non supporté': 'unsupported network',
 
@@ -489,7 +451,7 @@ export const EN: Record<string, string> = {
   'Sur cette page': 'On this page',
   'Retour au laboratoire': 'Return to the lab',
   'Sections du guide': 'Guide sections',
-  Démarrer: 'Getting started',
+  'Démarrer': 'Getting started',
   'Clés & adresses': 'Keys & addresses',
   'Réseaux & connectivité': 'Networks & connectivity',
   'Lightning — LDK réel': 'Lightning — real LDK',
@@ -499,7 +461,8 @@ export const EN: Record<string, string> = {
     'BitLab is a laboratory for learning Bitcoin and Lightning. Cryptography — key generation, transaction construction and signing — runs entirely in the browser, through audited libraries',
   'appliquant les règles de consensus du réseau. Les données publiques (blocs, soldes, frais) proviennent de nœuds Esplora publics':
     'that implement the consensus rules of the network. Public data (blocks, balances, fees) comes from public Esplora nodes',
-  ' ; deux nœuds Lightning LDK': '; two Lightning nodes based on LDK',
+  ' ; deux nœuds Lightning LDK':
+    '; two Lightning nodes based on LDK',
   ', compilés en WebAssembly, s’exécutent localement. Rien n’est simulé : tout résultat affiché provient d’un réseau Bitcoin réel.':
     ', compiled to WebAssembly, run locally. Nothing is simulated: every displayed result comes from a real Bitcoin network.',
   'Le projet suit le principe': 'The project follows the',
@@ -520,7 +483,8 @@ export const EN: Record<string, string> = {
   'Expérimenter Lightning': 'Experiment with Lightning',
   'Démarrer les deux nœuds LDK dans le navigateur, ouvrir un canal financé on-chain, puis émettre et payer des factures BOLT11':
     'Start the two LDK nodes in the browser, open an on-chain funded channel, then issue and pay BOLT11 invoices',
-  ' ou des offers BOLT12': ' or BOLT12 offers',
+  ' ou des offers BOLT12':
+    ' or BOLT12 offers',
   'Offers BOLT12': 'BOLT12 offers',
   'L’onglet Paiements distingue les deux protocoles. Une offer BOLT12 (lno1…) est un code de paiement réutilisable':
     'The Payments tab separates the two protocols. A BOLT12 offer (lno1…) is a reusable payment code',
@@ -535,16 +499,18 @@ export const EN: Record<string, string> = {
     ' (12 or 24 words). The resulting seed feeds a BIP32 tree',
   ' dont chaque branche correspond à un standard d’adresse : BIP44 (Legacy P2PKH)':
     ' whose branches map to address standards: BIP44 (Legacy P2PKH)',
-  ', BIP84 (SegWit P2WPKH)': ', BIP84 (SegWit P2WPKH)',
-  ' et BIP86 (Taproot P2TR)': ' and BIP86 (Taproot P2TR)',
-  '. BitLab repose sur les bibliothèques auditées': '. BitLab relies on the audited libraries',
-  '— les mêmes primitives que de nombreux portefeuilles en production.':
-    '— the same primitives as many production wallets.',
-  Type: 'Type',
+  ', BIP84 (SegWit P2WPKH)':
+    ', BIP84 (SegWit P2WPKH)',
+  ' et BIP86 (Taproot P2TR)':
+    ' and BIP86 (Taproot P2TR)',
+  '. BitLab repose sur les bibliothèques auditées':
+    '. BitLab relies on the audited libraries',
+  '— les mêmes primitives que de nombreux portefeuilles en production.': '— the same primitives as many production wallets.',
+  'Type': 'Type',
   'Chemin de dérivation': 'Derivation path',
-  Script: 'Script',
+  'Script': 'Script',
   'Préfixe exemple': 'Example prefix',
-  Le: 'The',
+  'Le': 'The',
   'suit le réseau :': 'follows the network:',
   'pour le mainnet,': 'for mainnet,',
   'pour les réseaux de test. Cette séparation garantit l’étanchéité des portefeuilles entre réseaux. Selon le format, les adresses sont encodées en base58check ou en bech32/bech32m, avec le préfixe propre à chaque réseau.':
@@ -565,10 +531,12 @@ export const EN: Record<string, string> = {
     'The active address’s UTXOs are fetched via Esplora; confirmed and pending outputs are distinguished. The user selects the ones funding the transaction.',
   'Les entrées et sorties sont assemblées ; un change automatique est ajouté lorsque le reliquat dépasse la limite de poussière (546 sats)':
     'Inputs and outputs are assembled; automatic change is added when the remainder exceeds the dust limit (546 sats)',
-  '. La taille virtuelle est estimée en direct.': '. The virtual size is estimated live.',
+  '. La taille virtuelle est estimée en direct.':
+    '. The virtual size is estimated live.',
   'La signature s’effectue localement : ECDSA pour Legacy et SegWit ; Schnorr et tweak Taproot (BIP86) pour P2TR':
     'Signing takes place locally: ECDSA for Legacy and SegWit; Schnorr and the Taproot tweak (BIP86) for P2TR',
-  '. La clé privée ne quitte pas le navigateur.': '. The private key never leaves the browser.',
+  '. La clé privée ne quitte pas le navigateur.':
+    '. The private key never leaves the browser.',
   'L’hexadécimal signé est publié vers le nœud du réseau actif via le proxy ; les confirmations sont ensuite suivies dans l’explorateur intégré.':
     'The signed hexadecimal is broadcast to the active network’s node via the proxy; confirmations are then tracked in the built-in explorer.',
   'Tailles et frais': 'Sizes and fees',
@@ -579,7 +547,7 @@ export const EN: Record<string, string> = {
     '. The input format determines transaction weight; the choice of address format therefore directly affects cost.',
   'Format d’entrée': 'Input format',
   'Poids approximatif': 'Approximate weight',
-  Usage: 'Use',
+  'Usage': 'Use',
   '~148 vB par entrée': '~148 vB per input',
   '~68 vB par entrée': '~68 vB per input',
   '~57 vB par entrée': '~57 vB per input',
@@ -594,7 +562,7 @@ export const EN: Record<string, string> = {
     'which enforces a strict path allow-list (injection protection), keeps a 60-second in-memory cache per network and relays to the corresponding public Esplora API',
   '. Ce canal ne transporte aucune donnée utilisateur : uniquement des informations publiques de la blockchain.':
     '. This channel carries no user data: only public blockchain information.',
-  Réseau: 'Network',
+  'Réseau': 'Network',
   'API Esplora': 'Esplora API',
   'Rôle au laboratoire': 'Role in the lab',
   'exploration seule — fonds réels': 'exploration only — real funds',
@@ -608,8 +576,10 @@ export const EN: Record<string, string> = {
     'Wallets are labeled per network at creation. The selector only shows wallets of the active network — a mainnet import on testnet is rejected, and cross-network signing is structurally impossible.',
   'Le module Lightning n’est': 'The Lightning module is',
   'pas une simulation': 'not a simulation',
-  ' : BitLab exécute deux nœuds': ': BitLab runs two',
-  '— le cœur Rust du Lightning Dev Kit': '— the Rust core of the Lightning Dev Kit',
+  ' : BitLab exécute deux nœuds':
+    ': BitLab runs two',
+  '— le cœur Rust du Lightning Dev Kit':
+    '— the Rust core of the Lightning Dev Kit',
   ', compilé en WebAssembly depuis rust/lnlab et piloté par un Web Worker dans le navigateur. Ils se synchronisent sur la chaîne via le proxy Esplora et échangent le protocole Lightning authentique — poignée de main Noise, messages BOLT':
     ', compiled to WebAssembly from rust/lnlab and driven by a Web Worker in the browser. They sync to the chain through the Esplora proxy and exchange the authentic Lightning protocol — Noise handshake, BOLT messages',
   ' — sur une paire de sockets mémoire. Chaque nœud possède sa propre graine, conservée exclusivement dans l’IndexedDB du site, ainsi que ses canaux et son historique de paiements.':
@@ -645,8 +615,8 @@ export const EN: Record<string, string> = {
   '. Le module Lightning, lui, ne passe plus par le serveur : il s’exécute dans le navigateur.':
     '. The Lightning module itself no longer goes through the server: it runs in the browser.',
   ' — proxy Esplora multi-réseaux': ' — multi-network Esplora proxy',
-  Endpoint: 'Endpoint',
-  Description: 'Description',
+  'Endpoint': 'Endpoint',
+  'Description': 'Description',
   'recommandations de frais (économie → prioritaire)': 'fee recommendations (economy → priority)',
   'hauteur du dernier bloc': 'latest block height',
   'UTXO dépensables d’une adresse': 'spendable UTXOs of an address',
@@ -679,10 +649,9 @@ export const EN: Record<string, string> = {
   'Environnement restreint': 'Restricted environment',
   'Le lab Lightning s’exécute entièrement dans le navigateur : aucun port sortant n’est requis, et seul le proxy Esplora de l’application a besoin d’un accès Internet. Il fonctionne donc derrière les pare-feux les plus restrictifs.':
     'The Lightning lab runs entirely in the browser: no outbound ports are required, and only the application’s Esplora proxy needs Internet access. It therefore works behind the most restrictive firewalls.',
-  Références: 'References',
+  'Références': 'References',
   'Voir la référence': 'See reference',
-  'Sources normatives et documentation technique utilisées dans ce guide.':
-    'Normative sources and technical documentation used in this guide.',
+  'Sources normatives et documentation technique utilisées dans ce guide.': 'Normative sources and technical documentation used in this guide.',
 
   'Du navigateur au réseau Bitcoin': 'From the browser to the Bitcoin network',
   'Dérivation hiérarchique des clés': 'Hierarchical key derivation',
@@ -694,8 +663,7 @@ export const EN: Record<string, string> = {
   '1 · clés & adresses': '1 · keys & addresses',
   'entrées (UTXO)': 'inputs (UTXOs)',
   'différence = frais du mineur': 'difference = miner fee',
-  'Chaque satoshi suit une chaîne de propriété vérifiable':
-    'Every satoshi follows a verifiable chain of ownership',
+  'Chaque satoshi suit une chaîne de propriété vérifiable': 'Every satoshi follows a verifiable chain of ownership',
   'Un sélecteur, cinq réseaux, mêmes primitives': 'One selector, five networks, same primitives',
   'liquidité sortante': 'outbound liquidity',
   'liquidité entrante': 'inbound liquidity',
@@ -713,14 +681,12 @@ export const EN: Record<string, string> = {
   'BitLab — le cycle complet, en vrai': 'BitLab — the full cycle, for real',
   'phrase BIP39 (12/24 mots)': 'BIP39 phrase (12/24 words)',
   'graine 512 bits': '512-bit seed',
-  'Une graine, une arborescence, trois formats d’adresse':
-    'One seed, one tree, three address formats',
+  'Une graine, une arborescence, trois formats d’adresse': 'One seed, one tree, three address formats',
   'signature ECDSA / Schnorr — dans le navigateur': 'ECDSA / Schnorr signing — in the browser',
-  sorties: 'outputs',
+  'sorties': 'outputs',
   'destinataire · 50 000 sats': 'recipient · 50,000 sats',
   'monnaie rendue · 9 200 sats': 'change · 9,200 sats',
-  'proxy Esplora unique · cache 60 s · liste blanche':
-    'single Esplora proxy · 60 s cache · allow-list',
+  'proxy Esplora unique · cache 60 s · liste blanche': 'single Esplora proxy · 60 s cache · allow-list',
   'Canal Lightning entre deux nœuds': 'Lightning channel between two nodes',
   'canal 2/2 · HTLC': 'channel 2/2 · HTLC',
   'financement on-chain 2/2': 'on-chain 2-of-2 funding',
@@ -730,68 +696,50 @@ export const EN: Record<string, string> = {
   'module Lightning — navigateur': 'Lightning module — browser',
   'liste blanche · cache · aucun secret': 'allow-list · cache · no secrets',
   'blocs · adresses · UTXO · frais · diffusion': 'blocks · addresses · UTXOs · fees · broadcast',
-  serveur: 'server',
-  'Ce que le navigateur signe, le serveur ne le saura jamais':
-    'What the browser signs, the server will never know',
+  'serveur': 'server',
+  'Ce que le navigateur signe, le serveur ne le saura jamais': 'What the browser signs, the server will never know',
 
   'Phrase mnémonique BIP39 invalide (mots inconnus ou checksum erroné).':
     'Invalid BIP39 mnemonic phrase (unknown words or bad checksum).',
   'Échec de la dérivation HD.': 'HD derivation failed.',
-  'Clé WIF invalide ou incompatible avec le réseau sélectionné.':
-    'Invalid WIF key, or incompatible with the selected network.',
+  'Clé WIF invalide ou incompatible avec le réseau sélectionné.': 'Invalid WIF key, or incompatible with the selected network.',
   'Aucun UTXO sélectionné.': 'No UTXO selected.',
   'Adresse de sortie invalide : {a}': 'Invalid output address: {a}',
-  'Montant de sortie invalide (sats entiers requis).':
-    'Invalid output amount (integer sats required).',
-  'Montant inférieur à la limite de poussière ({n} sats).':
-    'Amount below the dust limit ({n} sats).',
+  'Montant de sortie invalide (sats entiers requis).': 'Invalid output amount (integer sats required).',
+  'Montant inférieur à la limite de poussière ({n} sats).': 'Amount below the dust limit ({n} sats).',
   'TXID d’UTXO invalide.': 'Invalid UTXO TXID.',
   'Clé interne Taproot manquante.': 'Missing Taproot internal key.',
   'Au moins une sortie est requise.': 'At least one output is required.',
-  'Le total des sorties dépasse le total des UTXO sélectionnés.':
-    'Total outputs exceed the selected UTXOs.',
+  'Le total des sorties dépasse le total des UTXO sélectionnés.': 'Total outputs exceed the selected UTXOs.',
   'Hexadécimal de transaction invalide.': 'Invalid transaction hexadecimal.',
   'Le multisig nécessite au moins 2 clés publiques.': 'Multisig requires at least 2 public keys.',
   'Seuil m invalide (1 ≤ m ≤ {n}).': 'Invalid threshold m (1 ≤ m ≤ {n}).',
-  'Clé publique invalide (hex compressé 33 octets attendu).':
-    'Invalid public key (33-byte compressed hex expected).',
-  'Nœud {net} indisponible. Vérifiez la connexion puis réessayez.':
-    '{net} node unavailable. Check the connection and try again.',
+  'Clé publique invalide (hex compressé 33 octets attendu).': 'Invalid public key (33-byte compressed hex expected).',
+  'Nœud {net} indisponible. Vérifiez la connexion puis réessayez.': '{net} node unavailable. Check the connection and try again.',
   'Diffusion refusée par le nœud {net} : {err}': 'Broadcast rejected by the {net} node: {err}',
   'erreur {status}': '{status} error',
   'Le montant doit être un multiple de 1000 sats.': 'The amount must be a multiple of 1000 sats.',
 
-<<<<<<< HEAD
   'Canaux': 'Channels',
   'Factures': 'Invoices',
   'Paiements': 'Payments',
-=======
-  /* ─────────────────────────── Compléments ─────────────────────────── */
-  Canaux: 'Channels',
-  Factures: 'Invoices',
-  Paiements: 'Payments',
->>>>>>> 92c54ba (style: prettier-format repo)
   'Création impossible': 'Cannot create invoice',
-  Réseaux: 'Networks',
+  'Réseaux': 'Networks',
   'Générer un portefeuille': 'Generate a wallet',
   'Factures BOLT11': 'BOLT11 invoices',
-  Financer: 'Fund',
-  Connecter: 'Connect',
-  Ouvrir: 'Open',
+  'Financer': 'Fund',
+  'Connecter': 'Connect',
+  'Ouvrir': 'Open',
   'Démarrer les nœuds': 'Start the nodes',
-  et: 'and',
+  'et': 'and',
   'créée localement': 'created locally',
 
   'Laboratoire Lightning': 'Lightning lab',
   'Deux nœuds LDK réels compilés en WebAssembly tournent dans votre navigateur : canaux financés on-chain, factures BOLT11 signées, paiements HTLC authentiques. Vos clés et vos données restent dans votre navigateur.':
     'Two real LDK nodes compiled to WebAssembly run in your browser: on-chain funded channels, signed BOLT11 invoices, authentic HTLC payments. Your keys and data stay in your browser.',
-<<<<<<< HEAD
   'désactivé': 'off',
   'Fermer la navigation': 'Close navigation',
   'Impossible de dériver l’adresse demandée (entrée invalide).': 'Cannot derive the requested address (invalid input).',
-=======
-  désactivé: 'off',
->>>>>>> 92c54ba (style: prettier-format repo)
   'arrêt…': 'stopping…',
   'Nœud {n}': 'Node {n}',
   'Capacité sortante': 'Outbound capacity',
@@ -801,7 +749,6 @@ export const EN: Record<string, string> = {
     'Boots two Lightning nodes inside this browser ({net}). When off, no resource is consumed.',
   'A connecté à B': 'A connected to B',
   'pairs déconnectés': 'peers disconnected',
-<<<<<<< HEAD
   'laboratoire inactif': 'lab is not active',
   'aucune réponse du module — vérifiez votre connexion puis réactivez le laboratoire':
     'no response from the module — check your connection then toggle the lab again',
@@ -809,11 +756,6 @@ export const EN: Record<string, string> = {
     'worker script failed to load — reload the page and try again',
   'message illisible du module': 'unreadable message from the module',
   'Chargement du module WASM et synchronisation initiale…': 'Loading the WASM module and performing initial sync…',
-=======
-  Reconnecter: 'Reconnect',
-  'Chargement du module WASM et synchronisation initiale…':
-    'Loading the WASM module and performing initial sync…',
->>>>>>> 92c54ba (style: prettier-format repo)
   'Ouvrir un canal A → B': 'Open a channel A → B',
   'Le canal est financé on-chain : A construit la transaction de financement, B l’accepte, puis 6 confirmations verrouillent le canal.':
     'The channel is funded on-chain: A builds the funding transaction, B accepts it, then 6 confirmations lock the channel in.',
@@ -828,26 +770,16 @@ export const EN: Record<string, string> = {
   'Montant poussé trop élevé': 'Push amount too high',
   'Le push ne peut pas dépasser la capacité.': 'The push cannot exceed the capacity.',
   'Fermeture demandée': 'Closure requested',
-  'La transaction de fermeture sera diffusée on-chain.':
-    'The closing transaction will be broadcast on-chain.',
+  'La transaction de fermeture sera diffusée on-chain.': 'The closing transaction will be broadcast on-chain.',
   'Canaux du nœud A': 'Node A channels',
   'Aucun canal pour le moment.': 'No channels yet.',
   '{c}/{r} confirmations': '{c}/{r} confirmations',
-<<<<<<< HEAD
   'Capacité': 'Capacity',
   'Sortant': 'Outbound',
   'Entrant': 'Inbound',
   'Financer le canal': 'Fund the channel',
   'Payez {sats} sats vers l’adresse P2WSH ci-dessous depuis un portefeuille test : signé localement, la clé ne quitte jamais le navigateur.':
     'Pay {sats} sats to the P2WSH address below from a test wallet: signed locally, the key never leaves the browser.',
-=======
-  Capacité: 'Capacity',
-  Sortant: 'Outbound',
-  Entrant: 'Inbound',
-  'Financer le canal (on-chain)': 'Fund the channel (on-chain)',
-  'Le nœud A attend une transaction de {sats} sats vers l’adresse de financement P2WSH ci-dessous. Payez depuis l’un de vos portefeuilles : la transaction est signée localement, la clé ne quitte jamais le navigateur.':
-    'Node A is waiting for a {sats} sats transaction to the P2WSH funding address below. Pay from one of your wallets: the transaction is signed locally, the key never leaves the browser.',
->>>>>>> 92c54ba (style: prettier-format repo)
   'Script de financement illisible.': 'Unreadable funding script.',
   'Adresse de financement': 'Funding address',
   'Portefeuille source': 'Source wallet',
@@ -858,7 +790,7 @@ export const EN: Record<string, string> = {
     'The funding transaction is on-chain — wait for confirmations.',
   'Échec du financement': 'Funding failed',
   'Créer une facture BOLT11 (nœud B)': 'Create a BOLT11 invoice (node B)',
-  Créer: 'Create',
+  'Créer': 'Create',
   'Facture créée': 'Invoice created',
   'Signée par le nœud B — faites-la payer par A.': 'Signed by node B — have node A pay it.',
   'Montant invalide.': 'Invalid amount.',
@@ -875,8 +807,8 @@ export const EN: Record<string, string> = {
   'Offer réutilisable': 'Reusable offer',
   'Un code de paiement réutilisable, montant parfois libre — la facture est demandée au moment du paiement.':
     'A reusable payment code, sometimes with a free amount — the invoice is requested at payment time.',
-  facture: 'invoice',
-  offer: 'offer',
+  'facture': 'invoice',
+  'offer': 'offer',
   'Créer une offer BOLT12 (nœud B)': 'Create a BOLT12 offer (node B)',
   'Un même code lno1… pour un nombre illimité de paiements. Montant facultatif : laissez 0 pour un paiement libre.':
     'One lno1… code for unlimited payments. Amount optional: leave 0 for a free-amount payment.',
@@ -889,10 +821,10 @@ export const EN: Record<string, string> = {
   'Payer une offer (nœud A)': 'Pay an offer (node A)',
   'Le nœud A demande d’abord une facture au destinataire via messages onion chiffrés, puis la paie sur le canal.':
     'Node A first requests an invoice from the recipient over encrypted onion messages, then pays it over the channel.',
-  Vérifier: 'Verify',
-  Montant: 'Amount',
+  'Vérifier': 'Verify',
+  'Montant': 'Amount',
   'montant libre': 'free amount',
-  Émetteur: 'Issuer',
+  'Émetteur': 'Issuer',
   'Note au payeur (facultatif)': 'Payer note (optional)',
   'Demander et payer': 'Request & pay',
   'Montant requis': 'Amount required',
@@ -916,8 +848,7 @@ export const EN: Record<string, string> = {
   'Confirmer la suppression': 'Confirm deletion',
   'Réinitialiser…': 'Reset…',
   'Laboratoire réinitialisé': 'Lab reset',
-  'Toutes les données Lightning locales ont été supprimées.':
-    'All local Lightning data has been deleted.',
+  'Toutes les données Lightning locales ont été supprimées.': 'All local Lightning data has been deleted.',
   'financement du canal attendu': 'channel funding awaited',
   'paiement envoyé': 'payment sent',
   'tentative de routage échouée': 'routing attempt failed',
@@ -936,7 +867,7 @@ export const EN: Record<string, string> = {
   'Surveillance de la chaîne': 'Watching the chain',
   'Fenêtre active — minage en cours': 'Window open — mining now',
   'Diffusion du bloc…': 'Broadcasting block…',
-  Erreur: 'Error',
+  'Erreur': 'Error',
   '{n} threads': '{n} threads',
   'moteur {e}': '{e} engine',
   'âge du tip : {s} s': 'tip age: {s}s',
@@ -946,27 +877,19 @@ export const EN: Record<string, string> = {
   'Prochaine fenêtre minable dans ~{m} min': 'Next mineable window in ~{m} min',
   'Prochaine fenêtre minable dans ~{s} s': 'Next mineable window in ~{s}s',
   'Démarrer le mineur': 'Start the miner',
-  Arrêter: 'Stop',
-  Threads: 'Threads',
-  'Miner automatiquement dès la génération d’une clé':
-    'Mine automatically as soon as a key is generated',
-  'Blocs trouvés — récompense mûre après {n} confirmations :':
-    'Blocks found — reward matures after {n} confirmations:',
+  'Arrêter': 'Stop',
+  'Threads': 'Threads',
+  'Miner automatiquement dès la génération d’une clé': 'Mine automatically as soon as a key is generated',
+  'Blocs trouvés — récompense mûre après {n} confirmations :': 'Blocks found — reward matures after {n} confirmations:',
   '{c}/{n} conf.': '{c}/{n} conf.',
-  mûr: 'mature',
+  'mûr': 'mature',
   'Pédagogie : le mineur construit un bloc vide (coinbase seule) vers votre adresse et balaie les nonces en SHA-256d — exactement le travail des mineurs Bitcoin, en version jouable. Les threads sont bornés pour rester doux avec votre machine.':
     'How it works: the miner builds an empty block (coinbase only) paying your address and sweeps nonces in SHA-256d — exactly what Bitcoin miners do, in playable form. Threads are capped to stay gentle on your machine.',
   'Mineur démarré automatiquement': 'Miner started automatically',
   'Il minera vers {a} pendant les fenêtres BIP 94 — le panneau ci-dessous suit la progression.':
     'It will mine to {a} during BIP 94 windows — the panel below tracks progress.',
 
-<<<<<<< HEAD
   'Mineur Regtest — PoW réel sur votre chaîne privée': 'Regtest miner — real PoW on your private chain',
-=======
-  /* ── Regtest : mineur navigateur & nœud externe (mode avancé) ── */
-  'Mineur Regtest — PoW réel sur votre chaîne privée':
-    'Regtest miner — real PoW on your private chain',
->>>>>>> 92c54ba (style: prettier-format repo)
   'Mineur — indisponible sur ce réseau': 'Miner — unavailable on this network',
   'Ce réseau ne peut pas être miné depuis le navigateur (faucets du module Portefeuille, ou nœud signataire requis). Utilisez Testnet4 ou Regtest pour le minage réel.':
     'This network cannot be mined from the browser (see the Wallet module faucets, or a signer node is required). Use Testnet4 or Regtest for real mining.',
@@ -982,15 +905,13 @@ export const EN: Record<string, string> = {
     'Non-loopback host: the BitLab server only accepts loopback or private addresses (127.0.0.1, LAN).',
   'Enregistrer et tester': 'Save & test',
   'Nœud connecté': 'Node connected',
-  'Nœud injoignable — Core tourne-t-il avec -regtest -rest=1 ?':
-    'Node unreachable — is Core running with -regtest -rest=1?',
-  'REST OK mais RPC refusé — vérifiez rpcuser/rpcpass':
-    'REST OK but RPC refused — check rpcuser/rpcpass',
+  'Nœud injoignable — Core tourne-t-il avec -regtest -rest=1 ?': 'Node unreachable — is Core running with -regtest -rest=1?',
+  'REST OK mais RPC refusé — vérifiez rpcuser/rpcpass': 'REST OK but RPC refused — check rpcuser/rpcpass',
   'Identifiants stockés uniquement dans votre navigateur et transmis au serveur BitLab local, qui ne cible jamais d’hôte public.':
     'Credentials are stored in your browser only and sent to the local BitLab server, which never targets a public host.',
   'Le laboratoire Lightning est disponible sur testnet4, testnet3, signet et regtest. Changez de réseau dans la barre latérale.':
     'The Lightning lab is available on testnet4, testnet3, signet and regtest. Switch networks in the sidebar.',
-  Journal: 'Log',
+  'Journal': 'Log',
 
   'Chaîne regtest — laboratoire local': 'Regtest chain — local laboratory',
   'La chaîne privée est embarquée dans BitLab : rien à installer, ni Docker, ni machine virtuelle.':
@@ -1000,43 +921,30 @@ export const EN: Record<string, string> = {
   'Nœud externe (Bitcoin Core)': 'External node (Bitcoin Core)',
   'Désactivé : le moteur embarqué de BitLab sert la chaîne. Activé : votre Core local fait foi.':
     'Off: BitLab’s embedded engine serves the chain. On: your local Core is the authority.',
-  Hauteur: 'Height',
+  'Hauteur': 'Height',
   'Subvention / bloc': 'Subsidy / block',
   'Halving dans': 'Halving in',
   '{n} blocs': '{n} blocks',
-  Mempool: 'Mempool',
+  'Mempool': 'Mempool',
   'Faucet intégré — sats de test instantanés': 'Built-in faucet — instant test sats',
   'Le serveur signe une vraie transaction depuis son pool préminé puis mine 1 bloc : le solde est dépensable immédiatement.':
     'The server signs a real transaction from its pre-mined pool then mines 1 block: the balance is spendable immediately.',
   'Recevoir sur {a}': 'Send to {a}',
   'Miner 10 blocs': 'Mine 10 blocks',
-  'Générez et sélectionnez un portefeuille pour recevoir des sats.':
-    'Generate and select a wallet to receive sats.',
+  'Générez et sélectionnez un portefeuille pour recevoir des sats.': 'Generate and select a wallet to receive sats.',
   '{sats} sats envoyés — confirmés au bloc #{h}.': '{sats} sats sent — confirmed at block #{h}.',
-  '10 blocs minés — hauteur {h}. La récompense mûrit après 100 blocs.':
-    '10 blocks mined — height {h}. The reward matures after 100 blocks.',
-  'Chaîne réinitialisée — genèse neuf, pool faucet reconstitué.':
-    'Chain reset — fresh genesis, faucet pool rebuilt.',
-  'Pool faucet : {m} BTC mûrs · {i} BTC en maturation.':
-    'Faucet pool: {m} BTC mature · {i} BTC maturing.',
+  '10 blocs minés — hauteur {h}. La récompense mûrit après 100 blocs.': '10 blocks mined — height {h}. The reward matures after 100 blocks.',
+  'Chaîne réinitialisée — genèse neuf, pool faucet reconstitué.': 'Chain reset — fresh genesis, faucet pool rebuilt.',
+  'Pool faucet : {m} BTC mûrs · {i} BTC en maturation.': 'Faucet pool: {m} BTC mature · {i} BTC maturing.',
   'Réinitialiser la chaîne': 'Reset the chain',
   'Le regtest est embarqué dans BitLab : la chaîne privée tourne dans l’application — ni Docker, ni machine virtuelle, ni nœud à installer. Le faucet intégré distribue des BTC de test instantanément, et le mineur difficulty 1 fait tourner la PoW réelle dans votre navigateur.':
     'Regtest is embedded in BitLab: the private chain runs inside the application — no Docker, no virtual machine, no node to install. The built-in faucet hands out test BTC instantly, and the difficulty-1 miner runs real PoW in your browser.',
   'Le regtest est votre chaîne personnelle : difficulté 1, chaque bloc se trouve en quelques hachages et la récompense de 50 BTC de test est payée à votre adresse. Chaque bloc est remis à la chaîne regtest embarquée de BitLab (ou à votre nœud externe si configuré) — la récompense mûrit après 100 blocs.':
     'Regtest is your personal chain: difficulty 1, each block takes a few hashes and the 50 test-BTC reward pays your address. Every block is submitted to BitLab’s embedded regtest chain (or your external node if configured) — the reward matures after 100 blocks.',
-<<<<<<< HEAD
   'Minez des blocs depuis l’onglet Mineur pour confirmer.': 'Mine blocks from the Miner tab to confirm.',
   'Blocs de confirmation minés automatiquement.': 'Confirmation blocks mined automatically.',
 
   'Mineur': 'Miner',
-=======
-  'Minez des blocs depuis l’onglet Mineur pour confirmer.':
-    'Mine blocks from the Miner tab to confirm.',
-  '6 blocs minés automatiquement.': '6 blocks mined automatically.',
-
-  /* ───────────────── Module Mineur (page dédiée, PoW réel) ───────────────── */
-  Mineur: 'Miner',
->>>>>>> 92c54ba (style: prettier-format repo)
   'Mineur — PoW réel dans votre navigateur': 'Miner — real PoW in your browser',
   'Choisissez le réseau à miner, le portefeuille qui recevra les récompenses, puis démarrez : le hachage SHA-256d est réel, seule la difficulté est jouable.':
     'Pick the network to mine, the wallet that will receive the rewards, then start: the SHA-256d hashing is real, only the difficulty is playable.',
@@ -1061,8 +969,8 @@ export const EN: Record<string, string> = {
   'Journal d’activité': 'Activity log',
   'Opérations du laboratoire : réseau, portefeuilles, transactions, minage. Aucun secret n’y figure — les clés restent dans votre navigateur.':
     'Lab operations: network, wallets, transactions, mining. No secrets here — keys stay in your browser.',
-  Tout: 'All',
-  Effacer: 'Clear',
+  'Tout': 'All',
+  'Effacer': 'Clear',
   'Aucune entrée pour ce module pour le moment.': 'No entries for this module yet.',
   'Sorties brutes des nœuds (niveau LDK) : A en émeraude, B en violet, messages système en bleu.':
     'Raw node output (LDK level): A in emerald, B in violet, system messages in blue.',

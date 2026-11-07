@@ -21,8 +21,7 @@ export function blockSubsidy(height: number, net: string): number {
 export function compactBitsToTarget(bits: number): Uint8Array {
   const exponent = bits >>> 24;
   const mantissa = bits & 0x007f_ffff;
-  if (exponent < 3 || exponent > 35)
-    throw new Error(`exposant nBits hors bornes : 0x${bits.toString(16)}`);
+  if (exponent < 3 || exponent > 35) throw new Error(`exposant nBits hors bornes : 0x${bits.toString(16)}`);
   const target = new Uint8Array(32);
   const bytePos = exponent - 3;
   for (let k = 0; k < 3; k++) {
@@ -70,18 +69,7 @@ export interface CoinbaseParts {
   tag: Uint8Array;
 }
 
-<<<<<<< HEAD
 export function buildCoinbase({ height, scriptPubKey, valueSats, tag }: CoinbaseParts): { txHex: string; txid: string } {
-=======
-/**
- * Construit la transaction coinbase d'un bloc (sérialisation legacy : la
- * coinbase ne porte pas de témoin). txid = double-SHA256, affiché big-endian.
- */
-export function buildCoinbase({ height, scriptPubKey, valueSats, tag }: CoinbaseParts): {
-  txHex: string;
-  txid: string;
-} {
->>>>>>> 92c54ba (style: prettier-format repo)
   const scriptSig = new Uint8Array([...bip34Script(height), ...tag]);
   const parts: number[][] = [];
   const push = (bytes: number[] | Uint8Array) => parts.push(Array.from(bytes));
@@ -95,8 +83,7 @@ export function buildCoinbase({ height, scriptPubKey, valueSats, tag }: Coinbase
   push([0xff, 0xff, 0xff, 0xff]);
   push([0x01]);
   const value = BigInt(valueSats);
-  if (value <= 0n || value > 0xffff_ffff_ffffn)
-    throw new Error(`valeur coinbase invalide : ${valueSats}`);
+  if (value <= 0n || value > 0xffff_ffff_ffffn) throw new Error(`valeur coinbase invalide : ${valueSats}`);
   for (let i = 0; i < 8; i++) push([Number((value >> BigInt(8 * i)) & 0xffn)]);
   push([scriptPubKey.length]);
   push(scriptPubKey);
@@ -116,22 +103,7 @@ export interface TemplateParams {
   timeGapSec?: number;
 }
 
-<<<<<<< HEAD
 export function assembleHeader76({ tipHashHex, txidHex, tipTimeSec, nowMs, bits, timeGapSec = WINDOW_SECS }: TemplateParams): string {
-=======
-/**
- * Assemble les 76 premiers octets de l'en-tête (version..nBits) — le nonce
- * est balayé par les workers. Tous les champs sont sérialisés little-endian.
- */
-export function assembleHeader76({
-  tipHashHex,
-  txidHex,
-  tipTimeSec,
-  nowMs,
-  bits,
-  timeGapSec = WINDOW_SECS,
-}: TemplateParams): string {
->>>>>>> 92c54ba (style: prettier-format repo)
   const time = Math.max(Math.floor(nowMs / 1000), tipTimeSec + timeGapSec + 1);
   if (time > Math.floor(nowMs / 1000) + 7200) {
     throw new Error('horodatage de gabarit trop éloigné (tip du futur ?)');
