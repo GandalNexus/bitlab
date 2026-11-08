@@ -177,7 +177,7 @@ function FundingBridge({
   onSubmit,
 }: {
   pending: LnPendingFunding;
-  onSubmit: (hex: string, ucid: string) => void;
+  onSubmit: (hex: string, ucid: string) => Promise<void>;
 }) {
   const { t } = useT();
   const { toast } = useToast();
@@ -241,7 +241,7 @@ function FundingBridge({
           if (!mineRes.ok) throw first;
         }
       }
-      onSubmit(res.hex, pending.userChannelId);
+      await onSubmit(res.hex, pending.userChannelId);
       let minedNote = '';
       if (net === 'regtest' && regtestMode() === 'embedded') {
         try {

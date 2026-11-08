@@ -98,6 +98,11 @@ const initialStatus: LnLabStatus = {
 const MAX_EVENTS = 60;
 const MAX_LOGS = 200;
 
+export function classifyBroadcast(ok: boolean, detail: string): { ok: boolean; detail: string } {
+  if (!ok && /déjà connue|already known/i.test(detail)) return { ok: true, detail: '' };
+  return { ok, detail };
+}
+
 class LnLabController {
   private status: LnLabStatus = {
     ...initialStatus,
@@ -343,8 +348,9 @@ class LnLabController {
         break;
       }
       case 'broadcast': {
+        const c = classifyBroadcast(Boolean(msg.ok), String(msg.detail ?? ''));
         const broadcasts = [
-          { ok: Boolean(msg.ok), detail: String(msg.detail ?? ''), at: Date.now() },
+          { ok: c.ok, detail: c.detail, at: Date.now() },
           ...this.status.broadcasts,
         ].slice(0, 20);
         this.patch({ broadcasts });
@@ -449,8 +455,15 @@ class LnLabController {
     );
   }
 
-  submitFundingTx(hexTx: string, userChannelId: string): void {
-    this.send({ type: 'fundingTx', hex: hexTx, userChannelId });
+  submitFundingTx(hexTx: string, userChannelId: string): Promise<void> {
+    return this.request<void>(
+      { type: 'fundingTx', hex: hexTx, userChannelId, id: userChannelId },
+      (data) =>
+        (data.type === 'fundingSubmitted' && String(data.userChannelId) === String(userChannelId)
+          ? true
+          : undefined) as void,
+      'délai de financement dépassé',
+    );
   }
 
   createInvoice(
