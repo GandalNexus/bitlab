@@ -793,6 +793,7 @@ export const EN: Record<string, string> = {
   'Le nœud B négocie le canal — l’adresse de financement va apparaître.':
     'Node B is negotiating the channel — the funding address will appear shortly.',
   'délai de la demande d’ouverture dépassé': 'opening request timed out',
+  'délai de financement dépassé': 'funding acknowledgement timed out',
   'Capacité invalide': 'Invalid capacity',
   '1000 sats minimum.': '1000 sats minimum.',
   'Montant poussé trop élevé': 'Push amount too high',
