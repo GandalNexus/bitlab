@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, FlaskConical, Loader2, X } from 'lucide-react';
+import { ExternalLink, FlaskConical, Loader2, User, X } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import {
   buildReturnUrl,
@@ -13,6 +13,7 @@ import {
   selectCurrentProofValue,
   useBitquestMissionStore,
 } from '@/lib/bitquest-mission-store';
+import { useBitquestUserStore } from '@/lib/bitquest-user-store';
 import { cn } from '@/lib/utils';
 
 /**
@@ -43,6 +44,8 @@ export function BitquestMissionBanner() {
   const mission = useBitquestMissionStore((s) => s.mission);
   const proofValue = useBitquestMissionStore(selectCurrentProofValue);
   const clearMission = useBitquestMissionStore((s) => s.clearMission);
+  const user = useBitquestUserStore((s) => s.user);
+  const launchStatus = useBitquestUserStore((s) => s.launchStatus);
   const [submitting, setSubmitting] = useState(false);
 
   if (!mission) return null;
@@ -92,6 +95,21 @@ export function BitquestMissionBanner() {
             <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide">
               {mission.network}
             </span>
+            {user && (
+              <span
+                className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide"
+                title={t('Connecté via GandalNexus — identité vérifiée par BitQuest.')}
+              >
+                <User className="h-3 w-3" aria-hidden />
+                @{user.pseudo}
+              </span>
+            )}
+            {!user && launchStatus === 'pending' && (
+              <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                {t('identification…')}
+              </span>
+            )}
           </div>
           {mission.instructions && (
             <p className="text-foreground/80 text-xs leading-relaxed sm:max-w-2xl">
