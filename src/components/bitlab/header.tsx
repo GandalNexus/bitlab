@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Blocks, Menu, ChevronDown, Check, ShieldAlert } from 'lucide-react';
+import { Blocks, Menu, ChevronDown, Check, ShieldAlert, User, ExternalLink, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,8 @@ import { NETWORKS, NET_ORDER, type NetId } from '@/lib/networks';
 import { useT } from '@/lib/i18n';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import { cn } from '@/lib/utils';
+import { useBitquestUserStore } from '@/lib/bitquest-user-store';
+import { getBitquestUrl } from '@/lib/bitquest-user';
 
 export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const net = useLabStore((s) => s.network);
@@ -126,10 +128,77 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
             ) : null}
           </div>
 
+          <GandalNexusUserBadge />
+
           <LangToggle />
           <ThemeToggle />
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * Badge d'identité GandalNexus (LOT 3).
+ *
+ * Trois états visuels :
+ *   - connecté → bouton @pseudo avec lien direct vers BitQuest dashboard
+ *   - identification en cours → chip avec Loader2
+ *   - non connecté → bouton "Se connecter" qui ouvre BitQuest
+ *
+ * Caché en < sm pour laisser de la place au sélecteur de réseau sur mobile.
+ */
+function GandalNexusUserBadge() {
+  const { t } = useT();
+  const user = useBitquestUserStore((s) => s.user);
+  const launchStatus = useBitquestUserStore((s) => s.launchStatus);
+  const bitquestUrl = getBitquestUrl();
+
+  if (user) {
+    return (
+      <a
+        href={`${bitquestUrl}/`}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={t('Ouvert dans BitQuest · identité vérifiée')}
+        className={cn(
+          'border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary hidden items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors sm:flex',
+          'focus-visible:ring-primary/40 outline-none focus-visible:ring-2',
+        )}
+      >
+        <User className="h-3.5 w-3.5" aria-hidden />
+        <span className="max-w-[10ch] truncate">@{user.pseudo}</span>
+        <ExternalLink className="h-3 w-3 opacity-60" aria-hidden />
+      </a>
+    );
+  }
+
+  if (launchStatus === 'pending') {
+    return (
+      <span
+        className="border-border bg-card text-muted-foreground hidden items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium sm:flex"
+        aria-live="polite"
+      >
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+        {t('identification…')}
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={bitquestUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={t('Rejoindre GandalNexus')}
+      className={cn(
+        'border-border bg-card hover:bg-accent/60 hidden items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors sm:flex',
+        'focus-visible:ring-primary/40 outline-none focus-visible:ring-2',
+      )}
+    >
+      <User className="text-muted-foreground h-3.5 w-3.5" aria-hidden />
+      {t('Se connecter')}
+      <ExternalLink className="text-muted-foreground h-3 w-3" aria-hidden />
+    </a>
   );
 }
