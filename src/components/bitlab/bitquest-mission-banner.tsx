@@ -1,6 +1,7 @@
 'use client';
 
-import { ExternalLink, FlaskConical, X } from 'lucide-react';
+import { useState } from 'react';
+import { ExternalLink, FlaskConical, Loader2, X } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import {
   buildReturnUrl,
@@ -15,6 +16,14 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
+ * Délai d'affichage du loader avant redirection vers BitQuest.
+ * Court mais suffisant pour que l'apprenant voie "Preuve envoyée…"
+ * et comprenne la transition. 400ms est le seuil de perception
+ * immédiate/non-immédiate standard UX.
+ */
+const SUBMIT_FEEDBACK_MS = 400;
+
+/**
  * Bannière affichée en haut de l'app quand une mission BitQuest est
  * active. Elle rappelle le contexte (quête, type de preuve, réseau),
  * et propose un bouton « Terminer et renvoyer la preuve » qui redirige
@@ -23,12 +32,18 @@ import { cn } from '@/lib/utils';
  *
  * Le bouton est désactivé tant que la preuve n'est pas disponible
  * dans le store ; un hint explicatif est affiché à la place.
+ *
+ * Phase submitting (I3) : au clic "Terminer", on passe dans un état
+ * visuel "retour vers BitQuest" (spinner + message) pendant ~400ms
+ * avant la redirection effective. Évite l'effet "flash" où l'URL
+ * change sans feedback utilisateur.
  */
 export function BitquestMissionBanner() {
   const { t } = useT();
   const mission = useBitquestMissionStore((s) => s.mission);
   const proofValue = useBitquestMissionStore(selectCurrentProofValue);
   const clearMission = useBitquestMissionStore((s) => s.clearMission);
+  const [submitting, setSubmitting] = useState(false);
 
   if (!mission) return null;
 
@@ -36,9 +51,16 @@ export function BitquestMissionBanner() {
     proofValue !== null && proofValue.length > 0 && isValidReturnValue(mission.kind, proofValue);
 
   const onFinish = () => {
-    if (!ready || !proofValue) return;
+    if (!ready || !proofValue || submitting) return;
     const url = buildReturnUrl(mission, proofValue);
-    window.location.href = url;
+    setSubmitting(true);
+    // Court délai pour laisser l'utilisateur voir le feedback
+    // "Preuve envoyée, retour vers BitQuest…" avant la navigation.
+    // setTimeout est préférable à requestIdleCallback ici : on veut
+    // un délai déterministe, pas opportuniste.
+    window.setTimeout(() => {
+      window.location.href = url;
+    }, SUBMIT_FEEDBACK_MS);
   };
 
   const hintKey = HINT_KEY_BY_KIND[mission.kind];
@@ -76,35 +98,56 @@ export function BitquestMissionBanner() {
               {mission.instructions}
             </p>
           )}
-          <p className="text-muted-foreground text-xs">
-            {ready
-              ? t('Preuve prête ({field}). Clique pour revenir à BitQuest.', {
-                  field: RETURN_FIELD_BY_KIND[mission.kind],
-                })
-              : t(hintKey)}
+          <p
+            className={cn(
+              'text-xs',
+              submitting ? 'text-primary font-medium' : 'text-muted-foreground',
+            )}
+            aria-live="polite"
+          >
+            {submitting
+              ? t('Preuve envoyée, retour vers BitQuest…')
+              : ready
+                ? t('Preuve prête ({field}). Clique pour revenir à BitQuest.', {
+                    field: RETURN_FIELD_BY_KIND[mission.kind],
+                  })
+                : t(hintKey)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={onFinish}
-            disabled={!ready}
+            disabled={!ready || submitting}
+            aria-busy={submitting}
             className={cn(
               'inline-flex min-h-[32px] items-center gap-1.5 rounded-md border px-3 py-1 text-xs font-medium transition',
-              ready
+              ready && !submitting
                 ? 'border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer'
-                : 'border-border text-muted-foreground cursor-not-allowed opacity-60',
+                : submitting
+                  ? 'border-primary/50 bg-primary/10 text-primary cursor-wait'
+                  : 'border-border text-muted-foreground cursor-not-allowed opacity-60',
             )}
           >
-            {t('Terminer et renvoyer la preuve')}
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+            {submitting ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                {t('Retour en cours…')}
+              </>
+            ) : (
+              <>
+                {t('Terminer et renvoyer la preuve')}
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </>
+            )}
           </button>
           <button
             type="button"
             onClick={clearMission}
+            disabled={submitting}
             aria-label={t('Abandonner la mission BitQuest')}
             title={t('Abandonner la mission BitQuest')}
-            className="text-muted-foreground hover:bg-muted inline-flex h-7 w-7 items-center justify-center rounded-md"
+            className="text-muted-foreground hover:bg-muted inline-flex h-7 w-7 items-center justify-center rounded-md disabled:opacity-40"
           >
             <X className="h-3.5 w-3.5" aria-hidden />
           </button>
