@@ -1,7 +1,6 @@
 <div align="center">
   <a href="https://github.com/GandalNexus/bitlab">
-    <img src="public/icon-light.svg#gh-light-mode-only" alt="BitLab" width="140" />
-    <img src="public/icon-dark.svg#gh-dark-mode-only" alt="BitLab" width="140" />
+    <img src="public/icon-dark.svg" alt="BitLab" width="140" />
   </a>
 
   <h1>BitLab</h1>
