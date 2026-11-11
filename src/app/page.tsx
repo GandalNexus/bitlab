@@ -76,7 +76,7 @@ export default function BitLabPage() {
             sidebarCollapsed ? 'lg:pl-[68px]' : 'lg:pl-64',
           )}
         >
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
             {tab === 'dashboard' ? <Dashboard onNavigate={(t) => setTab(t as TabId)} /> : null}
             {tab === 'portefeuille' ? <WalletModule /> : null}
             {tab === 'transactions' ? <TxBuilder /> : null}
@@ -86,7 +86,7 @@ export default function BitLabPage() {
           </main>
 
           <footer className="border-border/70 bg-card/40 mt-auto border-t py-3.5">
-            <div className="text-muted-foreground mx-auto flex max-w-5xl justify-center px-4 text-[11px] sm:px-6">
+            <div className="text-muted-foreground mx-auto flex max-w-6xl justify-center px-4 text-[11px] sm:px-6">
               <span
                 className={cn(
                   'text-muted-foreground/70',
