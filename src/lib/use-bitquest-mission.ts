@@ -4,6 +4,8 @@ import { useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { parseBitquestMission, kindToTab, type BitlabTab } from './bitquest-bridge';
 import { useBitquestMissionStore } from './bitquest-mission-store';
+import { useBitquestUserStore } from './bitquest-user-store';
+import { verifyLaunchTokenAgainstBitquest } from './bitquest-user';
 import { useLabStore } from './store';
 
 /**
@@ -26,6 +28,9 @@ export function useBitquestMission(onTab: (tab: BitlabTab) => void): void {
   const searchParams = useSearchParams();
   const setMission = useBitquestMissionStore((s) => s.setMission);
   const currentMission = useBitquestMissionStore((s) => s.mission);
+  const setUser = useBitquestUserStore((s) => s.setUser);
+  const setLaunchStatus = useBitquestUserStore((s) => s.setLaunchStatus);
+  const launchStatus = useBitquestUserStore((s) => s.launchStatus);
   const setNetwork = useLabStore((s) => s.setNetwork);
   const addLog = useLabStore((s) => s.addLog);
 
@@ -59,10 +64,55 @@ export function useBitquestMission(onTab: (tab: BitlabTab) => void): void {
         kind: parsed.kind,
         réseau: parsed.network,
         signée: parsed.sig !== null,
+        avec_attempt: parsed.attemptId !== null,
+        avec_identité: parsed.launchToken !== null,
       },
     });
+
+    // SSO léger (LOT 2) : si on a reçu un launch_token, on l'échange
+    // contre le profil utilisateur côté BitQuest (verify-launch-token).
+    // Side-effect bloc-indépendant du reste du bootstrap mission. Zéro
+    // retry : single-use, TTL 60s, replay bloqué côté serveur.
+    if (parsed.launchToken && launchStatus !== 'pending') {
+      const token = parsed.launchToken;
+      setLaunchStatus('pending');
+      void verifyLaunchTokenAgainstBitquest(token)
+        .then((user) => {
+          setUser(user);
+          setLaunchStatus('success');
+          addLog({
+            kind: 'op',
+            module: 'bitquest',
+            label: 'identité GandalNexus récupérée',
+            detail: { pseudo: user.pseudo, role: user.role },
+          });
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : 'échec inconnu';
+          setLaunchStatus('error', msg);
+          addLog({
+            kind: 'error',
+            module: 'bitquest',
+            label: 'échec échange launch token',
+            detail: { raison: msg },
+          });
+        });
+    }
+
     // Nettoie l'URL (les params restent dans le store Zustand, ils ne
     // doivent plus apparaître dans l'historique de navigation).
     router.replace(pathname);
-  }, [parsed, currentMission, setMission, setNetwork, onTab, addLog, router, pathname]);
+  }, [
+    parsed,
+    currentMission,
+    setMission,
+    setNetwork,
+    onTab,
+    addLog,
+    router,
+    pathname,
+    setUser,
+    setLaunchStatus,
+    launchStatus,
+  ]);
 }
