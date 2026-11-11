@@ -21,8 +21,17 @@ export interface BitquestUserState {
    */
   launchStatus: "idle" | "pending" | "success" | "error";
   launchError: string | null;
+  /**
+   * Session token émis par BitQuest à la consommation du launch_token.
+   * JWT HS256 aud=bitlab-session, TTL 2h. Utilisé en Authorization:
+   * Bearer pour les appels CORS user-scoped (read-only).
+   * `sessionExpiresAt` en ms epoch (nullable si pas encore de session).
+   */
+  sessionToken: string | null;
+  sessionExpiresAt: number | null;
   setUser: (user: BitquestUser | null) => void;
   setLaunchStatus: (status: BitquestUserState["launchStatus"], error?: string | null) => void;
+  setSession: (token: string, expiresAt: number) => void;
   clearUser: () => void;
 }
 
@@ -32,6 +41,8 @@ const INITIAL = {
   user: null as BitquestUser | null,
   launchStatus: "idle" as const,
   launchError: null as string | null,
+  sessionToken: null as string | null,
+  sessionExpiresAt: null as number | null,
 };
 
 const noopStorage: Storage = {
@@ -50,6 +61,8 @@ export const useBitquestUserStore = create<BitquestUserState>()(
       setUser: (user) => set({ user }),
       setLaunchStatus: (launchStatus, error = null) =>
         set({ launchStatus, launchError: error }),
+      setSession: (sessionToken, sessionExpiresAt) =>
+        set({ sessionToken, sessionExpiresAt }),
       clearUser: () => set({ ...INITIAL }),
     }),
     {
@@ -63,6 +76,8 @@ export const useBitquestUserStore = create<BitquestUserState>()(
         user: state.user,
         launchStatus: state.launchStatus,
         launchError: state.launchError,
+        sessionToken: state.sessionToken,
+        sessionExpiresAt: state.sessionExpiresAt,
       }),
       version: 1,
     },

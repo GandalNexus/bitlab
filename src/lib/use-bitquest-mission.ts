@@ -30,6 +30,7 @@ export function useBitquestMission(onTab: (tab: BitlabTab) => void): void {
   const currentMission = useBitquestMissionStore((s) => s.mission);
   const setUser = useBitquestUserStore((s) => s.setUser);
   const setLaunchStatus = useBitquestUserStore((s) => s.setLaunchStatus);
+  const setSession = useBitquestUserStore((s) => s.setSession);
   const launchStatus = useBitquestUserStore((s) => s.launchStatus);
   const setNetwork = useLabStore((s) => s.setNetwork);
   const addLog = useLabStore((s) => s.addLog);
@@ -77,14 +78,15 @@ export function useBitquestMission(onTab: (tab: BitlabTab) => void): void {
       const token = parsed.launchToken;
       setLaunchStatus('pending');
       void verifyLaunchTokenAgainstBitquest(token)
-        .then((user) => {
-          setUser(user);
+        .then((res) => {
+          setUser(res.user);
+          setSession(res.session.token, new Date(res.session.expiresAt).getTime());
           setLaunchStatus('success');
           addLog({
             kind: 'op',
             module: 'bitquest',
             label: 'identité GandalNexus récupérée',
-            detail: { pseudo: user.pseudo, role: user.role },
+            detail: { pseudo: res.user.pseudo, role: res.user.role, session_ttl_s: res.session.ttlSeconds },
           });
         })
         .catch((err: unknown) => {
@@ -113,6 +115,7 @@ export function useBitquestMission(onTab: (tab: BitlabTab) => void): void {
     pathname,
     setUser,
     setLaunchStatus,
+    setSession,
     launchStatus,
   ]);
 }
