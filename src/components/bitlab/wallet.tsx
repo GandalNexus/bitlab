@@ -94,7 +94,22 @@ function WalletDetail({ w }: { w: LabWallet }) {
   const info = TYPE_INFO[w.type];
   const balance = useQuery({
     queryKey: ['address', net, w.address],
-    queryFn: () => api.address(w.address),
+    queryFn: async () => {
+      // On regtest-embedded, derive balance directly from the UTXO set —
+      // it is always correct after deserialization, unlike addrTxs which
+      // depends on a re-indexed view of confirmed transactions.
+      // On public networks, the standard addressInfo endpoint is fine.
+      if (net === 'regtest') {
+        const utxos = await api.utxos(w.address);
+        const funded = utxos.reduce((s, u) => s + u.value, 0);
+        return {
+          address: w.address,
+          chain_stats: { funded_txo_sum: funded, spent_txo_sum: 0, tx_count: utxos.length },
+          mempool_stats: { funded_txo_sum: 0, spent_txo_sum: 0, tx_count: 0 },
+        };
+      }
+      return api.address(w.address);
+    },
     refetchInterval: 45_000,
     retry: 1,
     enabled: Boolean(w.address),

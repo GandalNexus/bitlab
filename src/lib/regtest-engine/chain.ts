@@ -986,6 +986,43 @@ export class RegtestChain {
       }
       set.add(u.key);
     }
+    // Rebuild addrTxs for all confirmed transactions.
+    // This index is not serialized to disk — it must be derived from txs on
+    // every load, otherwise addressInfo() returns funded_txo_sum=0 after
+    // a server restart and the wallet balance shows 0.
+    for (const t of data.txs) {
+      if (t.height === null || !t.hex) continue;
+      try {
+        const parsed = parseTx(hex.decode(t.hex));
+        // Index outputs — the receiving script.
+        for (const out of parsed.outputs) {
+          this.indexAddr(hex.encode(out.script), t.txid);
+        }
+        // Index inputs — the spending script (looked up from the UTXO set,
+        // which is already fully restored at this point).
+        if (!t.isCoinbase) {
+          for (const inp of parsed.inputs) {
+            const spentScript = this.utxos.get(`${inp.txid}:${inp.vout}`)?.script;
+            // If the UTXO was already spent and removed, fall back to txs.
+            const fallback = (() => {
+              if (spentScript) return spentScript;
+              const prev = this.txs.get(inp.txid);
+              if (!prev?.hex) return null;
+              try {
+                return hex.encode(
+                  parseTx(hex.decode(prev.hex)).outputs[inp.vout]?.script ?? new Uint8Array(),
+                );
+              } catch {
+                return null;
+              }
+            })();
+            if (fallback) this.indexAddr(fallback, t.txid);
+          }
+        }
+      } catch {
+        // Unparseable tx (pruned hex) — skip; the UTXO set is the ground truth.
+      }
+    }
     for (const m of data.mempool) {
       this.mempool.set(m.txid, m);
       try {
