@@ -89,7 +89,7 @@ describe('useBitquestMissionStore — persistance sessionStorage', () => {
     expect(s.lastTxid).toBe('a'.repeat(64));
   });
 
-  it('clearMission réinitialise tout l\'état persisté', async () => {
+  it("clearMission réinitialise tout l'état persisté", async () => {
     const mod = await import('../src/lib/bitquest-mission-store');
     const s = mod.useBitquestMissionStore.getState();
     s.setMission(MISSION);

@@ -48,9 +48,7 @@ describe('parseBitquestMission', () => {
   it('tronque title à 120 chars et instructions à 300 chars (défense en profondeur)', () => {
     const longTitle = 'A'.repeat(200);
     const longInstructions = 'B'.repeat(500);
-    const m = parseBitquestMission(
-      params({ title: longTitle, instructions: longInstructions }),
-    );
+    const m = parseBitquestMission(params({ title: longTitle, instructions: longInstructions }));
     expect(m?.title).toHaveLength(120);
     expect(m?.instructions).toHaveLength(300);
   });
@@ -70,9 +68,7 @@ describe('parseBitquestMission', () => {
   });
 
   it('parses ts + sig when present', () => {
-    const m = parseBitquestMission(
-      params({ ts: '1794960000', sig: 'a'.repeat(32) }),
-    );
+    const m = parseBitquestMission(params({ ts: '1794960000', sig: 'a'.repeat(32) }));
     expect(m?.ts).toBe(1794960000);
     expect(m?.sig).toBe('a'.repeat(32));
   });
@@ -90,9 +86,7 @@ describe('parseBitquestMission', () => {
   });
 
   it('rejects javascript: scheme in returnTo (open-redirect guard)', () => {
-    expect(
-      parseBitquestMission(params({ returnTo: 'javascript:alert(1)' })),
-    ).toBeNull();
+    expect(parseBitquestMission(params({ returnTo: 'javascript:alert(1)' }))).toBeNull();
   });
 
   it('rejects malformed returnTo URL', () => {
