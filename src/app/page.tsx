@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LabHeader } from '@/components/bitlab/header';
 import { LabSidebar, useSidebarCollapsed, type TabId } from '@/components/bitlab/sidebar';
 import { AnnouncementBanner } from '@/components/bitlab/announcement-banner';
+import { BitquestMissionBanner } from '@/components/bitlab/bitquest-mission-banner';
 import { Dashboard } from '@/components/bitlab/dashboard';
 import { WalletModule } from '@/components/bitlab/wallet';
 import { TxBuilder } from '@/components/bitlab/tx-builder';
@@ -14,7 +15,18 @@ import { ExplorerModule } from '@/components/bitlab/explorer';
 import { useLabStore } from '@/lib/store';
 import { NETWORKS } from '@/lib/networks';
 import { useT } from '@/lib/i18n';
+import { useBitquestMission } from '@/lib/use-bitquest-mission';
 import { cn } from '@/lib/utils';
+
+/**
+ * Sous-composant isolé pour l'amorçage mission BitQuest. Vit sous une
+ * Suspense boundary car useSearchParams() impose ce contrat en App Router.
+ * Rend `null` — c'est un pur effet (store Zustand + bascule onglet).
+ */
+function BitquestMissionBoot({ onTab }: { onTab: (tab: TabId) => void }) {
+  useBitquestMission((t) => onTab(t as TabId));
+  return null;
+}
 
 export default function BitLabPage() {
   const { t } = useT();
@@ -48,8 +60,13 @@ export default function BitLabPage() {
           onToggleCollapsed={toggleSidebar}
         />
 
+        <Suspense fallback={null}>
+          <BitquestMissionBoot onTab={setTab} />
+        </Suspense>
+
         <div id="lab-top-cluster" className="sticky top-0 z-40">
           <AnnouncementBanner />
+          <BitquestMissionBanner />
           <LabHeader onOpenMobileNav={() => setMobileNavOpen(true)} />
         </div>
 

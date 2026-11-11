@@ -17,6 +17,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Copyable } from './bits';
 import { useLabStore } from '@/lib/store';
+import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { miner, type MinerStatus } from '@/lib/mining/miner';
 import { COINBASE_MATURITY } from '@/lib/mining/core';
 import { DEFAULT_NET, NETWORKS, type NetId } from '@/lib/networks';
@@ -64,6 +65,15 @@ export function MiningModule() {
   const [payoutId, setPayoutId] = useState<string | null>(null);
 
   useEffect(() => miner.subscribe(() => setStatus(miner.getStatus())), []);
+
+  // Expose au banner mission BitQuest (kind=BLOCK) le dernier hash miné.
+  // No-op si aucune mission active.
+  useEffect(() => {
+    const latest = status.blocks[0];
+    if (latest?.hash) {
+      useBitquestMissionStore.getState().setLastBlockHash(latest.hash);
+    }
+  }, [status.blocks]);
 
   const cfg = NETWORKS[net];
   const mineable = cfg.mineable !== 'none';

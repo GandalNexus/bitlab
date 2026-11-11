@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -35,6 +35,7 @@ import { QRCode } from '@/components/bitlab/qrcode';
 import { RegtestSettingsCard } from '@/components/bitlab/regtest-settings';
 import { Copyable, PageIntro, TypeBadge } from './bits';
 import { useLabStore, useActiveWallet } from '@/lib/store';
+import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { miner } from '@/lib/mining/miner';
 import {
   TYPE_INFO,
@@ -328,6 +329,12 @@ export function WalletModule() {
     [wallets, net],
   );
   const otherCount = wallets.length - netWallets.length;
+
+  useEffect(() => {
+    if (active?.address) {
+      useBitquestMissionStore.getState().setLastAddress(active.address);
+    }
+  }, [active?.address]);
 
   const [genType, setGenType] = useState<AddrType>('segwit');
   const [genWords, setGenWords] = useState<12 | 24>(12);
