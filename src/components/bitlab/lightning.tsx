@@ -42,6 +42,7 @@ import { api, mpBroadcast, type AddressUtxo } from '@/lib/mempool';
 import { buildSignedTx, estimateVsize, DUST_LIMIT } from '@/lib/bitcoin/tx';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import { regtestMode } from '@/lib/regtest';
+import { regtestChain } from '@/lib/regtest-chain';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import {
@@ -234,25 +235,15 @@ function FundingBridge({
               ? /encore (\d+) bloc/.exec(detail)
               : null;
           if (!need || attempt >= 2) throw first;
-          const mineRes = await fetch('/api/regtest/mine', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ blocks: Math.min(Number(need[1]) + 2, 120) }),
-          });
-          if (!mineRes.ok) throw first;
+          await regtestChain.mine(Math.min(Number(need[1]) + 2, 120));
         }
       }
       await onSubmit(res.hex, pending.userChannelId);
       let minedNote = '';
       if (net === 'regtest' && regtestMode() === 'embedded') {
         try {
-          const mineRes = await fetch('/api/regtest/mine', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ blocks: 8 }),
-          });
-          const mineBody = (await mineRes.json().catch(() => ({}))) as { ok?: boolean };
-          minedNote = mineBody.ok ? ' ' + t('Blocs de confirmation minés automatiquement.') : '';
+          await regtestChain.mine(8);
+          minedNote = ' ' + t('Blocs de confirmation minés automatiquement.');
         } catch {
           minedNote = ' ' + t('Minez des blocs depuis l’onglet Mineur pour confirmer.');
         }

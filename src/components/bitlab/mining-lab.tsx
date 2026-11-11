@@ -22,6 +22,8 @@ import { miner, type MinerStatus } from '@/lib/mining/miner';
 import { COINBASE_MATURITY } from '@/lib/mining/core';
 import { DEFAULT_NET, NETWORKS, type NetId } from '@/lib/networks';
 import { api } from '@/lib/mempool';
+import { regtestChain } from '@/lib/regtest-chain';
+import { regtestMode } from '@/lib/regtest';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import type { LabWallet } from '@/lib/bitcoin/keys';
 import { useT } from '@/lib/i18n';
@@ -434,22 +436,29 @@ function MaturationPanel({ wallets }: { wallets: LabWallet[] }) {
   const matureNow = async () => {
     setBusy(true);
     try {
-      const res = await fetch('/api/regtest/mine', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ blocks: k }),
-      });
-      const body = (await res.json().catch(() => ({}))) as {
-        ok?: boolean;
-        detail?: string;
-        tip?: { height: number };
-      };
-      if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
+      let newTip: { height: number } | undefined;
+      if (regtestMode() === 'embedded') {
+        const result = await regtestChain.mine(k);
+        newTip = result.tip;
+      } else {
+        const res = await fetch('/api/regtest/mine', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ blocks: k }),
+        });
+        const body = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          detail?: string;
+          tip?: { height: number };
+        };
+        if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
+        newTip = body.tip;
+      }
       addLog({
         kind: 'op',
         module: 'mineur',
         label: 'blocs minés (maturation)',
-        detail: { blocs: k, 'nouveau tip': body.tip?.height, destination: 'pool faucet' },
+        detail: { blocs: k, 'nouveau tip': newTip?.height, destination: 'pool faucet' },
       });
       await qc.invalidateQueries({ queryKey: ['maturation'] });
       await qc.invalidateQueries({ queryKey: ['utxos'] });
