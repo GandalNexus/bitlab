@@ -1,21 +1,28 @@
 /**
  * Store Zustand dédié à l'état d'une mission BitQuest en cours.
  *
- * Isolé du `useLabStore` principal pour éviter d'alourdir le state
- * persisté en IDB — la mission est éphémère (durée d'une visite), pas
- * besoin de la restaurer entre sessions. Si l'apprenant recharge la
- * page sans les query params, on repart propre.
+ * Persistance : `sessionStorage` via le middleware `persist`. Scope =
+ * onglet courant. Survit au refresh et à la navigation interne mais
+ * disparaît à la fermeture de l'onglet. Matche la sémantique "mission
+ * éphémère" voulue à l'origine, tout en réparant la perte d'état au
+ * reload qui cassait l'expérience quand `useBitquestMission` nettoie
+ * l'URL via `router.replace(pathname)` après le parse initial.
  *
- * Les champs `lastTxid`, `lastBolt11`, `lastBlockHash` sont alimentés
- * par les modules concernés (tx-builder, lightning, mineur) après
- * chaque action réussie, et le banner les utilise pour construire
- * l'URL de retour vers BitQuest.
+ * SSR-safe : `createJSONStorage` retourne `undefined` en SSR (pas de
+ * `window`), le middleware tombe alors sur un noop. Les composants
+ * clients re-hydratent au mount.
+ *
+ * Les champs `lastTxid`, `lastBolt11`, `lastBlockHash`, `lastScid`,
+ * `lastAddress` sont alimentés par les modules concernés (tx-builder,
+ * lightning, mineur, portefeuille) après chaque action réussie, et le
+ * banner les utilise pour construire l'URL de retour vers BitQuest.
  */
 
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { BitquestMission } from './bitquest-bridge';
 
-interface BitquestMissionState {
+export interface BitquestMissionState {
   mission: BitquestMission | null;
   lastTxid: string | null;
   lastBolt11: string | null;
@@ -31,21 +38,51 @@ interface BitquestMissionState {
   setLastAddress: (address: string) => void;
 }
 
-export const useBitquestMissionStore = create<BitquestMissionState>((set) => ({
+const INITIAL_STATE = {
   mission: null,
   lastTxid: null,
   lastBolt11: null,
   lastBlockHash: null,
   lastScid: null,
   lastAddress: null,
-  setMission: (mission) => set({ mission }),
-  clearMission: () => set({ mission: null }),
-  setLastTxid: (lastTxid) => set({ lastTxid }),
-  setLastBolt11: (lastBolt11) => set({ lastBolt11 }),
-  setLastBlockHash: (lastBlockHash) => set({ lastBlockHash }),
-  setLastScid: (lastScid) => set({ lastScid }),
-  setLastAddress: (lastAddress) => set({ lastAddress }),
-}));
+} as const;
+
+export const BITQUEST_MISSION_STORAGE_KEY = 'bitlab.bitquest-mission.v1';
+
+export const useBitquestMissionStore = create<BitquestMissionState>()(
+  persist(
+    (set) => ({
+      ...INITIAL_STATE,
+      setMission: (mission) => set({ mission }),
+      clearMission: () => set({ ...INITIAL_STATE }),
+      setLastTxid: (lastTxid) => set({ lastTxid }),
+      setLastBolt11: (lastBolt11) => set({ lastBolt11 }),
+      setLastBlockHash: (lastBlockHash) => set({ lastBlockHash }),
+      setLastScid: (lastScid) => set({ lastScid }),
+      setLastAddress: (lastAddress) => set({ lastAddress }),
+    }),
+    {
+      name: BITQUEST_MISSION_STORAGE_KEY,
+      // sessionStorage : scope onglet, survit refresh, pas de persistence inter-sessions.
+      // `createJSONStorage` retourne undefined si sessionStorage n'existe pas (SSR, tests node).
+      storage: createJSONStorage(() =>
+        typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined'
+          ? window.sessionStorage
+          : noopStorage,
+      ),
+      // Ne persiste que les données, pas les setters (sélection explicite).
+      partialize: (state) => ({
+        mission: state.mission,
+        lastTxid: state.lastTxid,
+        lastBolt11: state.lastBolt11,
+        lastBlockHash: state.lastBlockHash,
+        lastScid: state.lastScid,
+        lastAddress: state.lastAddress,
+      }),
+      version: 1,
+    },
+  ),
+);
 
 /**
  * Sélecteur utile : récupère la valeur courante attendue par la mission
@@ -68,3 +105,17 @@ export function selectCurrentProofValue(state: BitquestMissionState): string | n
       return state.lastAddress;
   }
 }
+
+/**
+ * Storage noop utilisé quand aucun `sessionStorage` n'est disponible
+ * (SSR, environnement node sans jsdom). Satisfait l'interface `Storage`
+ * complète attendue par `createJSONStorage`.
+ */
+const noopStorage: Storage = {
+  length: 0,
+  clear: () => {},
+  getItem: () => null,
+  key: () => null,
+  removeItem: () => {},
+  setItem: () => {},
+};
