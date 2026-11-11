@@ -2,7 +2,6 @@ import type { NextRequest } from 'next/server';
 import net from 'node:net';
 import dns from 'node:dns';
 import { createHash } from 'node:crypto';
-import { getRegtestChain, persist } from '@/lib/regtest-engine/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -251,19 +250,13 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: false, detail: 'réseau non minable via BitLab' }, { status: 400 });
   }
   if (body.net === 'regtest' && !req.headers.get('x-regtest-cfg')) {
-    const chain = await getRegtestChain();
-    try {
-      const mined = chain.connectRawBlock(String(body.block ?? ''));
-      await persist(chain);
-      return Response.json({
-        ok: true,
-        detail: `bloc accepté par la chaîne regtest embarquée (#${mined.height})`,
-        height: mined.height,
-        hash: mined.hash,
-      });
-    } catch (err) {
-      return Response.json({ ok: false, detail: (err as Error).message }, { status: 400 });
-    }
+    // On serverless deployments the embedded chain lives in the browser
+    // worker — tell the client to submit the block there instead.
+    return Response.json({
+      ok: false,
+      clientSubmit: true,
+      detail: 'regtest block must be submitted to browser chain worker',
+    });
   }
 
   const check = validateBlockHex(String(body.block ?? ''), spec);

@@ -1,6 +1,7 @@
 import { useLabStore } from './store';
 import { currentNet, NETWORKS } from './networks';
-import { regtestHeaders } from './regtest';
+import { regtestHeaders, regtestMode } from './regtest';
+import { regtestChain } from './regtest-chain';
 import { tSync } from './i18n';
 
 export interface RecommendedFees {
@@ -89,6 +90,21 @@ function log(kind: 'http' | 'error', label: string, detail: Record<string, unkno
 
 export async function mpGet<T>(path: string): Promise<T> {
   const net = currentNet();
+  // On regtest-embedded, route directly to the browser chain worker.
+  if (net === 'regtest' && regtestMode() === 'embedded') {
+    const t0 = performance.now();
+    try {
+      const data = await regtestChain.query<T>(path);
+      log('http', `GET [regtest/worker] /${path}`, {
+        duration: Math.round(performance.now() - t0),
+        type: Array.isArray(data) ? `tableau[${(data as unknown[]).length}]` : typeof data,
+      });
+      return data;
+    } catch (e) {
+      log('error', `GET [regtest/worker] /${path}`, { erreur: String(e) });
+      throw e;
+    }
+  }
   const t0 = performance.now();
   try {
     const headers = net === 'regtest' ? regtestHeaders() : {};
@@ -112,7 +128,7 @@ export async function mpGet<T>(path: string): Promise<T> {
     log('http', `GET [${net}] /${path}`, {
       status: res.status,
       duration,
-      type: Array.isArray(data) ? `tableau[${data.length}]` : typeof data,
+      type: Array.isArray(data) ? `tableau[${(data as unknown[]).length}]` : typeof data,
     });
     return data;
   } catch (e) {
@@ -128,6 +144,11 @@ export async function mpGet<T>(path: string): Promise<T> {
 
 export async function mpGetText(path: string): Promise<string> {
   const net = currentNet();
+  // On regtest-embedded, the worker query returns plain text already.
+  if (net === 'regtest' && regtestMode() === 'embedded') {
+    const data = await regtestChain.query<unknown>(path);
+    return String(data);
+  }
   const t0 = performance.now();
   try {
     const headers = net === 'regtest' ? regtestHeaders() : {};
@@ -174,6 +195,28 @@ export async function mpGetOn<T>(net: string, path: string): Promise<T> {
 
 export async function mpBroadcast(rawHex: string): Promise<string> {
   const net = currentNet();
+  // On regtest-embedded, broadcast directly through the browser chain worker.
+  if (net === 'regtest' && regtestMode() === 'embedded') {
+    const t0 = performance.now();
+    log('http', `POST [regtest/worker] /tx (diffusion)`, { tailleOctets: rawHex.length / 2 });
+    try {
+      const result = await regtestChain.broadcast(rawHex.trim());
+      log('http', `POST [regtest/worker] /tx (diffusion)`, {
+        duration: Math.round(performance.now() - t0),
+        txid: result.txid,
+      });
+      return result.txid;
+    } catch (e) {
+      const msg = String((e as Error).message ?? e);
+      log('error', `POST [regtest/worker] /tx (diffusion)`, { erreur: msg.slice(0, 300) });
+      throw new Error(
+        tSync('Diffusion refusée par le nœud {net} : {err}', {
+          net: NETWORKS[net].label,
+          err: msg.slice(0, 200),
+        }),
+      );
+    }
+  }
   const t0 = performance.now();
   log('http', `POST [${net}] /tx (diffusion)`, { tailleOctets: rawHex.length / 2 });
   const res = await fetch(`/api/bitcoin?path=tx&network=${net}`, {

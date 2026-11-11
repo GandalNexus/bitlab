@@ -18,6 +18,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { useActiveWallet, useLabStore } from '@/lib/store';
 import { api } from '@/lib/mempool';
+import { regtestChain } from '@/lib/regtest-chain';
 import {
   loadRegtestCfg,
   isLocalHost,
@@ -102,6 +103,7 @@ function EmbeddedPanel() {
   const info = useQuery({
     queryKey: ['regtest-info'],
     queryFn: async () => {
+      if (regtestMode() === 'embedded') return regtestChain.info();
       const res = await fetch('/api/regtest/info', { cache: 'no-store' });
       if (!res.ok) throw new Error(String(res.status));
       return (await res.json()) as EmbeddedInfo;
@@ -120,18 +122,19 @@ function EmbeddedPanel() {
     setBusy('faucet');
     setFeedback(null);
     try {
-      const res = await fetch('/api/regtest/faucet', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ address: active.address, sats: Number(amount) }),
-      });
-      const body = (await res.json()) as {
-        ok?: boolean;
-        detail?: string;
-        txid?: string;
-        blockHeight?: number;
-      };
-      if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
+      let body: { ok?: boolean; detail?: string; txid?: string; blockHeight?: number };
+      if (regtestMode() === 'embedded') {
+        const result = await regtestChain.faucet(active.address, Number(amount));
+        body = { ok: true, txid: result.txid, blockHeight: result.blockHeight };
+      } else {
+        const res = await fetch('/api/regtest/faucet', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ address: active.address, sats: Number(amount) }),
+        });
+        body = (await res.json()) as typeof body;
+        if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
+      }
       setFeedback({
         ok: true,
         text: t('{sats} sats envoyés — confirmés au bloc #{h}.', {
@@ -151,21 +154,28 @@ function EmbeddedPanel() {
     setBusy('mine');
     setFeedback(null);
     try {
-      const res = await fetch('/api/regtest/mine', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ blocks: 10, address: active?.address }),
-      });
-      const body = (await res.json()) as {
-        ok?: boolean;
-        detail?: string;
-        tip?: { height: number };
-      };
-      if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
+      let tip: { height: number } | undefined;
+      if (regtestMode() === 'embedded') {
+        const result = await regtestChain.mine(10, active?.address);
+        tip = result.tip;
+      } else {
+        const res = await fetch('/api/regtest/mine', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ blocks: 10, address: active?.address }),
+        });
+        const body = (await res.json()) as {
+          ok?: boolean;
+          detail?: string;
+          tip?: { height: number };
+        };
+        if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
+        tip = body.tip;
+      }
       setFeedback({
         ok: true,
         text: t('10 blocs minés — hauteur {h}. La récompense mûrit après 100 blocs.', {
-          h: body.tip?.height ?? '?',
+          h: tip?.height ?? '?',
         }),
       });
       invalidate();
@@ -180,7 +190,11 @@ function EmbeddedPanel() {
     setBusy('reset');
     setFeedback(null);
     try {
-      await fetch('/api/regtest/reset', { method: 'POST' });
+      if (regtestMode() === 'embedded') {
+        await regtestChain.reset();
+      } else {
+        await fetch('/api/regtest/reset', { method: 'POST' });
+      }
       setFeedback({
         ok: true,
         text: t('Chaîne réinitialisée — genèse neuf, pool faucet reconstitué.'),

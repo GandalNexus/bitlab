@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decodeRegtestHeader, isLocalHost, type RegtestCfg } from '@/lib/regtest';
-import { getRegtestChain, persist } from '@/lib/regtest-engine/server';
-import { handleEsploraPath } from '@/lib/regtest-engine/esplora-router';
 import {
   blockHashByHeight,
   chainInfoToTipHash,
@@ -261,34 +259,15 @@ export async function GET(req: NextRequest) {
         );
       }
     }
-    try {
-      const chain = await getRegtestChain();
-      const result = handleEsploraPath(chain, path);
-      if (result.type === 'bin') {
-        return new NextResponse(result.body as unknown as BodyInit, {
-          status: result.status,
-          headers: {
-            'content-type': 'application/octet-stream',
-            'x-network': 'regtest',
-            'x-engine': 'embedded',
-          },
-        });
-      }
-      const textBody = result.type === 'json' ? JSON.stringify(result.body) : String(result.body);
-      return new NextResponse(textBody, {
-        status: result.status,
-        headers: {
-          'content-type': result.type === 'json' ? 'application/json' : 'text/plain',
-          'x-network': 'regtest',
-          'x-engine': 'embedded',
-        },
-      });
-    } catch (err) {
-      return NextResponse.json(
-        { erreur: `Moteur regtest embarqué : ${(err as Error).message}` },
-        { status: 500 },
-      );
-    }
+    // Embedded-mode requests are now handled browser-side by the regtest chain
+    // worker. If a request arrives here without an x-regtest-cfg header it
+    // means the client is running in an environment that bypasses the worker
+    // (e.g. the LN worker which runs in a different context). Return a clear
+    // error rather than a silent 500.
+    return NextResponse.json(
+      { erreur: 'Regtest embarqué : utilisez le moteur navigateur (worker).' },
+      { status: 400 },
+    );
   }
 
   const cacheKey = `${net}:${path}`;
@@ -384,20 +363,11 @@ export async function POST(req: NextRequest) {
         );
       }
     }
-    try {
-      const chain = await getRegtestChain();
-      const { txid } = chain.acceptTx(raw);
-      await persist(chain);
-      return new NextResponse(txid, {
-        status: 200,
-        headers: { 'content-type': 'text/plain', 'x-network': net, 'x-engine': 'embedded' },
-      });
-    } catch (err) {
-      return NextResponse.json(
-        { erreur: `Diffusion regtest refusée : ${(err as Error).message}` },
-        { status: 400 },
-      );
-    }
+    // No embedded chain on the server anymore — the browser worker handles this.
+    return NextResponse.json(
+      { erreur: 'Regtest embarqué : utilisez le moteur navigateur (worker).' },
+      { status: 400 },
+    );
   }
 
   try {
