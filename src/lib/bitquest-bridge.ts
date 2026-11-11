@@ -38,7 +38,21 @@ export interface BitquestMission {
   ts: number | null;
   /** HMAC-SHA256 base64url si BitQuest signe le lien. */
   sig: string | null;
+  /**
+   * Titre pédagogique de la quête (I2). Non signé — contextuel/UX
+   * uniquement. BitQuest reste autoritatif sur le titre côté serveur.
+   */
+  title: string | null;
+  /**
+   * Consigne courte de la mission (I2). Non signée. Vaut nil si BitQuest
+   * ne l'a pas transmise (ex. ancienne version du serveur).
+   */
+  instructions: string | null;
 }
+
+/** Limites d'affichage BitLab — défensif même si BitQuest tronque déjà. */
+const TITLE_MAX = 120;
+const INSTRUCTIONS_MAX = 300;
 
 /** Nom du param de retour selon le kind. */
 export const RETURN_FIELD_BY_KIND: Record<BitquestKind, string> = {
@@ -93,6 +107,12 @@ export function parseBitquestMission(params: URLSearchParams): BitquestMission |
   const ts = tsRaw && /^\d+$/.test(tsRaw) ? Number(tsRaw) : null;
   const sig = sigRaw && sigRaw.length >= 16 && sigRaw.length <= 128 ? sigRaw : null;
 
+  // Hints pédagogiques (I2) : non signés, optionnels, bornés en longueur.
+  // On strip les caractères de contrôle pour éviter les injections dans
+  // l'affichage (zéro width, bidi, etc.).
+  const title = sanitizeHint(params.get('title'), TITLE_MAX);
+  const instructions = sanitizeHint(params.get('instructions'), INSTRUCTIONS_MAX);
+
   return {
     questCode,
     kind: kindRaw,
@@ -100,7 +120,17 @@ export function parseBitquestMission(params: URLSearchParams): BitquestMission |
     returnTo,
     ts,
     sig,
+    title,
+    instructions,
   };
+}
+
+function sanitizeHint(raw: string | null, max: number): string | null {
+  if (raw === null) return null;
+  // Retire les caractères de contrôle (sauf saut de ligne) + trim + cap.
+  const cleaned = raw.replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '').trim();
+  if (cleaned.length === 0) return null;
+  return cleaned.slice(0, max);
 }
 
 /**

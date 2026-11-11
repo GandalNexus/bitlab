@@ -54,7 +54,15 @@ export function BitquestMissionBanner() {
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <FlaskConical className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
             <span className="font-semibold">
-              {t('Mission BitQuest :')} <code className="font-mono">{mission.questCode}</code>
+              {mission.title ? (
+                <>
+                  {t('Mission :')} {mission.title}
+                </>
+              ) : (
+                <>
+                  {t('Mission BitQuest :')} <code className="font-mono">{mission.questCode}</code>
+                </>
+              )}
             </span>
             <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide">
               {mission.kind}
@@ -63,6 +71,11 @@ export function BitquestMissionBanner() {
               {mission.network}
             </span>
           </div>
+          {mission.instructions && (
+            <p className="text-foreground/80 text-xs leading-relaxed sm:max-w-2xl">
+              {mission.instructions}
+            </p>
+          )}
           <p className="text-muted-foreground text-xs">
             {ready
               ? t('Preuve prête ({field}). Clique pour revenir à BitQuest.', {

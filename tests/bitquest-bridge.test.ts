@@ -29,7 +29,44 @@ describe('parseBitquestMission', () => {
       returnTo: BASE.returnTo,
       ts: null,
       sig: null,
+      title: null,
+      instructions: null,
     });
+  });
+
+  it('parses title + instructions quand fournis (hints I2)', () => {
+    const m = parseBitquestMission(
+      params({
+        title: "Anatomie d'une transaction",
+        instructions: "Construis un paiement de 45000 sats dans l'atelier.",
+      }),
+    );
+    expect(m?.title).toBe("Anatomie d'une transaction");
+    expect(m?.instructions).toBe("Construis un paiement de 45000 sats dans l'atelier.");
+  });
+
+  it('tronque title à 120 chars et instructions à 300 chars (défense en profondeur)', () => {
+    const longTitle = 'A'.repeat(200);
+    const longInstructions = 'B'.repeat(500);
+    const m = parseBitquestMission(
+      params({ title: longTitle, instructions: longInstructions }),
+    );
+    expect(m?.title).toHaveLength(120);
+    expect(m?.instructions).toHaveLength(300);
+  });
+
+  it('retourne title/instructions null si vides après trim', () => {
+    const m = parseBitquestMission(params({ title: '   ', instructions: '' }));
+    expect(m?.title).toBeNull();
+    expect(m?.instructions).toBeNull();
+  });
+
+  it('strip les caractères de contrôle des hints (anti-injection affichage)', () => {
+    const m = parseBitquestMission(
+      params({ title: 'Mission\u0000propre\u0001', instructions: 'Instructions\u001Fnettes' }),
+    );
+    expect(m?.title).toBe('Missionpropre');
+    expect(m?.instructions).toBe('Instructionsnettes');
   });
 
   it('parses ts + sig when present', () => {
@@ -103,6 +140,8 @@ describe('buildReturnUrl', () => {
     returnTo: 'https://bitquest.local/q/tx-basics',
     ts: null,
     sig: null,
+    title: null,
+    instructions: null,
   };
 
   it('appends bitlab_result + kind + network + value field', () => {
