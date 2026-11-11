@@ -171,12 +171,7 @@ export function buildReturnUrl(mission: BitquestMission, value: string): string 
 
 /** Mapping kind → onglet BitLab à pré-sélectionner automatiquement. */
 export type BitlabTab =
-  | 'dashboard'
-  | 'portefeuille'
-  | 'transactions'
-  | 'lightning'
-  | 'mineur'
-  | 'explorateur';
+  'dashboard' | 'portefeuille' | 'transactions' | 'lightning' | 'mineur' | 'explorateur';
 
 export function kindToTab(kind: BitquestKind): BitlabTab {
   switch (kind) {
