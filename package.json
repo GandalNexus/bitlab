@@ -70,7 +70,7 @@
     "clsx": "^2.1.1",
     "idb-keyval": "^6.3.0",
     "lucide-react": "^1.72.0",
-    "minimatch": "^10.2.6",
+    "minimatch": "^11.0.1",
     "next": "^16.4.6",
     "picomatch": "^4.0.7",
     "qrcode": "^1.5.4",
