@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Copyable, PageIntro } from './bits';
 import { QRCode } from './qrcode';
 import { useLabStore } from '@/lib/store';
+import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { NETWORKS, DEFAULT_NET } from '@/lib/networks';
 import { api, mpBroadcast, type AddressUtxo } from '@/lib/mempool';
 import { buildSignedTx, estimateVsize, DUST_LIMIT } from '@/lib/bitcoin/tx';
@@ -516,6 +517,8 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
       if (!Number.isInteger(sats) || sats <= 0) throw new Error(t('Montant invalide.'));
       const bolt11 = await lnLab.createInvoice('B', sats * 1000, memo, 3600);
       setInvoice(bolt11);
+      // Expose au banner mission BitQuest (kind=INVOICE)
+      useBitquestMissionStore.getState().setLastBolt11(bolt11);
       toast({
         title: t('Facture créée'),
         description: t('Signée par le nœud B — faites-la payer par A.'),

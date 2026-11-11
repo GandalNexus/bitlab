@@ -34,6 +34,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useToast } from '@/hooks/use-toast';
 import { Copyable, JsonBlock, PageIntro } from './bits';
 import { useLabStore, useActiveWallet } from '@/lib/store';
+import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { TYPE_INFO, type LabWallet } from '@/lib/bitcoin/keys';
 import { api, mpBroadcast, explorerBase } from '@/lib/mempool';
 import { DEFAULT_NET, NETWORKS } from '@/lib/networks';
@@ -1087,6 +1088,10 @@ export function TxBuilder() {
               }}
               onBroadcasted={(txid) => {
                 setLastTxid(txid);
+                // Expose le txid à une éventuelle mission BitQuest active.
+                // No-op si aucune mission n'est en cours — le store est
+                // isolé du state persisté.
+                useBitquestMissionStore.getState().setLastTxid(txid);
               }}
             />
           ) : null}
