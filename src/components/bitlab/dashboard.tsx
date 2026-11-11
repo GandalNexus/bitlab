@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { StatCard, timeAgo } from './bits';
 import { ActivityLog } from './activity-log';
 import { GandalNexusMissionCard } from './gandalnexus-mission-card';
+import { GandalNexusMissionsPanel } from './gandalnexus-missions-panel';
 import { useLabStore } from '@/lib/store';
 import { api } from '@/lib/mempool';
 import { NETWORKS } from '@/lib/networks';
@@ -213,6 +214,8 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
           })}
         </div>
       </section>
+
+      <GandalNexusMissionsPanel />
 
       <section aria-label={t('Journal d’activité')}>
         <ActivityLog />

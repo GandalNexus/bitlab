@@ -36,13 +36,26 @@ export function getBitquestUrl(): string {
 }
 
 /**
- * POST le launch_token à BitQuest, retourne le profil utilisateur.
+ * Résultat de l'échange launch_token : profil utilisateur + session
+ * token longue durée (2h) pour appels CORS user-scoped ultérieurs.
+ */
+export interface LaunchTokenExchangeResult {
+  user: BitquestUser;
+  session: {
+    token: string;
+    expiresAt: string; // ISO
+    ttlSeconds: number;
+  };
+}
+
+/**
+ * POST le launch_token à BitQuest, retourne profil + session token.
  * Jette une Error avec un message court en cas d'échec — l'appelant
  * décide (silencieux côté UX, log technique côté dev).
  */
 export async function verifyLaunchTokenAgainstBitquest(
   token: string,
-): Promise<BitquestUser> {
+): Promise<LaunchTokenExchangeResult> {
   const url = `${getBitquestUrl()}/api/auth/verify-launch-token`;
   const res = await fetch(url, {
     method: "POST",
@@ -62,9 +75,72 @@ export async function verifyLaunchTokenAgainstBitquest(
     }
     throw new Error(msg);
   }
-  const body = (await res.json()) as { ok: boolean; user: BitquestUser };
+  const body = (await res.json()) as {
+    ok: boolean;
+    user: BitquestUser;
+    session?: { token: string; expiresAt: string; ttlSeconds: number };
+  };
   if (!body.ok || !body.user?.id) {
     throw new Error("BitQuest : réponse malformée.");
   }
-  return body.user;
+  if (!body.session?.token) {
+    throw new Error("BitQuest : session token absent de la réponse.");
+  }
+  return { user: body.user, session: body.session };
+}
+
+/**
+ * Représentation JSON d'une tentative BitLab (serveur BitQuest).
+ * Shape alignée sur /api/bitlab/me/attempts.
+ */
+export interface GandalNexusAttempt {
+  id: string;
+  questCode: string;
+  questTitle: string;
+  kind: string;
+  network: string;
+  state: string;
+  launchedAt: string;
+  expiresAt: string;
+  completedAt: string | null;
+  failedAt: string | null;
+  failReason: string | null;
+  proofId: string | null;
+  result: Record<string, unknown> | null;
+  returnTo: string | null;
+}
+
+/**
+ * Récupère les tentatives de l'utilisateur via l'endpoint CORS user-scoped.
+ * Nécessite un `sessionToken` valide (émis au verify-launch-token).
+ */
+export async function fetchMyAttempts(opts: {
+  sessionToken: string;
+  state?: "active" | "all";
+  limit?: number;
+}): Promise<GandalNexusAttempt[]> {
+  const params = new URLSearchParams();
+  if (opts.state) params.set("state", opts.state);
+  if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+  const url = `${getBitquestUrl()}/api/bitlab/me/attempts${
+    params.toString() ? `?${params.toString()}` : ""
+  }`;
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { authorization: `Bearer ${opts.sessionToken}` },
+    credentials: "omit",
+    mode: "cors",
+  });
+  if (!res.ok) {
+    let msg = `BitQuest /bitlab/me/attempts ${res.status}`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body.error) msg = body.error;
+    } catch {
+      // ignore
+    }
+    throw new Error(msg);
+  }
+  const body = (await res.json()) as { attempts: GandalNexusAttempt[] };
+  return body.attempts ?? [];
 }
