@@ -1,7 +1,10 @@
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { hex } from '@scure/base';
 import { scriptToAddressOn } from './bitcoin/tx';
+import { parseFundingOutpoint, scidFromConfirmedStatus } from './bitcoin/scid';
+import { api } from './mempool';
 import { regtestHeaderValue, regtestMode } from './regtest';
+import { regtestChain } from './regtest-chain';
 import { tSync } from './i18n';
 
 export type LnNetId = 'testnet4' | 'testnet3' | 'signet' | 'regtest';
@@ -101,6 +104,15 @@ const MAX_LOGS = 200;
 export function classifyBroadcast(ok: boolean, detail: string): { ok: boolean; detail: string } {
   if (!ok && /déjà connue|already known/i.test(detail)) return { ok: true, detail: '' };
   return { ok, detail };
+}
+
+const LN_CHAIN_BRIDGE_TX_RX = /^[0-9a-fA-F]{120,}$/;
+
+export const LN_CHAIN_BRIDGE_PATH_RX =
+  /^(?:blocks\/tip\/(?:height|hash)|block-height\/\d{1,7}|block\/[0-9a-f]{64}\/raw|v1\/fees\/recommended)$/i;
+
+export function shouldBridgeChain(network: LnNetId, mode: string): boolean {
+  return network === 'regtest' && mode === 'embedded';
 }
 
 class LnLabController {
@@ -222,6 +234,7 @@ class LnLabController {
         kv: { a: this.kvToArray(kvA), b: this.kvToArray(kvB) },
         regtestHeader:
           network === 'regtest' && regtestMode() === 'external' ? regtestHeaderValue() : '',
+        chainBridge: shouldBridgeChain(network, regtestMode()),
       });
     } catch (err) {
       this.patch({ phase: 'off', error: `activation: ${(err as Error).message}` });
@@ -364,6 +377,15 @@ class LnLabController {
           this.patch({ pendingFunding: null });
         }
         break;
+      case 'chainBridgeRequest':
+        void this.serveChainBridge(
+          msg as unknown as {
+            id: string;
+            path: string;
+            tx?: string;
+          },
+        );
+        break;
       case 'error': {
         const message = String(msg.message ?? 'erreur inconnue');
         if (this.status.phase === 'booting') {
@@ -397,6 +419,36 @@ class LnLabController {
     }
     await idbSet(KV_KEY(network, 'A'), perNode.A);
     await idbSet(KV_KEY(network, 'B'), perNode.B);
+  }
+
+  private async serveChainBridge(req: { id: string; path: string; tx?: string }) {
+    const id = String(req.id ?? '');
+    const reply = (ok: boolean, body?: unknown, detail?: string) => {
+      if (this.worker) {
+        this.worker.postMessage({ type: 'chainBridgeReply', id, ok, body, detail });
+      }
+    };
+    const path = String(req.path ?? '');
+    try {
+      if (path === 'tx') {
+        const raw = String(req.tx ?? '').trim();
+        if (!LN_CHAIN_BRIDGE_TX_RX.test(raw)) {
+          reply(false, undefined, 'transaction brute invalide');
+          return;
+        }
+        await regtestChain.broadcast(raw);
+        reply(true, '');
+        return;
+      }
+      if (!LN_CHAIN_BRIDGE_PATH_RX.test(path)) {
+        reply(false, undefined, 'chemin interdit pour le pont Lightning');
+        return;
+      }
+      const body = await regtestChain.query<unknown>(path);
+      reply(true, body);
+    } catch (err) {
+      reply(false, undefined, (err as Error).message);
+    }
   }
 
   private send(payload: Record<string, unknown>) {
@@ -525,6 +577,17 @@ class LnLabController {
 }
 
 export const lnLab = new LnLabController();
+
+export async function resolveChannelScid(channel: LnChannelView): Promise<string | null> {
+  const outpoint = parseFundingOutpoint(channel.fundingTxo ?? '');
+  if (!outpoint) return null;
+  try {
+    const tx = await api.tx(outpoint.txid);
+    return scidFromConfirmedStatus(tx.status, outpoint.vout);
+  } catch {
+    return null;
+  }
+}
 
 export function msatToSats(msat: string | number | null | undefined): number {
   const value = typeof msat === 'string' ? Number(msat) : msat;
