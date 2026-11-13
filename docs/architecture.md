@@ -1,7 +1,7 @@
 # Architecture
 
-BitLab is a Next.js 16 single-page laboratory backed by a small Python
-in-browser Lightning lab. This document explains how the codebase is organized, which design
+BitLab is a Next.js 16 single-page laboratory whose Lightning lab runs two
+real LDK 0.2 nodes compiled to WebAssembly inside the visitor's browser. This document explains how the codebase is organized, which design
 patterns it relies on, and why. The guiding constraints are: private key
 material never reaches the server, blockchain data is never mocked, and the
 domain logic must stay testable offline.
@@ -120,7 +120,7 @@ must go through `t()`; this is a documented project rule in
 | State | Zustand 5 | Explicit persistence, no middleware magic |
 | Server state | TanStack Query | Fetch caching and retry for blockchain reads |
 | Crypto | `@scure/btc-signer`, `@scure/bip32`, `@scure/bip39`, `@noble/curves` | Audited, dependency-light, browser-first |
-| Lightning | `ldk-node` 0.7 (Python bindings) | Two real nodes per supported network |
+| Lightning | `lightning` crate (LDK 0.2) compiled to `wasm32` | Two real nodes in a Web Worker, wired by hand in `rust/lnlab` |
 | Tests | Vitest 3 | Offline, deterministic |
 | CI | GitHub Actions | Lint, typecheck, tests, production build |
 
