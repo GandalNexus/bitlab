@@ -186,44 +186,37 @@ class LnLabController {
       const kvB = await this.loadKvMap(network, 'B');
       const restore = Object.keys(kvA).length > 0 || Object.keys(kvB).length > 0;
 
+      if (this.worker) {
+        this.kvEpoch += 1;
+        const stale = this.worker;
+        this.worker = null;
+        stale.terminate();
+      }
+
       const worker = new Worker('/lnlab/worker.js', { type: 'module' });
       this.worker = worker;
-      let watchdog: ReturnType<typeof setTimeout> | null = null;
-      const armWatchdog = () => {
-        if (watchdog) clearTimeout(watchdog);
-        watchdog = setTimeout(() => {
-          watchdog = null;
-          if (this.worker === worker && this.status.phase === 'booting') {
-            this.patch({
-              phase: 'off',
-              error: `worker: ${tSync('aucune réponse du module — vérifiez votre connexion puis réactivez le laboratoire')}`,
-            });
-            worker.terminate();
-            this.worker = null;
-          }
-        }, 60000);
-      };
-      const disarmWatchdog = () => {
-        if (watchdog) {
-          clearTimeout(watchdog);
-          watchdog = null;
+      const deadline = setTimeout(() => {
+        if (this.worker === worker && this.status.phase === 'booting') {
+          this.patch({
+            phase: 'off',
+            error: `worker: ${tSync('aucune réponse du module — vérifiez votre connexion puis réactivez le laboratoire')}`,
+          });
+          worker.terminate();
+          if (this.worker === worker) this.worker = null;
         }
-      };
-      armWatchdog();
+      }, 60000);
       worker.onmessage = (event) => {
-        if (this.status.phase === 'booting') armWatchdog();
-        else disarmWatchdog();
-        this.onWorkerMessage(event.data);
+        this.onWorkerMessage(event.data, worker);
       };
       worker.onerror = (event) => {
-        disarmWatchdog();
+        clearTimeout(deadline);
         this.patch({
           phase: 'off',
           error: `worker: ${event.message || tSync('script du worker non chargé — rechargez la page et réessayez')}`,
         });
       };
       worker.onmessageerror = () => {
-        disarmWatchdog();
+        clearTimeout(deadline);
         this.patch({ phase: 'off', error: `worker: ${tSync('message illisible du module')}` });
       };
       worker.postMessage({
@@ -315,7 +308,11 @@ class LnLabController {
     });
   }
 
-  private onWorkerMessage(msg: { type: string; [field: string]: unknown }) {
+  private onWorkerMessage(
+    msg: { type: string; [field: string]: unknown },
+    sender: Worker | null,
+  ) {
+    if (sender && sender !== this.worker && msg.type !== 'stopped') return;
     switch (msg.type) {
       case 'ready':
         this.patch({
@@ -388,14 +385,14 @@ class LnLabController {
         break;
       case 'error': {
         const message = String(msg.message ?? 'erreur inconnue');
-        if (this.status.phase === 'booting') {
+        if (sender === this.worker && this.status.phase === 'booting') {
           this.patch({ phase: 'off', error: message });
         }
         this.pushLog('sys', message);
         break;
       }
       case 'stopped':
-        this.finishStop(this.worker);
+        this.finishStop(sender);
         break;
       default:
         break;
