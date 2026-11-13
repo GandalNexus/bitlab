@@ -58,7 +58,7 @@ async function bridgeBlockHex(hash) {
 }
 
 async function bridgeBroadcast(txHex) {
-  const res = await askBridge({ path: 'tx', txHex });
+  const res = await askBridge({ path: 'tx', tx: txHex });
   return { ok: Boolean(res.ok), detail: res.ok ? '' : String(res.detail ?? '').slice(0, BROADCAST_DETAIL_MAX) };
 }
 
@@ -330,8 +330,9 @@ const handlers = {
     try {
       lab.pay_invoice(msg.node, msg.invoice, msg.amountMsat == null ? null : BigInt(msg.amountMsat));
       runTick();
+      post({ type: 'paymentInitiated', requestId: msg.requestId });
     } catch (err) {
-      post({ type: 'error', message: `paiement: ${err.message || err}` });
+      fail(msg.requestId, `paiement: ${err.message || err}`);
     }
   },
 
@@ -354,8 +355,9 @@ const handlers = {
         msg.payerNote == null ? null : msg.payerNote,
       );
       runTick();
+      post({ type: 'offerPaymentInitiated', requestId: msg.requestId });
     } catch (err) {
-      post({ type: 'error', message: `paiement offer: ${err.message || err}` });
+      fail(msg.requestId, `paiement offer: ${err.message || err}`);
     }
   },
 

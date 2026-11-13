@@ -772,8 +772,11 @@ export const EN: Record<string, string> = {
   'Capacité sortante': 'Outbound capacity',
   'Capacité entrante': 'Inbound capacity',
   'Activer le laboratoire': 'Activate the lab',
-  'Démarre deux nœuds Lightning dans ce navigateur ({net}). Désactivé, aucune ressource n’est consommée.':
-    'Boots two Lightning nodes inside this browser ({net}). When off, no resource is consumed.',
+  'Les nœuds restent actifs après un rechargement de page et se réactivent automatiquement ; seul l’interrupteur les arrête.':
+    'Nodes stay active across page reloads and reactivate automatically; only the switch stops them.',
+  'Le laboratoire tourne sur {other}. Arrêtez-le sur ce réseau avant de le démarrer ici.':
+    'The lab is running on {other}. Stop it there before starting it on this network.',
+  'Bloc {h}': 'Block {h}',
   'A connecté à B': 'A connected to B',
   'pairs déconnectés': 'peers disconnected',
   'laboratoire inactif': 'lab is not active',
@@ -820,18 +823,38 @@ export const EN: Record<string, string> = {
   'La transaction de financement est sur la chaîne — attendez les confirmations.':
     'The funding transaction is on-chain — wait for confirmations.',
   'Échec du financement': 'Funding failed',
-  'Créer une facture BOLT11 (nœud B)': 'Create a BOLT11 invoice (node B)',
+  'Créer une facture BOLT11 (nœud {n})': 'Create a BOLT11 invoice (node {n})',
+  'Nœud payé': 'Payee node',
+  'Nœud payeur': 'Payer node',
   Créer: 'Create',
   'Facture créée': 'Invoice created',
-  'Signée par le nœud B — faites-la payer par A.': 'Signed by node B — have node A pay it.',
+  'Signée par le nœud {n} — faites-la payer par l’autre nœud.':
+    'Signed by node {n} — have the other node pay it.',
   'Montant invalide.': 'Invalid amount.',
-  'Payer une facture (nœud A)': 'Pay an invoice (node A)',
   'Paiement lancé': 'Payment started',
-  'Le HTLC circule sur le canal A → B.': 'The HTLC is travelling over the A → B channel.',
+  'Paiement impossible': 'Payment failed',
+  'Le HTLC circule sur le canal {a} → {b}.': 'The HTLC is travelling over the {a} → {b} channel.',
+  'Choisissez d’abord le nœud payeur, collez la facture (lntb…, lntbs…, lnbcrt…), vérifiez l’aperçu puis payez.':
+    'Pick the payer node first, paste the invoice (lntb…, lntbs…, lnbcrt…), review the preview, then pay.',
+  'Le nœud {n} n’a aucune capacité sortante : ouvrez et confirmez d’abord un canal.':
+    'Node {n} has no outbound capacity: open and confirm a channel first.',
+  'Cette facture est expirée : demandez-en une nouvelle.':
+    'This invoice has expired: request a new one.',
+  'Le nœud payeur est aussi le destinataire : choisissez l’autre nœud.':
+    'The payer node is also the recipient: choose the other node.',
+  'Facture à montant libre : indiquez combien payer.':
+    'Invoice with a free amount: enter how much to pay.',
+  'Facture illisible : vérifiez la chaîne complète copiée-collée.':
+    'Unreadable invoice: check the complete string you pasted.',
+  'Montant au-dessus de la limite HTLC du canal ({max} sats par paiement) : ouvrez un canal d’une capacité au moins 10 fois supérieure.':
+    'Amount above the channel HTLC limit ({max} sats per payment): open a channel with at least 10 times more capacity.',
+  'Aucun canal du nœud {n} ne pourra payer {sats} sats d’un coup : un HTLC est limité à 10 % de la capacité du canal.':
+    'No channel of node {n} will be able to pay {sats} sats at once: a single HTLC is capped at 10% of the channel capacity.',
+  Expiration: 'Expiry',
+  'facture expirée': 'invoice expired',
+  Destination: 'Destination',
   'Une facture neuve à chaque paiement : montant verrouillé, expiration d’une heure.':
     'A fresh invoice for every payment: locked amount, one-hour expiry.',
-  'Collez une facture Lightning (lntb…, lntbs…, lnbcrt…) : le montant est déjà inscrit dedans.':
-    'Paste a Lightning invoice (lntb…, lntbs…, lnbcrt…): the amount is already encoded in it.',
   'Facture à usage unique': 'Single-use invoice',
   'Un montant fixe, une expiration, un seul paiement — comme un ticket de caisse.':
     'A fixed amount, an expiry, a single payment — like a cashier’s receipt.',
@@ -840,30 +863,29 @@ export const EN: Record<string, string> = {
     'A reusable payment code, sometimes with a free amount — the invoice is requested at payment time.',
   facture: 'invoice',
   offer: 'offer',
-  'Créer une offer BOLT12 (nœud B)': 'Create a BOLT12 offer (node B)',
+  'Créer une offer BOLT12 (nœud {n})': 'Create a BOLT12 offer (node {n})',
   'Un même code lno1… pour un nombre illimité de paiements. Montant facultatif : laissez 0 pour un paiement libre.':
     'One lno1… code for unlimited payments. Amount optional: leave 0 for a free-amount payment.',
   'Montant (sats, 0 = libre)': 'Amount (sats, 0 = free)',
   'Créer l’offer': 'Create offer',
   'Offer créée': 'Offer created',
-  'Signée par le nœud B — réutilisable autant de fois que voulu.':
-    'Signed by node B — reusable as many times as you like.',
+  'Signée par le nœud {n} — réutilisable autant de fois que voulu.':
+    'Signed by node {n} — reusable as many times as you like.',
   'Offer illisible': 'Unreadable offer',
-  'Payer une offer (nœud A)': 'Pay an offer (node A)',
-  'Le nœud A demande d’abord une facture au destinataire via messages onion chiffrés, puis la paie sur le canal.':
-    'Node A first requests an invoice from the recipient over encrypted onion messages, then pays it over the channel.',
+  'Payer une offer BOLT12': 'Pay a BOLT12 offer',
+  'Choisissez d’abord le nœud payeur : il demande une facture au destinataire via messages onion chiffrés, puis la paie sur le canal.':
+    'Pick the payer node first: it requests an invoice from the recipient over encrypted onion messages, then pays it over the channel.',
   Vérifier: 'Verify',
   Montant: 'Amount',
   'montant libre': 'free amount',
   Émetteur: 'Issuer',
   'Note au payeur (facultatif)': 'Payer note (optional)',
   'Demander et payer': 'Request & pay',
-  'Montant requis': 'Amount required',
   'Cette offer ne fixe pas de montant : indiquez combien payer.':
     'This offer has no fixed amount: enter how much to pay.',
   'Demande de facture envoyée': 'Invoice request sent',
-  'A interroge B via messages onion chiffrés, puis paie la facture retournée. Suivez le journal.':
-    'A asks B over encrypted onion messages, then pays the returned invoice. Watch the journal.',
+  'Le nœud {a} interroge {b} via messages onion chiffrés, puis paie la facture retournée. Suivez le journal.':
+    'Node {a} queries {b} over encrypted onion messages, then pays the returned invoice. Watch the journal.',
   'Deux nœuds LDK réels compilés en WebAssembly tournent dans votre navigateur : canaux financés on-chain, factures BOLT11, offers BOLT12 réutilisables via messages onion, paiements HTLC authentiques. Vos clés et vos données restent dans votre navigateur.':
     'Two real LDK nodes compiled to WebAssembly run in your browser: on-chain funded channels, BOLT11 invoices, reusable BOLT12 offers over onion messages, authentic HTLC payments. Your keys and data stay in your browser.',
   'Événements Lightning': 'Lightning events',

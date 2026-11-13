@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { LangProvider } from '@/lib/i18n';
 import { THEME_BOOT_SCRIPT, ThemeProvider } from '@/lib/theme';
+import { LnLabRestorer } from '@/components/bitlab/lnlab-restorer';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -56,7 +57,10 @@ export default function RootLayout({
       >
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <LangProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <LnLabRestorer />
+            {children}
+          </ThemeProvider>
         </LangProvider>
         <Toaster />
       </body>

@@ -106,13 +106,49 @@ export function classifyBroadcast(ok: boolean, detail: string): { ok: boolean; d
   return { ok, detail };
 }
 
-const LN_CHAIN_BRIDGE_TX_RX = /^[0-9a-fA-F]{120,}$/;
+export const LN_CHAIN_BRIDGE_TX_RX = /^[0-9a-fA-F]{120,}$/;
 
 export const LN_CHAIN_BRIDGE_PATH_RX =
   /^(?:blocks\/tip\/(?:height|hash)|block-height\/\d{1,7}|block\/[0-9a-f]{64}\/raw|v1\/fees\/recommended)$/i;
 
 export function shouldBridgeChain(network: LnNetId, mode: string): boolean {
   return network === 'regtest' && mode === 'embedded';
+}
+
+const DESIRED_KEY = 'lnlab-desired-nets';
+
+interface NetStore {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+export function readDesiredNets(store: NetStore | null): LnNetId[] {
+  if (!store) return [];
+  try {
+    const raw = store.getItem(DESIRED_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((n): n is LnNetId => (LN_NETWORKS as string[]).includes(String(n)));
+  } catch {
+    return [];
+  }
+}
+
+export function writeDesiredNets(store: NetStore | null, nets: LnNetId[]): void {
+  if (!store) return;
+  try {
+    if (nets.length === 0) store.removeItem(DESIRED_KEY);
+    else store.setItem(DESIRED_KEY, JSON.stringify(nets));
+  } catch {
+    return;
+  }
+}
+
+function localStorageStore(): NetStore | null {
+  if (typeof localStorage === 'undefined') return null;
+  return localStorage;
 }
 
 class LnLabController {
@@ -129,8 +165,24 @@ class LnLabController {
   private network: LnNetId | null = null;
   private kvQueue: Promise<void> = Promise.resolve();
   private kvEpoch = 0;
+  private seq = 0;
+  private desired = new Set<LnNetId>(readDesiredNets(localStorageStore()));
 
   getStatus = (): LnLabStatus => this.status;
+
+  isDesired = (network: LnNetId): boolean => this.desired.has(network);
+
+  desiredNets = (): LnNetId[] => [...this.desired];
+
+  private setDesired(network: LnNetId, on: boolean) {
+    if (on) {
+      this.desired.delete(network);
+      this.desired.add(network);
+    } else {
+      this.desired.delete(network);
+    }
+    writeDesiredNets(localStorageStore(), [...this.desired]);
+  }
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -171,6 +223,7 @@ class LnLabController {
   async activate(network: LnNetId): Promise<void> {
     if (this.status.phase === 'booting' || this.status.phase === 'ready') return;
     this.network = network;
+    this.setDesired(network, true);
     this.patch({
       phase: 'booting',
       network,
@@ -235,6 +288,7 @@ class LnLabController {
   }
 
   deactivate(): void {
+    if (this.network) this.setDesired(this.network, false);
     const worker = this.worker;
     if (!worker) {
       this.patch({ phase: 'off' });
@@ -259,6 +313,7 @@ class LnLabController {
 
   async reset(network: LnNetId): Promise<void> {
     this.kvEpoch += 1;
+    this.setDesired(network, false);
     this.deactivate();
     await idbDel(SEEDS_KEY(network));
     await idbDel(KV_KEY(network, 'A'));
@@ -308,7 +363,10 @@ class LnLabController {
     });
   }
 
-  private onWorkerMessage(msg: { type: string; [field: string]: unknown }, sender: Worker | null) {
+  private onWorkerMessage(
+    msg: { type: string; [field: string]: unknown },
+    sender: Worker | null,
+  ) {
     if (sender && sender !== this.worker && msg.type !== 'stopped') return;
     switch (msg.type) {
       case 'ready':
@@ -489,6 +547,11 @@ class LnLabController {
     });
   }
 
+  private nextRequestId(prefix: string): string {
+    this.seq += 1;
+    return `${prefix}-${Date.now()}-${this.seq}`;
+  }
+
   openChannel(valueSats: number, pushMsat: number): Promise<void> {
     const userChannelId = Date.now();
     return this.request<void>(
@@ -518,7 +581,7 @@ class LnLabController {
     description: string,
     expirySecs: number,
   ): Promise<string> {
-    const id = `inv-${Date.now()}`;
+    const id = this.nextRequestId('inv');
     return this.request<string>(
       {
         type: 'createInvoice',
@@ -533,12 +596,18 @@ class LnLabController {
     );
   }
 
-  payInvoice(node: NodeKey, invoice: string, amountMsat: number | null): void {
-    this.send({ type: 'payInvoice', node: node === 'A' ? 0 : 1, invoice, amountMsat });
+  payInvoice(node: NodeKey, invoice: string, amountMsat: number | null): Promise<void> {
+    const requestId = this.nextRequestId('pay');
+    return this.request<void>(
+      { type: 'payInvoice', node: node === 'A' ? 0 : 1, invoice, amountMsat, requestId },
+      (data) =>
+        (data.type === 'paymentInitiated' && data.requestId === requestId ? true : undefined) as void,
+      'délai du paiement dépassé',
+    );
   }
 
   createOffer(node: NodeKey, amountMsat: number | null, description: string): Promise<string> {
-    const id = `offer-${Date.now()}`;
+    const id = this.nextRequestId('offer');
     return this.request<string>(
       { type: 'createOffer', id, node: node === 'A' ? 0 : 1, amountMsat, description },
       (data) => (data.type === 'offer' && data.id === id ? (data.offer as string) : undefined),
@@ -551,12 +620,20 @@ class LnLabController {
     offer: string,
     amountMsat: number | null,
     payerNote: string | null,
-  ): void {
-    this.send({ type: 'payOffer', node: node === 'A' ? 0 : 1, offer, amountMsat, payerNote });
+  ): Promise<void> {
+    const requestId = this.nextRequestId('payoffer');
+    return this.request<void>(
+      { type: 'payOffer', node: node === 'A' ? 0 : 1, offer, amountMsat, payerNote, requestId },
+      (data) =>
+        (data.type === 'offerPaymentInitiated' && data.requestId === requestId
+          ? true
+          : undefined) as void,
+      'délai du paiement offer dépassé',
+    );
   }
 
   decodeOffer(offer: string): Promise<LnOfferView> {
-    const id = `decode-${Date.now()}`;
+    const id = this.nextRequestId('decode');
     return this.request<LnOfferView>(
       { type: 'decodeOffer', id, offer },
       (data) =>
@@ -587,4 +664,13 @@ export function msatToSats(msat: string | number | null | undefined): number {
   const value = typeof msat === 'string' ? Number(msat) : msat;
   if (!Number.isFinite(value)) return 0;
   return Math.floor((value ?? 0) / 1000);
+}
+
+export function maxPayableSats(channels: LnChannelView[]): number {
+  const usable = channels.filter((c) => c.isReady || c.isUsable);
+  if (usable.length === 0) return 0;
+  const values = usable.map((c) => Math.floor(Number(c.valueSats) / 10));
+  const finite = values.filter((v) => Number.isFinite(v) && v > 0);
+  if (finite.length === 0) return 0;
+  return Math.max(...finite);
 }
