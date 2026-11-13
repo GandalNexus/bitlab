@@ -308,10 +308,7 @@ class LnLabController {
     });
   }
 
-  private onWorkerMessage(
-    msg: { type: string; [field: string]: unknown },
-    sender: Worker | null,
-  ) {
+  private onWorkerMessage(msg: { type: string; [field: string]: unknown }, sender: Worker | null) {
     if (sender && sender !== this.worker && msg.type !== 'stopped') return;
     switch (msg.type) {
       case 'ready':
