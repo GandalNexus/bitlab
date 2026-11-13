@@ -50,7 +50,10 @@ export default function BitLabPage() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen flex-col">
+      {/* Fond étoilé GandalNexus (mode sombre uniquement, pointer-events none) */}
+      <div aria-hidden className="starfield" />
+
+      <div className="relative z-10 flex min-h-screen flex-col">
         <LabSidebar
           active={tab}
           onNavigate={(id) => setTab(id)}
