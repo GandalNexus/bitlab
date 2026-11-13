@@ -139,12 +139,29 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
 }
 
 /**
- * Badge d'identité GandalNexus (LOT 3).
+ * Construit l'URL SSO top-level BitQuest → BitLab.
+ * BitQuest lit son cookie HttpOnly (SameSite=Lax), émet un launch_token,
+ * et redirige vers BitLab avec `?launch_token=XXX`. Le hook
+ * `useBitquestMission` consomme ensuite ce token côté client.
+ */
+function buildSsoUrl(bitquestUrl: string): string {
+  const returnTo =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}`
+      : '/';
+  const params = new URLSearchParams({ returnTo });
+  return `${bitquestUrl}/api/auth/bitlab-sso?${params.toString()}`;
+}
+
+/**
+ * Badge d'identité GandalNexus (LOT 3 + LOT 6).
  *
  * Trois états visuels :
  *   - connecté → bouton @pseudo avec lien direct vers BitQuest dashboard
  *   - identification en cours → chip avec Loader2
- *   - non connecté → bouton "Se connecter" qui ouvre BitQuest
+ *   - non connecté → bouton "Se connecter" qui déclenche un SSO
+ *     top-level vers BitQuest (cookie Lax envoyé, redirect avec
+ *     launch_token consommé au retour)
  *
  * Caché en < sm pour laisser de la place au sélecteur de réseau sur mobile.
  */
@@ -185,12 +202,12 @@ function GandalNexusUserBadge() {
     );
   }
 
+  // Navigation top-level (pas target=_blank) : cookie bq_session SameSite=Lax
+  // envoyé, BitQuest nous redirige automatiquement avec un launch_token.
   return (
     <a
-      href={bitquestUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={t('Rejoindre GandalNexus')}
+      href={buildSsoUrl(bitquestUrl)}
+      title={t('Se connecter avec BitQuest')}
       className={cn(
         'border-border bg-card hover:bg-accent/60 hidden items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors sm:flex',
         'focus-visible:ring-primary/40 outline-none focus-visible:ring-2',
