@@ -16,6 +16,7 @@ let lab = null;
 let best = null;
 let timers = [];
 let stopping = false;
+let booting = false;
 let regtestHeader = '';
 let bridge = false;
 let bridgeSeq = 0;
@@ -203,34 +204,71 @@ function stopTimers() {
   timers = [];
 }
 
+async function loadWasmResponse() {
+  const url = new URL('lnlab_bg.wasm', import.meta.url);
+  if (typeof caches === 'undefined') return { res: await fetch(url), cached: false };
+  try {
+    const cache = await caches.open('lnlab-wasm-v1');
+    const hit = await cache.match(url);
+    const meta = await cache.match(`${url.href}#meta`);
+    if (hit && meta) {
+      const { etag } = await meta.json();
+      const head = await fetch(url, { method: 'HEAD' });
+      if (head.ok && (head.headers.get('etag') ?? '') === etag) {
+        return { res: hit, cached: true };
+      }
+    }
+    const res = await fetch(url);
+    if (!res.ok) return { res, cached: false };
+    await cache.put(url, res.clone());
+    await cache.put(
+      `${url.href}#meta`,
+      new Response(JSON.stringify({ etag: res.headers.get('etag') ?? '' }), {
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    return { res, cached: false };
+  } catch {
+    return { res: await fetch(url), cached: false };
+  }
+}
+
 async function boot(msg) {
+  if (lab || booting) return;
+  booting = true;
   net = msg.network;
   bridge = msg.chainBridge === true;
   regtestHeader = typeof msg.regtestHeader === 'string' ? msg.regtestHeader : '';
   stopping = false;
   log('sys', `chargement du module WASM (${net})…`);
-  await initWasm({ module_or_path: new URL('lnlab_bg.wasm', import.meta.url) });
-  const now = Math.floor(Date.now() / 1000);
-  if (msg.mode === 'restore') {
-    lab = LnLab.boot_restore(net, msg.seeds.a, msg.seeds.b, now, msg.kv.a, msg.kv.b);
-    log('sys', 'nœuds restaurés depuis le stockage local');
-  } else {
-    const tip = Number(await proxyJson('blocks/tip/height'));
-    const hash = await proxyJson(`block-height/${tip}`);
-    lab = LnLab.boot_fresh(net, msg.seeds.a, msg.seeds.b, tip, hash, now);
-    log('sys', `nouveaux nœuds créés au bloc ${tip}`);
+  try {
+    const { res, cached } = await loadWasmResponse();
+    await initWasm({ module_or_path: res });
+    log('sys', cached ? 'module WASM chargé depuis le cache local' : 'module WASM chargé');
+    const now = Math.floor(Date.now() / 1000);
+    if (msg.mode === 'restore') {
+      lab = LnLab.boot_restore(net, msg.seeds.a, msg.seeds.b, now, msg.kv.a, msg.kv.b);
+      log('sys', 'nœuds restaurés depuis le stockage local');
+    } else {
+      const tip = Number(await proxyJson('blocks/tip/height'));
+      const hash = await proxyJson(`block-height/${tip}`);
+      lab = LnLab.boot_fresh(net, msg.seeds.a, msg.seeds.b, tip, hash, now);
+      log('sys', `nouveaux nœuds créés au bloc ${tip}`);
+    }
+    best = lab.best_block();
+    best = { height: Number(best.height), hash: best.hash };
+    startTimers();
+    post({
+      type: 'ready',
+      nodeA: lab.node_id(0),
+      nodeB: lab.node_id(1),
+      best,
+    });
+    emitStatus();
+    runTick();
+  } finally {
+    booting = false;
   }
-  best = lab.best_block();
-  best = { height: Number(best.height), hash: best.hash };
-  startTimers();
-  post({
-    type: 'ready',
-    nodeA: lab.node_id(0),
-    nodeB: lab.node_id(1),
-    best,
-  });
-  emitStatus();
-  runTick();
 }
 
 function fail(requestId, message) {

@@ -76,31 +76,26 @@ class RegtestChainController {
     return new Promise<T>((resolve, reject) => {
       this.ensureWorker()
         .then(() => {
-          this.pending.set(id, {
-            resolve: resolve as (v: unknown) => void,
-            reject,
-          });
+          const worker = this.worker;
+          if (!worker) {
+            reject(new Error('regtest worker unavailable'));
+            return;
+          }
           const timer = setTimeout(() => {
             this.pending.delete(id);
             reject(new Error('regtest worker timeout'));
           }, WORKER_TIMEOUT_MS);
-          this.worker!.postMessage({ ...msg, id });
-          // Clear timeout when resolved.
-          const orig = this.pending.get(id);
-          if (orig) {
-            const wrappedResolve = orig.resolve;
-            const wrappedReject = orig.reject;
-            this.pending.set(id, {
-              resolve: (v) => {
-                clearTimeout(timer);
-                wrappedResolve(v);
-              },
-              reject: (e) => {
-                clearTimeout(timer);
-                wrappedReject(e);
-              },
-            });
-          }
+          this.pending.set(id, {
+            resolve: (v: unknown) => {
+              clearTimeout(timer);
+              resolve(v as T);
+            },
+            reject: (e: Error) => {
+              clearTimeout(timer);
+              reject(e);
+            },
+          });
+          worker.postMessage({ ...msg, id });
         })
         .catch(reject);
     });
