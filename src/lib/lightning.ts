@@ -23,6 +23,21 @@ export interface LnChannelView {
   fundingTxo?: string;
   confirmations?: string;
   confirmationsRequired?: string;
+  /**
+   * Short channel ID (scid) GandalNexus — identifiant Lightning
+   * `block × tx × vout`. Exposé par le WASM LDK dès qu'un scid réel
+   * (ou un alias) est disponible pour ce canal. `scidFormatted` est
+   * la forme humaine `blockxTxxVout` directement acceptée par
+   * `/api/bitlab/proof` côté BitQuest (kind=CHANNEL).
+   *
+   * Tous les champs scid* sont optionnels : un canal fraîchement
+   * ouvert sans alias peut ne pas en avoir avant les 3 confirmations.
+   */
+  shortChannelId?: string;
+  scidBlock?: string;
+  scidTxIndex?: string;
+  scidVout?: string;
+  scidFormatted?: string;
 }
 
 export interface LnEventView {

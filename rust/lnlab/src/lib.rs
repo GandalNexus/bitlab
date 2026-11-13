@@ -610,6 +610,32 @@ impl LnLab {
                                 put_bool(&obj, "isReady", c.is_channel_ready);
                                 put_bool(&obj, "isUsable", c.is_usable);
                                 put_bool(&obj, "isAnnounced", c.is_announced);
+                                // Short channel ID (scid) — identifiant Lightning
+                                // block×tx×vout. Expose l'u64 brut et ses trois
+                                // composantes décomposées (format attendu par
+                                // BitQuest `/api/bitlab/proof` kind=CHANNEL).
+                                // Fallback sur les scid alias si le vrai scid
+                                // n'est pas encore annoncé (canal privé ou
+                                // confirmation pas atteinte).
+                                if let Some(scid) = c
+                                        .short_channel_id
+                                        .or(c.outbound_scid_alias)
+                                        .or(c.inbound_scid_alias)
+                                {
+                                        put(&obj, "shortChannelId", scid.to_string());
+                                        // scid = (block << 40) | (tx_idx << 16) | vout
+                                        let block = scid >> 40;
+                                        let tx_idx = (scid >> 16) & 0x00FFFFFF;
+                                        let vout = scid & 0xFFFF;
+                                        put(&obj, "scidBlock", block.to_string());
+                                        put(&obj, "scidTxIndex", tx_idx.to_string());
+                                        put(&obj, "scidVout", vout.to_string());
+                                        put(
+                                                &obj,
+                                                "scidFormatted",
+                                                format!("{}x{}x{}", block, tx_idx, vout),
+                                        );
+                                }
                                 if let Some(funding) = &c.funding_txo {
                                         put(&obj, "fundingTxo", funding.to_string());
                                 }
