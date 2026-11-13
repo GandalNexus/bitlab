@@ -7,6 +7,7 @@ import { RegtestChain } from '../src/lib/regtest-engine/chain';
 import { registerNetGetter } from '../src/lib/networks';
 import { deriveForType } from '../src/lib/bitcoin/keys';
 import { buildSignedTx, scriptToAddressOn } from '../src/lib/bitcoin/tx';
+import { parseFundingOutpoint, scidFromConfirmedStatus } from '../src/lib/bitcoin/scid';
 
 registerNetGetter(() => 'regtest');
 
@@ -187,6 +188,40 @@ describe('labo Lightning e2e — deux nœuds LDK réels sur la chaîne regtest e
     expect(String(ch.outboundMsat)).toBe('990000000');
     expect(String(ch.inboundMsat)).toBe('0');
     expect(flushKv(lab)).toBeGreaterThan(0);
+  });
+
+  it('scid : le canal exposé par LDK dérive le short channel id canonique BOLT-03 du placement on-chain', () => {
+    const channels = Array.from(lab.list_channels(0));
+    const ch = channels[0] as { channelId: string; fundingTxo?: string; isReady: boolean };
+
+    const outpoint = parseFundingOutpoint(String(ch.fundingTxo ?? ''));
+    expect(outpoint, 'fundingTxo doit être un outpoint txid:vout valide').not.toBeNull();
+    expect(outpoint!.vout).toBe(0);
+
+    const info = chain.txInfo(outpoint!.txid) as {
+      status: { confirmed: boolean; block_height?: number; block_index?: number };
+    };
+    expect(info, 'tx de financement connue de la chaîne').not.toBeNull();
+    expect(info.status.confirmed).toBe(true);
+    expect(info.status.block_height).toBeGreaterThan(0);
+    expect(info.status.block_index).toBeGreaterThan(0);
+
+    const scid = scidFromConfirmedStatus(info.status, outpoint!.vout);
+    expect(scid, 'scid calculé depuis le placement réel').not.toBeNull();
+    expect(scid).toMatch(/^\d+x\d+x\d+$/);
+    expect(scid).toBe(`${info.status.block_height}x${info.status.block_index}x${outpoint!.vout}`);
+
+    const parts = scid!.split('x').map(Number);
+    const encoded = (BigInt(parts[0]) << 40n) | (BigInt(parts[1]) << 16n) | BigInt(parts[2]);
+    expect(Number(encoded >> 40n)).toBe(info.status.block_height);
+    expect(Number((encoded >> 16n) & 0xffffffn)).toBe(info.status.block_index);
+
+    const blockHash = chain.blockHashAtHeight(info.status.block_height!);
+    expect(blockHash).not.toBeNull();
+    const record = chain.blockByHash(blockHash!);
+    expect(record, 'bloc de financement retrouvé').not.toBeNull();
+    expect(record!.txids[info.status.block_index!]).toBe(outpoint!.txid);
+    expect(record!.txids[0]).not.toBe(outpoint!.txid);
   });
 
   it('BOLT11 : facture lnbcrt signée par B, décodée par le WASM, payée par A (HTLC réel)', () => {

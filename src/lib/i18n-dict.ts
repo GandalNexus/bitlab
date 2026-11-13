@@ -804,6 +804,7 @@ export const EN: Record<string, string> = {
   'Canaux du nœud A': 'Node A channels',
   'Aucun canal pour le moment.': 'No channels yet.',
   '{c}/{r} confirmations': '{c}/{r} confirmations',
+  'Identifiant court de canal': 'Short channel ID',
   Capacité: 'Capacity',
   Sortant: 'Outbound',
   Entrant: 'Inbound',

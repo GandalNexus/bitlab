@@ -59,7 +59,12 @@ export interface TxInfo {
   size: number;
   weight: number;
   fee?: number;
-  status: { confirmed: boolean; block_height?: number; block_time?: number };
+  status: {
+    confirmed: boolean;
+    block_height?: number;
+    block_index?: number;
+    block_time?: number;
+  };
 }
 
 export interface BlockDetail {

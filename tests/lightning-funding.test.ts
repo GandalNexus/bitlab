@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { classifyBroadcast } from '../src/lib/lightning';
+import {
+  classifyBroadcast,
+  LN_CHAIN_BRIDGE_PATH_RX,
+  shouldBridgeChain,
+} from '../src/lib/lightning';
 
 describe('classifyBroadcast — duplicate funding broadcast', () => {
   it('treats a duplicate (already in chain) as success', () => {
@@ -24,5 +28,42 @@ describe('classifyBroadcast — duplicate funding broadcast', () => {
   it('preserves successes unchanged', () => {
     expect(classifyBroadcast(true, '')).toEqual({ ok: true, detail: '' });
     expect(classifyBroadcast(true, 'txid')).toEqual({ ok: true, detail: 'txid' });
+  });
+});
+
+describe('pont chaîne du laboratoire Lightning (regtest embarqué)', () => {
+  it('active le pont uniquement en regtest embarqué', () => {
+    expect(shouldBridgeChain('regtest', 'embedded')).toBe(true);
+    expect(shouldBridgeChain('regtest', 'external')).toBe(false);
+    expect(shouldBridgeChain('testnet4', 'embedded')).toBe(false);
+    expect(shouldBridgeChain('signet', 'external')).toBe(false);
+  });
+
+  it('n’autorise que les chemins Esplora requis par le worker Lightning', () => {
+    const allowed = [
+      'blocks/tip/height',
+      'blocks/tip/hash',
+      'block-height/102',
+      `block/${'a'.repeat(64)}/raw`,
+      'v1/fees/recommended',
+    ];
+    for (const path of allowed) {
+      expect(LN_CHAIN_BRIDGE_PATH_RX.test(path)).toBe(true);
+    }
+    const rejected = [
+      'address/bcrt1qabc/utxo',
+      'tx/a'.padEnd(66, '0'),
+      `block/${'a'.repeat(64)}`,
+      'v1/lightning/statistics/latest',
+      'mempool',
+      'blocks/tip/height/extra',
+      'block-height/abc',
+      `tx/${'a'.repeat(64)}`,
+      '',
+      '../admin',
+    ];
+    for (const path of rejected) {
+      expect(LN_CHAIN_BRIDGE_PATH_RX.test(path)).toBe(false);
+    }
   });
 });

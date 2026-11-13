@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -48,6 +48,7 @@ import { cn } from '@/lib/utils';
 import {
   lnLab,
   msatToSats,
+  resolveChannelScid,
   LN_NETWORKS,
   type LnChannelView,
   type LnEventView,
@@ -59,6 +60,59 @@ import {
 
 function useLnStatus(): LnLabStatus {
   return useSyncExternalStore(lnLab.subscribe, lnLab.getStatus, lnLab.getStatus);
+}
+
+function useChannelScids(channels: LnChannelView[]): Record<string, string> {
+  const [scids, setScids] = useState<Record<string, string>>({});
+  const resolving = useRef(new Set<string>());
+
+  useEffect(() => {
+    const pending = channels.filter(
+      (ch) =>
+        (ch.isReady || ch.isUsable) &&
+        ch.fundingTxo &&
+        !(ch.channelId in scids) &&
+        !resolving.current.has(ch.channelId),
+    );
+    if (pending.length === 0) return;
+    pending.forEach((ch) => resolving.current.add(ch.channelId));
+    let cancelled = false;
+    void Promise.all(
+      pending.map(async (ch) => [ch.channelId, await resolveChannelScid(ch)] as const),
+    ).then((results) => {
+      results.forEach(([id]) => resolving.current.delete(id));
+      if (cancelled) return;
+      const resolved = Object.fromEntries(
+        results.filter((r): r is [string, string] => r[1] !== null),
+      );
+      if (Object.keys(resolved).length === 0) return;
+      setScids((prev) => ({ ...prev, ...resolved }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [channels, scids]);
+
+  return scids;
+}
+
+function useBitquestChannelCapture(scids: Record<string, string>): void {
+  const mission = useBitquestMissionStore((s) => s.mission);
+  const setLastScid = useBitquestMissionStore((s) => s.setLastScid);
+  const capturedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    const current = mission;
+    if (!current || current.kind !== 'CHANNEL') {
+      capturedFor.current = null;
+      return;
+    }
+    if (capturedFor.current === current.questCode) return;
+    const first = Object.values(scids)[0];
+    if (!first) return;
+    setLastScid(first);
+    capturedFor.current = current.questCode;
+  }, [mission, scids, setLastScid]);
 }
 
 function PhaseBadge({ phase }: { phase: LnLabStatus['phase'] }) {
@@ -321,7 +375,7 @@ function FundingBridge({
   );
 }
 
-function ChannelsView({ st }: { st: LnLabStatus }) {
+function ChannelsView({ st, scids }: { st: LnLabStatus; scids: Record<string, string> }) {
   const { t } = useT();
   const { toast } = useToast();
   const [capacity, setCapacity] = useState('100000');
@@ -472,6 +526,14 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
                     <p className="font-mono">{fmtInt(msatToSats(ch.inboundMsat))} sats</p>
                   </div>
                 </div>
+                {scids[ch.channelId] ? (
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <p className="text-muted-foreground text-[10px] uppercase">
+                      {t('Identifiant court de canal')}
+                    </p>
+                    <p className="font-mono text-[11px]">{scids[ch.channelId]}</p>
+                  </div>
+                ) : null}
                 <div className="mt-2 flex justify-end">
                   <Button
                     size="sm"
@@ -1009,6 +1071,8 @@ export function LightningModule() {
   const lnNet = supported ? (net as LnNetId) : null;
   const active = st.phase === 'ready' || st.phase === 'booting' || st.phase === 'stopping';
   const onSameNetwork = st.network === lnNet;
+  const scids = useChannelScids([...st.channelsA, ...st.channelsB]);
+  useBitquestChannelCapture(scids);
 
   const toggle = (on: boolean) => {
     if (!lnNet) return;
@@ -1090,7 +1154,7 @@ export function LightningModule() {
                 <TabsTrigger value="journal">{t('Journal')}</TabsTrigger>
               </TabsList>
               <TabsContent value="channels" className="mt-4">
-                <ChannelsView st={st} />
+                <ChannelsView st={st} scids={scids} />
               </TabsContent>
               <TabsContent value="payments" className="mt-4">
                 <PaymentsView st={st} />
