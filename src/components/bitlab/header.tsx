@@ -1,7 +1,18 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Blocks, Menu, ChevronDown, Check, ShieldAlert, User, ExternalLink, Loader2 } from 'lucide-react';
+import {
+  Blocks,
+  Menu,
+  ChevronDown,
+  Check,
+  ShieldAlert,
+  User,
+  ExternalLink,
+  Loader2,
+  LogOut,
+  LogIn,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -154,50 +165,77 @@ function buildSsoUrl(bitquestUrl: string): string {
 }
 
 /**
- * Badge d'identité GandalNexus (LOT 3 + LOT 6).
+ * Badge d'identité GandalNexus (LOT 3 + LOT 6 + LOT 9).
  *
- * Trois états visuels :
- *   - connecté → bouton @pseudo avec lien direct vers BitQuest dashboard
- *   - identification en cours → chip avec Loader2
- *   - non connecté → bouton "Se connecter" qui déclenche un SSO
+ * Trois états visuels (toujours visibles, y compris en mobile) :
+ *   - connecté → dropdown @pseudo avec actions « Ouvrir BitQuest »
+ *     et « Déconnexion locale » (clear du store BitLab uniquement ;
+ *     la session BitQuest reste intacte).
+ *   - identification en cours → chip avec Loader2.
+ *   - non connecté → bouton « Se connecter » qui déclenche un SSO
  *     top-level vers BitQuest (cookie Lax envoyé, redirect avec
- *     launch_token consommé au retour)
+ *     launch_token consommé au retour).
  *
- * Caché en < sm pour laisser de la place au sélecteur de réseau sur mobile.
+ * En < sm, le label texte est tronqué à l'icône pour économiser l'espace.
  */
 function GandalNexusUserBadge() {
   const { t } = useT();
   const user = useBitquestUserStore((s) => s.user);
   const launchStatus = useBitquestUserStore((s) => s.launchStatus);
+  const clearUser = useBitquestUserStore((s) => s.clearUser);
   const bitquestUrl = getBitquestUrl();
 
   if (user) {
     return (
-      <a
-        href={`${bitquestUrl}/`}
-        target="_blank"
-        rel="noopener noreferrer"
-        title={t('Ouvert dans BitQuest · identité vérifiée')}
-        className={cn(
-          'border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary hidden items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors sm:flex',
-          'focus-visible:ring-primary/40 outline-none focus-visible:ring-2',
-        )}
-      >
-        <User className="h-3.5 w-3.5" aria-hidden />
-        <span className="max-w-[10ch] truncate">@{user.pseudo}</span>
-        <ExternalLink className="h-3 w-3 opacity-60" aria-hidden />
-      </a>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className={cn(
+            'border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary flex items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors',
+            'focus-visible:ring-primary/40 outline-none focus-visible:ring-2',
+          )}
+          title={t('Identité GandalNexus')}
+          aria-label={t('Menu utilisateur GandalNexus')}
+        >
+          <User className="h-3.5 w-3.5" aria-hidden />
+          <span className="hidden max-w-[10ch] truncate sm:inline">@{user.pseudo}</span>
+          <ChevronDown className="h-3 w-3 opacity-60" aria-hidden />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="text-muted-foreground text-[11px] tracking-wider uppercase">
+            @{user.pseudo} · {user.role}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <a
+              href={`${bitquestUrl}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" aria-hidden />
+              {t('Ouvrir BitQuest')}
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => clearUser()}
+            className="text-destructive focus:text-destructive flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+            {t('Déconnexion locale')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
   if (launchStatus === 'pending') {
     return (
       <span
-        className="border-border bg-card text-muted-foreground hidden items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium sm:flex"
+        className="border-border bg-card text-muted-foreground flex items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium"
         aria-live="polite"
       >
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-        {t('identification…')}
+        <span className="hidden sm:inline">{t('identification…')}</span>
       </span>
     );
   }
@@ -209,13 +247,12 @@ function GandalNexusUserBadge() {
       href={buildSsoUrl(bitquestUrl)}
       title={t('Se connecter avec BitQuest')}
       className={cn(
-        'border-border bg-card hover:bg-accent/60 hidden items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors sm:flex',
+        'border-border bg-card hover:bg-accent/60 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors',
         'focus-visible:ring-primary/40 outline-none focus-visible:ring-2',
       )}
     >
-      <User className="text-muted-foreground h-3.5 w-3.5" aria-hidden />
-      {t('Se connecter')}
-      <ExternalLink className="text-muted-foreground h-3 w-3" aria-hidden />
+      <LogIn className="text-muted-foreground h-3.5 w-3.5" aria-hidden />
+      <span className="hidden sm:inline">{t('Se connecter')}</span>
     </a>
   );
 }
