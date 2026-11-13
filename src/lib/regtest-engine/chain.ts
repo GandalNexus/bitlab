@@ -331,6 +331,7 @@ export class RegtestChain {
     }
     const confirmed = rec.height !== null;
     const block = confirmed ? this.blocks.get(rec.blockHash ?? '') : null;
+    const blockIndex = block ? block.txids.indexOf(txid) : -1;
     return {
       txid: rec.txid,
       version: parsed.version,
@@ -366,6 +367,7 @@ export class RegtestChain {
             confirmed: true,
             block_height: rec.height ?? undefined,
             block_hash: rec.blockHash ?? undefined,
+            block_index: blockIndex >= 0 ? blockIndex : undefined,
             block_time: block?.time,
           }
         : { confirmed: false },
