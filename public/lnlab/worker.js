@@ -17,20 +17,52 @@ let best = null;
 let timers = [];
 let stopping = false;
 let regtestHeader = '';
+let bridge = false;
+let bridgeSeq = 0;
+const bridgePending = new Map();
 
 function extraHeaders() {
   return regtestHeader ? { 'x-regtest-cfg': regtestHeader } : {};
 }
 
-function post(msg) {
-  self.postMessage(msg);
+function post(msg, transfer) {
+  self.postMessage(msg, transfer || []);
 }
 
 function log(node, line) {
   post({ type: 'log', node, line });
 }
 
+function askBridge(payload) {
+  return new Promise((resolve, reject) => {
+    const id = `lnb-${++bridgeSeq}`;
+    bridgePending.set(id, { resolve, reject });
+    post({ type: 'chainBridgeRequest', id, ...payload });
+  });
+}
+
+async function bridgeJson(path) {
+  const res = await askBridge({ path });
+  if (!res.ok) throw new Error(`chaîne ${path} -> ${res.status}`);
+  return res.body;
+}
+
+async function bridgeBlockHex(hash) {
+  const res = await askBridge({ path: `block/${hash}/raw`, binary: true });
+  if (!res.ok) throw new Error(`bloc ${hash.slice(0, 12)} indisponible (${res.status})`);
+  const bytes = res.body instanceof Uint8Array ? res.body : new Uint8Array(res.body ?? []);
+  let hex = '';
+  for (let i = 0; i < bytes.length; i += 1) hex += bytes[i].toString(HEX_BYTE_BASE).padStart(HEX_PAD, '0');
+  return hex;
+}
+
+async function bridgeBroadcast(txHex) {
+  const res = await askBridge({ path: 'tx', txHex });
+  return { ok: Boolean(res.ok), detail: res.ok ? '' : String(res.detail ?? '').slice(0, BROADCAST_DETAIL_MAX) };
+}
+
 async function proxyJson(path) {
+  if (bridge) return bridgeJson(path);
   const res = await fetch(`${PROXY}?path=${encodeURIComponent(path)}&network=${net}`, { headers: extraHeaders() });
   if (!res.ok) throw new Error(`proxy ${path} -> ${res.status}`);
   const text = await res.text();
@@ -42,6 +74,7 @@ async function proxyJson(path) {
 }
 
 async function proxyBlockHex(hash) {
+  if (bridge) return bridgeBlockHex(hash);
   const res = await fetch(`${PROXY}?path=${encodeURIComponent(`block/${hash}/raw`)}&network=${net}`, { headers: extraHeaders() });
   if (!res.ok) throw new Error(`bloc ${hash.slice(0, 12)} indisponible (${res.status})`);
   const bytes = new Uint8Array(await res.arrayBuffer());
@@ -51,6 +84,15 @@ async function proxyBlockHex(hash) {
 }
 
 async function broadcastTx(network, txHex) {
+  if (bridge) {
+    try {
+      const res = await bridgeBroadcast(txHex);
+      post({ type: 'broadcast', ok: res.ok, detail: res.detail });
+    } catch (err) {
+      post({ type: 'broadcast', ok: false, detail: String(err) });
+    }
+    return;
+  }
   try {
     const res = await fetch(`${PROXY}?path=tx&network=${network}`, {
       method: 'POST',
@@ -163,6 +205,7 @@ function stopTimers() {
 
 async function boot(msg) {
   net = msg.network;
+  bridge = msg.chainBridge === true;
   regtestHeader = typeof msg.regtestHeader === 'string' ? msg.regtestHeader : '';
   stopping = false;
   log('sys', `chargement du module WASM (${net})…`);
@@ -314,6 +357,14 @@ const handlers = {
 
 self.onmessage = (event) => {
   const msg = event.data;
+  if (msg?.type === 'chainBridgeReply') {
+    const pending = bridgePending.get(String(msg.id));
+    if (!pending) return;
+    bridgePending.delete(String(msg.id));
+    if (msg.ok) pending.resolve({ ok: true, body: msg.body, detail: msg.detail });
+    else pending.reject(new Error(`pont chaîne: ${msg.detail ?? 'requête refusée'}`));
+    return;
+  }
   const handler = handlers[msg.type];
   if (handler) handler(msg);
 };
