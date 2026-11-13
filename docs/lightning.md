@@ -76,7 +76,9 @@ can import it from a module worker.
 ## Lifecycle
 
 1. **Activate** — the toggle in the Lightning module boots the worker. The
-   WASM module is fetched lazily (~3 MB compressed) on first activation only.
+   WASM module is fetched lazily (~3 MB compressed) on first activation only,
+   then served from CacheStorage with ETag revalidation so later boots no
+   longer re-download it.
 2. **Seeds** — on first run the controller draws two 32-byte seeds
    (`crypto.getRandomValues`) and stores them in IndexedDB. Subsequent boots
    restore the same node identities.
@@ -100,9 +102,24 @@ can import it from a module worker.
    regtest worker (tip, block by height, raw blocks, fees, broadcasts) and
    replies with `chainBridgeReply`. The bridge accepts only the four Esplora
    paths the lab needs (`LN_CHAIN_BRIDGE_PATH_RX` in `lib/lightning.ts`) plus
-   raw-transaction broadcast; everything else is refused.
+   raw-transaction broadcast (`tx`, validated by `LN_CHAIN_BRIDGE_TX_RX`);
+   everything else is refused. A source-level contract test
+   (`tests/lightning-funding.test.ts`) pins the field names shared by the
+   worker and the host so the two sides can never drift apart again.
 6. **Deactivate** — the worker flushes pending KV writes, encodes the channel
    managers and terminates. Memory returns to the browser.
+
+### Activation persistence
+
+Activation is an intent, not a page-scoped state. Turning the toggle on
+records the network in a `lnlab-desired-nets` entry (localStorage); a global
+restorer (`LnLabRestorer`) mounts on every page and re-activates the lab
+right after a reload, before the user even opens the Lightning module — the
+nodes then restore their channels from IndexedDB as described above. The
+only way to stop the lab is the toggle itself (or a lab reset); reloading,
+navigating between modules or switching the sidebar network never tears the
+nodes down. When the lab runs on another network, the toggle is disabled
+with an explanatory hint instead of silently stopping the running nodes.
 
 ## Channel and payment workflow
 
@@ -115,9 +132,35 @@ can import it from a module worker.
    `funding_transaction_generated`. A discarded or refused request clears the
    pending-funding state on both sides, so a stale payment can never fund an
    abandoned channel.
-3. The channel appears as *pending* with a confirmation counter (6 blocks).
-4. Once ready, create a BOLT-11 invoice on B, copy or scan it, pay it from A,
-   and watch the HTLC settle; reverse the direction with `push_msat` funds.
+3. The channel appears as *pending* with a confirmation counter (6 blocks);
+   on the embedded Regtest chain the confirmation blocks are mined
+   automatically right after the broadcast.
+4. Once ready, create a BOLT-11 invoice on the payee node, copy or scan it,
+   pay it from the payer node, and watch the HTLC settle; reverse the
+   direction with `push_msat` funds.
+
+### Payment flow rules
+
+Both payment panels follow the same discipline, learned from the way Polar
+shapes its Lightning flows:
+
+- **The payer is chosen first.** A node picker sits at the top of the pay
+  card and shows each node's live outbound liquidity; a node with zero
+  outbound capacity cannot be selected as a payer.
+- **Nothing is paid blind.** BOLT-11 invoices are decoded client-side
+  (`bolt11` library) and the card shows the description, the amount (or
+  *free amount*), the expiry and the recovered destination pubkey before the
+  pay button unlocks; BOLT-12 offers are decoded by LDK on demand (*Verify*).
+- **Self-payment is refused** when the decoded destination equals the payer
+  node id, with an explicit explanation instead of an opaque LDK error.
+- **The HTLC ceiling is enforced up front.** LDK caps a single HTLC at 10 %
+  of a channel's capacity (`max_htlc_value_in_flight_percent_of_channel`);
+  payments above `maxPayableSats()` are blocked with an explanation instead
+  of failing after six routing retries, and invoice creation warns when no
+  channel of the payee could ever settle the requested amount.
+- **Payment initiation is acknowledged.** `payInvoice`/`payOffer` are
+  request/response calls: an LDK rejection surfaces immediately as a toast
+  with the node's own error, not as a buried journal line.
 
 ## Short channel ID (scid)
 
