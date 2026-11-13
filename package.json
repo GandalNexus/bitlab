@@ -1,6 +1,6 @@
 {
   "name": "bitlab",
-  "version": "0.3.01111",
+  "version": "0.4.0",
   "private": true,
   "description": "BitLab — a multi-network Bitcoin & Lightning teaching lab. Wallets, transaction builder and a real LDK node, with keys that never leave the browser.",
   "license": "MIT",
