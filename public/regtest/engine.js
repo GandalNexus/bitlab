@@ -8597,6 +8597,7 @@ var RegtestChain = class {
     }
     const confirmed = rec.height !== null;
     const block = confirmed ? this.blocks.get(rec.blockHash ?? "") : null;
+    const blockIndex = block ? block.txids.indexOf(txid) : -1;
     return {
       txid: rec.txid,
       version: parsed.version,
@@ -8629,6 +8630,7 @@ var RegtestChain = class {
         confirmed: true,
         block_height: rec.height ?? void 0,
         block_hash: rec.blockHash ?? void 0,
+        block_index: blockIndex >= 0 ? blockIndex : void 0,
         block_time: block?.time
       } : { confirmed: false }
     };
