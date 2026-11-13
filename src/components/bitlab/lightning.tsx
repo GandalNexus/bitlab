@@ -695,8 +695,7 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
   const payerChannels = payerNode === 'A' ? st.channelsA : st.channelsB;
   const payeeChannels = payerNode === 'A' ? st.channelsB : st.channelsA;
   const payAmountSats = decoded?.amountSats ?? (Number.isInteger(openMsat) ? openMsat : null);
-  const exceedsHtlcLimit =
-    payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
+  const exceedsHtlcLimit = payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
   const createAmountSats = parseInt(amount, 10);
   const createExceedsLimit =
     Number.isInteger(createAmountSats) &&
@@ -1058,8 +1057,7 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
       ? enteredSats
       : null
     : msatToSats(decoded.amountMsat);
-  const exceedsHtlcLimit =
-    payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
+  const exceedsHtlcLimit = payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
   const createAmountSats = parseInt(amount, 10);
   const createExceedsLimit =
     Number.isInteger(createAmountSats) &&
@@ -1083,9 +1081,7 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
       if (freeAmount) {
         const sats = parseInt(payAmount, 10);
         if (!Number.isInteger(sats) || sats <= 0) {
-          throw new Error(
-            t('Cette offer ne fixe pas de montant : indiquez combien payer.'),
-          );
+          throw new Error(t('Cette offer ne fixe pas de montant : indiquez combien payer.'));
         }
         amountMsat = sats * 1000;
       }

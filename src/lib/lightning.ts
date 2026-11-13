@@ -363,10 +363,7 @@ class LnLabController {
     });
   }
 
-  private onWorkerMessage(
-    msg: { type: string; [field: string]: unknown },
-    sender: Worker | null,
-  ) {
+  private onWorkerMessage(msg: { type: string; [field: string]: unknown }, sender: Worker | null) {
     if (sender && sender !== this.worker && msg.type !== 'stopped') return;
     switch (msg.type) {
       case 'ready':
@@ -601,7 +598,9 @@ class LnLabController {
     return this.request<void>(
       { type: 'payInvoice', node: node === 'A' ? 0 : 1, invoice, amountMsat, requestId },
       (data) =>
-        (data.type === 'paymentInitiated' && data.requestId === requestId ? true : undefined) as void,
+        (data.type === 'paymentInitiated' && data.requestId === requestId
+          ? true
+          : undefined) as void,
       'délai du paiement dépassé',
     );
   }
