@@ -23,7 +23,8 @@ Browser
 ├── React UI (components/bitlab/lightning.tsx)
 │       │  messages
 │       ▼
-├── lib/lightning.ts          Lab controller: seeds, IndexedDB, funding bridge
+├── lib/lightning.ts          Lab controller: seeds, IndexedDB, funding bridge,
+│       │                     regtest chain bridge
 │       │  postMessage
 │       ▼
 ├── Web Worker  public/lnlab/worker.js
@@ -33,7 +34,8 @@ Browser
 │   ├── Node "A"              full LDK 0.2 stack
 │   ├── Node "B"              full LDK 0.2 stack
 │   └── in-memory socket pair real Noise handshake between A and B
-└── /api/bitcoin              same-origin Esplora proxy (blocks, fees, broadcast)
+├── /api/bitcoin              same-origin Esplora proxy (blocks, fees, broadcast)
+└── regtest worker            embedded chain (regtest only, see below)
 ```
 
 The server never runs Lightning. It serves the compiled WebAssembly artifact
@@ -86,10 +88,19 @@ can import it from a module worker.
 4. **Peer link** — A connects to B through the in-memory socket pair and the
    Noise handshake runs for real. If the link drops, the UI offers to
    reconnect.
-5. **Chain feed** — the worker polls the proxy for the tip, downloads missing
-   blocks (`block-height/:n`, then `block/:hash/raw` in binary) and feeds them
-   to both nodes; fees come from `v1/fees/recommended` (sat/vB converted to
-   sat/kwu).
+5. **Chain feed** — the worker polls the tip, downloads missing blocks
+   (`block-height/:n`, then `block/:hash/raw` in binary) and feeds them to
+   both nodes; fees come from `v1/fees/recommended` (sat/vB converted to
+   sat/kwu). On Testnet4, Testnet3 and Signet, and on Regtest with an
+   external Bitcoin Core node, both calls go through the `/api/bitcoin`
+   proxy. On the embedded Regtest chain (no external node), the worker
+   cannot reach the proxy — the chain lives in the browser's regtest worker
+   — so the controller activates the **chain bridge**: the LN worker sends
+   `chainBridgeRequest` messages, the controller resolves them against the
+   regtest worker (tip, block by height, raw blocks, fees, broadcasts) and
+   replies with `chainBridgeReply`. The bridge accepts only the four Esplora
+   paths the lab needs (`LN_CHAIN_BRIDGE_PATH_RX` in `lib/lightning.ts`) plus
+   raw-transaction broadcast; everything else is refused.
 6. **Deactivate** — the worker flushes pending KV writes, encodes the channel
    managers and terminates. Memory returns to the browser.
 
@@ -107,6 +118,29 @@ can import it from a module worker.
 3. The channel appears as *pending* with a confirmation counter (6 blocks).
 4. Once ready, create a BOLT-11 invoice on B, copy or scan it, pay it from A,
    and watch the HTLC settle; reverse the direction with `push_msat` funds.
+
+## Short channel ID (scid)
+
+Once a channel is ready, the UI derives its **canonical BOLT-03 short channel
+id** from the funding transaction placement on chain:
+
+```
+scid = (block_height << 40) | (tx_index << 16) | funding_output_index
+```
+
+- the funding outpoint (`txid:vout`) is reported by the WASM channel details;
+- the block height and the transaction index inside that block come from the
+  blockchain view: Esplora `tx/:txid` (`status.block_height` +
+  `status.block_index`) on hosted networks, the embedded chain's own adapter
+  on Regtest (`lib/regtest-engine/esplora-router.ts`);
+- `lib/bitcoin/scid.ts` performs the encoding with strict range checks
+  (24-bit height, 24-bit index, 16-bit output) and renders the `h x t x v`
+  form shown on each ready channel card.
+
+The derivation is pure, offline and covered by unit tests plus a Lightning
+E2E scenario that reconciles the scid with the actual block record
+(`tests/lightning-e2e.test.ts`). It is also the proof value captured for a
+BitQuest mission of kind `CHANNEL` (`lastScid` in the mission store).
 
 ## BOLT12 offers vs BOLT11 invoices
 
@@ -147,5 +181,6 @@ payer note can be attached to the invoice request.
 - The Rust source (`rust/lnlab`) and the committed build artifact
   (`public/lnlab/`) can be audited and rebuilt with the commands in
   [README.md](../README.md).
-- Mainnet is not offered for the lab: Lightning is restricted to Testnet4,
-  Testnet3 and Signet so that protocol experiments never risk real funds.
+- Mainnet is not offered for the lab: Lightning is restricted to Regtest,
+  Testnet4, Testnet3 and Signet so that protocol experiments never risk real
+  funds.
