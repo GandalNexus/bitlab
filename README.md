@@ -53,7 +53,7 @@ Quality gates:
 bun run lint          # ESLint
 bun run typecheck     # tsc --noEmit
 bun run format:check  # Prettier
-bun run test          # Vitest — 155 offline tests (Bitcoin core, scid, BitQuest bridge, Lightning e2e)
+bun run test          # Vitest — 163 offline tests (Bitcoin core, scid, BitQuest bridge, Lightning e2e)
 ```
 
 ## Lightning lab — regtest workflow
@@ -64,7 +64,8 @@ The recommended path to try Lightning end-to-end:
 2. Go to **Wallet** → generate a SegWit wallet → use the **Faucet** to fund it (the embedded chain mines to your address automatically).
 3. Go to **Lightning** → activate the lab → click **Open channel**, pick your wallet as the funding source.
 4. The UI builds and signs the funding transaction, broadcasts it, mines 8 confirmation blocks, and waits for `channel_ready` — all automatically. The ready channel then displays its canonical BOLT-03 short channel ID (`h x t x v`), derived from the funding output placement on the embedded chain.
-5. Create a **BOLT11 invoice** on node B and pay it from node A. Create a **BOLT12 offer** on node B and pay it from node A.
+5. Create a **BOLT11 invoice** on the payee node (pick it first — live inbound liquidity is shown), then pay it from the **payer node** you select at the top of the pay card: the invoice is decoded before payment (description, amount, expiry, destination), self-payment is refused, and single-HTLC amounts above 10% of the channel capacity are blocked with an explanation (LDK's `max_htlc_value_in_flight` rule). Create a **BOLT12 offer** and pay it the same way.
+6. Reload the page, browse other modules, come back — the lab stays up and reactivates automatically. Only the toggle stops it.
 
 No external node, no faucet, no waiting. The full BOLT11/BOLT12 loop runs in under a minute on the embedded chain. On Regtest the Lightning worker pulls blocks and broadcasts through the embedded chain worker itself (chain bridge), so the lab needs nothing beyond the browser.
 
