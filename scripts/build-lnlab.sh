@@ -27,12 +27,17 @@ cp target/wbindgen-out/lnlab.js           "$OUT/lnlab_bg.js"
 printf '\nexport default wasm_bindgen;\n' >> "$OUT/lnlab_bg.js"
 
 # Embed a short content hash in the loader shim so browsers never serve
-# a stale WASM binary after a rebuild (Cache-Control: no-store + hash param).
-WASM_HASH=$(node -e "
-const {createHash}=require('crypto');
-const {readFileSync}=require('fs');
-process.stdout.write(createHash('sha256').update(readFileSync('$OUT/lnlab_bg.wasm')).digest('hex').slice(0,12));
-")
+# a stale WASM binary après un rebuild (Cache-Control: no-store + hash param).
+# Utilise `sha256sum` (coreutils / image Rust) ou `shasum -a 256` (macOS) —
+# zéro dépendance Node runtime côté build (l'image Rust n'a pas Node).
+if command -v sha256sum >/dev/null 2>&1; then
+  WASM_HASH=$(sha256sum "$OUT/lnlab_bg.wasm" | cut -c1-12)
+elif command -v shasum >/dev/null 2>&1; then
+  WASM_HASH=$(shasum -a 256 "$OUT/lnlab_bg.wasm" | cut -c1-12)
+else
+  echo "Aucun hasher trouvé (sha256sum ou shasum requis)." >&2
+  exit 1
+fi
 
 cat > "$OUT/lnlab.js" <<LNLAB_JS
 /**
