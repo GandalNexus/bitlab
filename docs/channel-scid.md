@@ -41,29 +41,71 @@ disponibles aux consommateurs qui en ont besoin.
 
 ## Prochaine étape — UX capture auto
 
-Pour fermer la boucle avec BitQuest, il reste à :
+Pour fermer la boucle avec BitQuest, le module lightning doit afficher
+un CTA « Soumettre ce canal à BitQuest » dès qu'un canal est prêt.
 
-1. Dans le module lightning du labo, détecter que l'apprenant est en
-   mission `kind=CHANNEL` (via `useBitquestMission` → `mission.kind`).
-2. Observer la liste des canaux (`channels_of`) au polling.
-3. Dès qu'un canal `isReady === true` avec `scidFormatted` apparaît,
-   proposer un CTA « Soumettre ce canal à BitQuest » qui :
-   - construit l'URL de retour `returnTo?bitlab_result=1&scid=<scidFormatted>`
-   - navigue top-level vers cette URL.
+### Pré-requis déjà en place
 
-Pas de HMAC côté BitLab (c'est BitQuest qui vérifie à la réception via
-`/api/bitlab/deep-link/verify-return`).
+| Pièce | Fichier | État |
+|---|---|---|
+| Mission courante (store Zustand) | `src/lib/bitquest-mission-store.ts` | ✅ |
+| Hook de lecture mission + tab | `src/lib/use-bitquest-mission.ts` | ✅ |
+| `LnChannelView.scidFormatted` | `src/lib/lightning.ts` (ligne 40) | ✅ |
+| `buildReturnUrl(mission, value)` | `src/lib/bitquest-bridge.ts` (ligne 187) | ✅ |
+| Validation CHANNEL scid | `isValidReturnValue('CHANNEL', ...)` (ligne 167) | ✅ |
+
+### Intégration à faire dans `src/components/bitlab/lightning.tsx`
+
+1. `const mission = useBitquestMissionStore((s) => s.mission)` — lire
+   la mission courante.
+2. Garder le CTA conditionnel : `mission?.kind === 'CHANNEL'` **et**
+   `channel.isReady === true` **et** `channel.scidFormatted` non
+   `undefined` (filtrer les canaux sans scid annoncé ni alias).
+3. Au clic, appeler :
+   ```ts
+   const url = buildReturnUrl(mission, channel.scidFormatted!);
+   window.location.href = url;
+   ```
+   Pas d'ouverture d'onglet : la navigation **top-level** est
+   indispensable pour conserver la session BitQuest (cookies
+   SameSite=Lax).
+
+### Bords à surveiller
+
+- Canal `isReady` mais **privé/non annoncé** sans alias : `scidFormatted`
+  reste `undefined`. L'UI doit alors afficher un hint « Attends ~3
+  confirmations » plutôt que de masquer le canal.
+- Plusieurs canaux prêts simultanément : le CTA doit être **par ligne**
+  (pas un bouton global) pour permettre à l'apprenant de choisir lequel
+  déclarer.
+- Après le clic, pas besoin de confirmation locale : BitQuest renvoie
+  l'apprenant avec `bitlab_result=1` et affichera le statut officiel.
+
+### Pas de HMAC côté BitLab
+
+C'est BitQuest qui vérifie à la réception via
+`POST /api/bitlab/deep-link/verify-return`. `ts` et `sig` (s'ils
+existaient dans l'URL entrante) sont échoés tels quels par
+`buildReturnUrl`.
 
 ## Build WASM
 
-Après modification du fichier Rust, rebuild le WASM :
+La chaîne d'outillage est `cargo build --target wasm32-unknown-unknown`
++ `wasm-bindgen --target no-modules` (pas `wasm-pack`). Le script
+`scripts/build-lnlab.sh` fait l'orchestration et pose les artefacts
+dans `public/lnlab/` avec un hash de busting cache.
 
 ```bash
-cd rust/lnlab
-wasm-pack build --target web --out-dir ../../public/wasm/lnlab --release
+# Depuis la racine bitlab/
+./scripts/build-lnlab.sh
 ```
 
-Les clients BitLab verront les nouveaux champs dès le rechargement.
+Pré-requis locaux :
+- `rustup target add wasm32-unknown-unknown`
+- `cargo install wasm-bindgen-cli --version 0.2.100 --locked`
+
+Les clients BitLab verront les nouveaux champs au prochain reload
+(service-worker + hash WASM dans l'URL = pas de cache stale).
 
 ## Limites
 

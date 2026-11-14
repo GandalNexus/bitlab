@@ -1,5 +1,6 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Blocks,
@@ -154,12 +155,25 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
  * BitQuest lit son cookie HttpOnly (SameSite=Lax), émet un launch_token,
  * et redirige vers BitLab avec `?launch_token=XXX`. Le hook
  * `useBitquestMission` consomme ensuite ce token côté client.
+ *
+ * ⚠️ Pattern SSR-safe via `useSyncExternalStore` : évite le mismatch
+ * d'hydration en servant une valeur stable "/" côté serveur ET au
+ * premier render client, puis bascule vers l'origine complète. On
+ * n'utilise pas `useState + useEffect` (anti-pattern React moderne,
+ * lint `react-hooks/set-state-in-effect`).
  */
-function buildSsoUrl(bitquestUrl: string): string {
-  const returnTo =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}`
-      : '/';
+const EMPTY_SUBSCRIBE = () => () => {};
+
+function getClientReturnTo(): string {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
+function useSsoUrl(bitquestUrl: string): string {
+  const returnTo = useSyncExternalStore(
+    EMPTY_SUBSCRIBE,
+    getClientReturnTo,
+    () => '/', // SSR snapshot — match le premier render client (avant hydration)
+  );
   const params = new URLSearchParams({ returnTo });
   return `${bitquestUrl}/api/auth/bitlab-sso?${params.toString()}`;
 }
@@ -184,6 +198,7 @@ function GandalNexusUserBadge() {
   const launchStatus = useBitquestUserStore((s) => s.launchStatus);
   const clearUser = useBitquestUserStore((s) => s.clearUser);
   const bitquestUrl = getBitquestUrl();
+  const ssoUrl = useSsoUrl(bitquestUrl);
 
   if (user) {
     return (
@@ -244,7 +259,7 @@ function GandalNexusUserBadge() {
   // envoyé, BitQuest nous redirige automatiquement avec un launch_token.
   return (
     <a
-      href={buildSsoUrl(bitquestUrl)}
+      href={ssoUrl}
       title={t('Se connecter avec BitQuest')}
       className={cn(
         'border-border bg-card hover:bg-accent/60 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors',
