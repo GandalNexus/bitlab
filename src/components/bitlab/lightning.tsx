@@ -37,6 +37,7 @@ import { Copyable, PageIntro } from './bits';
 import { QRCode } from './qrcode';
 import { useLabStore } from '@/lib/store';
 import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
+import { buildReturnUrl, isValidReturnValue } from '@/lib/bitquest-bridge';
 import { NETWORKS, DEFAULT_NET } from '@/lib/networks';
 import { api, mpBroadcast, type AddressUtxo } from '@/lib/mempool';
 import { buildSignedTx, estimateVsize, DUST_LIMIT } from '@/lib/bitcoin/tx';
@@ -337,6 +338,30 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
   const [push, setPush] = useState('40000');
   const [opening, setOpening] = useState(false);
   const channels = st.channelsA;
+  // Mission CHANNEL BitQuest : active le CTA « Soumettre » sur chaque canal
+  // prêt dont scidFormatted est connu (alias ou short_channel_id annoncé).
+  const bitquestMission = useBitquestMissionStore((s) => s.mission);
+
+  const submitToBitquest = (ch: LnChannelView) => {
+    if (!bitquestMission || bitquestMission.kind !== 'CHANNEL') return;
+    const scid = ch.scidFormatted;
+    if (!scid || !isValidReturnValue('CHANNEL', scid)) {
+      toast({
+        title: t('scid indisponible'),
+        description: t(
+          'Ce canal n’a pas encore de short_channel_id annoncé ni d’alias. Attends ~3 confirmations.',
+        ),
+        variant: 'destructive',
+      });
+      return;
+    }
+    const url = buildReturnUrl(bitquestMission, scid);
+    // Navigation top-level : conserve la session BitQuest (cookies SameSite=Lax).
+    // `assign` au lieu d'une affectation directe `window.location.href = …`
+    // pour satisfaire la règle `react-hooks/immutability` et expliciter que
+    // c'est un effet de bord navigation volontaire.
+    window.location.assign(url);
+  };
 
   const open = async () => {
     const cap = parseInt(capacity, 10);
@@ -481,6 +506,25 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
                     <p className="font-mono">{fmtInt(msatToSats(ch.inboundMsat))} sats</p>
                   </div>
                 </div>
+                {bitquestMission?.kind === 'CHANNEL' && ready && (
+                  <div className="border-primary/30 bg-primary/5 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
+                    <span className="text-primary text-[10px]">
+                      {ch.scidFormatted
+                        ? t('Mission BitQuest : scid prêt à être soumis.')
+                        : t('Mission BitQuest : en attente du scid annoncé (~3 conf).')}
+                    </span>
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1 text-[10px]"
+                      onClick={() => submitToBitquest(ch)}
+                      disabled={!ch.scidFormatted}
+                      aria-label={t('Soumettre ce canal à BitQuest')}
+                    >
+                      <Zap className="h-3 w-3" />
+                      {t('Soumettre à BitQuest')}
+                    </Button>
+                  </div>
+                )}
                 <div className="mt-2 flex justify-end">
                   <Button
                     size="sm"

@@ -16,15 +16,21 @@ import { useLabStore } from '@/lib/store';
 import { NETWORKS } from '@/lib/networks';
 import { useT } from '@/lib/i18n';
 import { useBitquestMission } from '@/lib/use-bitquest-mission';
+import { useSilentSso } from '@/lib/silent-sso';
 import { cn } from '@/lib/utils';
 
 /**
- * Sous-composant isolé pour l'amorçage mission BitQuest. Vit sous une
- * Suspense boundary car useSearchParams() impose ce contrat en App Router.
- * Rend `null` — c'est un pur effet (store Zustand + bascule onglet).
+ * Sous-composant isolé pour l'amorçage mission BitQuest + SSO silent.
+ * Vit sous une Suspense boundary car useSearchParams() impose ce contrat
+ * en App Router. Rend `null` — c'est un pur effet (store Zustand +
+ * bascule onglet + redirect SSO éventuel).
  */
 function BitquestMissionBoot({ onTab }: { onTab: (tab: TabId) => void }) {
   useBitquestMission((t) => onTab(t as TabId));
+  // SSO silent : vérifie passivement si l'utilisateur a déjà une session
+  // BitQuest et l'amorce sans action manuelle. No-op si une mission est
+  // en cours (useBitquestMission prend le dessus).
+  useSilentSso();
   return null;
 }
 
