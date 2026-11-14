@@ -59,6 +59,14 @@ export function useBitquestMission(onTab: (tab: BitlabTab) => void): void {
     () => (searchParams && !parsed ? pickLaunchTokenOnly(searchParams) : null),
     [searchParams, parsed],
   );
+  // Retour de `/api/auth/bitlab-logout` (déconnexion globale GandalNexus).
+  // La page BitQuest nous renvoie avec `?logged_out=1` — on nettoie le
+  // store local puis on gomme le param de l'URL.
+  const loggedOut = useMemo(
+    () => searchParams?.get('logged_out') === '1',
+    [searchParams],
+  );
+  const clearUser = useBitquestUserStore((s) => s.clearUser);
 
   // Side-effect : échange du launch_token contre le profil utilisateur.
   // Factorisé pour être appelé depuis les deux branches (mission complète
@@ -146,6 +154,21 @@ export function useBitquestMission(onTab: (tab: BitlabTab) => void): void {
     exchangeLaunchToken,
     launchStatus,
   ]);
+
+  // Branche logout : l'utilisateur revient de /api/auth/bitlab-logout
+  // avec `?logged_out=1`. On vide le store local (déjà vidé côté
+  // BitQuest : cookie session + user.token roté) et on nettoie l'URL.
+  useEffect(() => {
+    if (!loggedOut) return;
+    clearUser();
+    addLog({
+      kind: 'op',
+      module: 'bitquest',
+      label: 'déconnexion globale GandalNexus',
+      detail: {},
+    });
+    router.replace(pathname);
+  }, [loggedOut, clearUser, addLog, router, pathname]);
 
   // Branche SSO seul : l'utilisateur revient du bouton « Se connecter »
   // du header (navigation top-level vers /api/auth/bitlab-sso). L'URL

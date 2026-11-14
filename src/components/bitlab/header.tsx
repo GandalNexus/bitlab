@@ -233,10 +233,21 @@ function GandalNexusUserBadge() {
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => clearUser()}
-            className="text-destructive focus:text-destructive flex items-center gap-2"
+            className="flex items-center gap-2"
           >
             <LogOut className="h-4 w-4" aria-hidden />
             {t('Déconnexion locale')}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => {
+              const returnTo = `${window.location.origin}${window.location.pathname}`;
+              const target = `${bitquestUrl}/api/auth/bitlab-logout?returnTo=${encodeURIComponent(returnTo)}`;
+              window.location.assign(target);
+            }}
+            className="text-destructive focus:text-destructive flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+            {t('Déconnexion globale')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
