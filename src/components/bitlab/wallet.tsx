@@ -33,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { QRCode } from '@/components/bitlab/qrcode';
 
 import { RegtestSettingsCard } from '@/components/bitlab/regtest-settings';
+import { EncryptedBackupButton } from '@/components/bitlab/encrypted-backup';
 import { Copyable, PageIntro, TypeBadge } from './bits';
 import { useLabStore, useActiveWallet } from '@/lib/store';
 import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
@@ -161,19 +162,22 @@ function WalletDetail({ w }: { w: LabWallet }) {
       </div>
 
       <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-600 dark:text-amber-400">
             <KeyRound className="h-3.5 w-3.5" /> {t('Secrets du laboratoire — ne jamais partager')}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
-            onClick={() => setShowSecret((v) => !v)}
-          >
-            {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            {showSecret ? t('Masquer') : t('Révéler')}
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <EncryptedBackupButton wallet={w} />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
+              onClick={() => setShowSecret((v) => !v)}
+            >
+              {showSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              {showSecret ? t('Masquer') : t('Révéler')}
+            </Button>
+          </div>
         </div>
         {showSecret ? (
           <div className="mt-3 space-y-2">
