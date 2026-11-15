@@ -93,7 +93,9 @@ function decodeBolt11(raw: string): Bolt11Preview | null {
           ? d.timestamp + d.tagsObject.expire_time
           : null,
       paymentHash:
-        typeof d.tagsObject.payment_hash === 'string' ? d.tagsObject.payment_hash.toLowerCase() : null,
+        typeof d.tagsObject.payment_hash === 'string'
+          ? d.tagsObject.payment_hash.toLowerCase()
+          : null,
     };
   } catch {
     return null;
@@ -700,20 +702,17 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
 
   const selfPayment =
     decoded?.payee != null && decoded.payee === (payerNode === 'A' ? st.nodeA : st.nodeB);
-  const alreadyPaid =
-    decoded?.paymentHash != null && lnLab.hasPaidPaymentHash(decoded.paymentHash);
+  const alreadyPaid = decoded?.paymentHash != null && lnLab.hasPaidPaymentHash(decoded.paymentHash);
   const noLiquidity = outbound[payerNode] <= 0;
   const expired = decoded?.expiresAt != null && now != null && decoded.expiresAt * 1000 < now;
   const needsOpenAmount = decoded !== null && decoded.amountSats === null;
   const openMsat = parseInt(openAmount, 10);
   const payerChannels = payerNode === 'A' ? st.channelsA : st.channelsB;
   const payAmountSats = decoded?.amountSats ?? (Number.isInteger(openMsat) ? openMsat : null);
-  const exceedsHtlcLimit =
-    payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
+  const exceedsHtlcLimit = payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
   const createAmountSats = parseInt(amount, 10);
   const invoicePayerCandidate: NodeKey = payeeNode === 'A' ? 'B' : 'A';
-  const invoicePayerCandidateChannels =
-    invoicePayerCandidate === 'A' ? st.channelsA : st.channelsB;
+  const invoicePayerCandidateChannels = invoicePayerCandidate === 'A' ? st.channelsA : st.channelsB;
   const createExceedsLimit =
     Number.isInteger(createAmountSats) &&
     createAmountSats > 0 &&
@@ -727,7 +726,9 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
       if (expired) throw new Error(t('Cette facture est expirée : demandez-en une nouvelle.'));
       if (alreadyPaid)
         throw new Error(
-          t('Cette facture a déjà été payée par ce laboratoire : demandez une facture neuve au lieu de payer deux fois.'),
+          t(
+            'Cette facture a déjà été payée par ce laboratoire : demandez une facture neuve au lieu de payer deux fois.',
+          ),
         );
       if (selfPayment)
         throw new Error(t('Le nœud payeur est aussi le destinataire : choisissez l’autre nœud.'));
@@ -895,7 +896,9 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
           </div>
           {payInput.trim() && alreadyPaid ? (
             <p className="text-xs text-red-500">
-              {t('Facture déjà payée : payer deux fois la même facture perdrait les sats du payeur.')}
+              {t(
+                'Facture déjà payée : payer deux fois la même facture perdrait les sats du payeur.',
+              )}
             </p>
           ) : null}
           {payInput.trim() && decoded === null ? (
@@ -1083,12 +1086,10 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
       ? enteredSats
       : null
     : msatToSats(decoded.amountMsat);
-  const exceedsHtlcLimit =
-    payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
+  const exceedsHtlcLimit = payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
   const createAmountSats = parseInt(amount, 10);
   const offerPayerCandidate: NodeKey = payeeNode === 'A' ? 'B' : 'A';
-  const offerPayerCandidateChannels =
-    offerPayerCandidate === 'A' ? st.channelsA : st.channelsB;
+  const offerPayerCandidateChannels = offerPayerCandidate === 'A' ? st.channelsA : st.channelsB;
   const createExceedsLimit =
     Number.isInteger(createAmountSats) &&
     createAmountSats > 0 &&
@@ -1111,9 +1112,7 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
       if (freeAmount) {
         const sats = parseInt(payAmount, 10);
         if (!Number.isInteger(sats) || sats <= 0) {
-          throw new Error(
-            t('Cette offer ne fixe pas de montant : indiquez combien payer.'),
-          );
+          throw new Error(t('Cette offer ne fixe pas de montant : indiquez combien payer.'));
         }
         amountMsat = sats * 1000;
       }
