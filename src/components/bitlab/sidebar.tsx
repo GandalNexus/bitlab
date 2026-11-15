@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Blocks,
   BookOpen,
+  Droplets,
   ExternalLink,
   Hammer,
   PanelLeftClose,
@@ -19,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 
 export type TabId =
-  'dashboard' | 'portefeuille' | 'transactions' | 'lightning' | 'mineur' | 'explorateur';
+  'dashboard' | 'portefeuille' | 'faucet' | 'transactions' | 'lightning' | 'mineur' | 'explorateur';
 
 export const COLLAPSE_KEY = 'bitlab-sidebar-collapsed';
 
@@ -69,6 +70,7 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Modules',
     items: [
+      { id: 'faucet', label: 'Faucet', icon: Droplets },
       { id: 'transactions', label: 'Transactions', icon: Hammer },
       { id: 'lightning', label: 'Lightning Network', icon: Radio },
       { id: 'mineur', label: 'Mineur', icon: Pickaxe },

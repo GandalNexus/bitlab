@@ -1069,4 +1069,42 @@ export const EN: Record<string, string> = {
   'Aucune entrée pour ce module pour le moment.': 'No entries for this module yet.',
   'Sorties brutes des nœuds (niveau LDK) : A en émeraude, B en violet, messages système en bleu.':
     'Raw node output (LDK level): A in emerald, B in violet, system messages in blue.',
+  Faucet: 'Faucet',
+  'Distribuez des sats de test sur chacun de vos portefeuilles, en trois clics.':
+    'Hand out test sats to each of your wallets in three clicks.',
+  'Comment ça marche ?': 'How does it work?',
+  '1 — Choisissez le montant de sats de test à recevoir.':
+    '1 — Pick the amount of test sats to receive.',
+  '2 — Cliquez « Recevoir » sur le portefeuille visé.':
+    '2 — Click “Receive” on the wallet you target.',
+  '3 — Les sats arrivent confirmés : rien d’autre à faire.':
+    '3 — The sats arrive confirmed: nothing else to do.',
+  'Montant par distribution': 'Amount per distribution',
+  'Le moteur signe une vraie transaction depuis son pool préminé puis mine 1 bloc : le solde est immédiatement dépensable.':
+    'The engine signs a real transaction from its premined pool then mines 1 block: the balance is instantly spendable.',
+  '« Miner 10 blocs » fait aussi avancer la chaîne : utile pour confirmer un canal Lightning.':
+    '“Mine 10 blocks” also advances the chain: useful to confirm a Lightning channel.',
+  'Vos portefeuilles ({n})': 'Your wallets ({n})',
+  'Chaque portefeuille reçoit ses propres sats sur sa propre adresse.':
+    'Each wallet receives its own sats on its own address.',
+  'Aucun portefeuille pour le moment. Créez-en un dans le module Portefeuille, puis revenez ici pour le remplir.':
+    'No wallet yet. Create one in the Wallet module, then come back here to fill it.',
+  'Créer un portefeuille': 'Create a wallet',
+  vide: 'empty',
+  'Recevoir {sats} sats': 'Receive {sats} sats',
+  'Hauteur de la chaîne : {h}': 'Chain height: {h}',
+  'Sats reçus sur {label}': 'Sats received on {label}',
+  '{sats} sats confirmés au bloc #{h} — le solde du portefeuille est dépensable immédiatement.':
+    '{sats} sats confirmed at block #{h} — the wallet balance is instantly spendable.',
+  'Échec du faucet': 'Faucet failed',
+  '10 blocs minés': '10 blocks mined',
+  'Nouvelle hauteur : {h}.': 'New height: {h}.',
+  'Échec du minage': 'Mining failed',
+  'Le faucet a son propre module : ouvrez « Faucet » dans la barre latérale pour alimenter chacun de vos portefeuilles.':
+    'The faucet has its own module: open “Faucet” in the sidebar to fund each of your wallets.',
+  'Pas de faucet intégré sur ce réseau': 'No built-in faucet on this network',
+  'Le faucet intégré sert la chaîne regtest embarquée dans BitLab. Sur testnet4, les sats viennent d’un faucet public externe.':
+    'The built-in faucet serves the regtest chain embedded in BitLab. On testnet4, sats come from an external public faucet.',
+  'Basculez sur Regtest dans le sélecteur de réseau pour disposer de sats de test instantanés, ou alimentez vos adresses testnet depuis un service externe.':
+    'Switch to Regtest in the network selector to get instant test sats, or fund your testnet addresses from an external service.',
 };
