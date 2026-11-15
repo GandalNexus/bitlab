@@ -26,7 +26,7 @@
  *   { type:'persist', data }             main thread must save this to IndexedDB
  */
 
-import { RegtestChain, addressToScriptBcrt, handleEsploraPath } from '/regtest/engine.js?v=7dc83d46d655';
+import { RegtestChain, addressToScriptBcrt, handleEsploraPath } from '/regtest/engine.js?v=030958acd0a5';
 
 let chain = null;
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { hex } from '@scure/base';
+import { RegtestChain } from '../src/lib/regtest-engine/chain';
+import { registerNetGetter } from '../src/lib/networks';
+import { deriveForType } from '../src/lib/bitcoin/keys';
+import { buildSignedTx } from '../src/lib/bitcoin/tx';
 import {
   classifyBroadcast,
   LN_CHAIN_BRIDGE_PATH_RX,
@@ -136,8 +141,7 @@ describe('désir d’activation persistant du laboratoire Lightning', () => {
   });
 });
 
-describe('maxPayableSats — limite HTLC par canal (10 % LDK)', () => {
-  const channel = (over: Partial<LnChannelView>): LnChannelView => ({
+describe('maxPayableSats — limite HTLC par canal (10 % LDK)', () => {  const channel = (over: Partial<LnChannelView>): LnChannelView => ({
     channelId: 'c',
     userChannelId: 'u',
     counterparty: '02ff',
@@ -154,13 +158,47 @@ describe('maxPayableSats — limite HTLC par canal (10 % LDK)', () => {
   it('limite un paiement unique à 10 % de la capacité du meilleur canal utilisable', () => {
     expect(maxPayableSats([channel({ valueSats: '100000' })])).toBe(10000);
     expect(maxPayableSats([channel({ valueSats: '250000' })])).toBe(25000);
-    expect(
-      maxPayableSats([channel({ valueSats: '50000' }), channel({ valueSats: '300000' })]),
-    ).toBe(30000);
+    expect(maxPayableSats([channel({ valueSats: '50000' }), channel({ valueSats: '300000' })])).toBe(
+      30000,
+    );
   });
 
   it('ignore les canaux non prêts et répond zéro sans canal', () => {
     expect(maxPayableSats([channel({ isReady: false, isUsable: false })])).toBe(0);
     expect(maxPayableSats([])).toBe(0);
+  });
+});
+
+describe('addressUtxos — UTXO verrouillé par le mempool (financement Lightning)', () => {
+  registerNetGetter(() => 'regtest');
+
+  it('masque un UTXO dépensé dans le mempool puis le restitue après minage', () => {
+    const c = new RegtestChain();
+    const sourcePriv = hex.decode('a2'.padEnd(64, '0'));
+    const source = deriveForType(sourcePriv, 'segwit', 'regtest');
+    const payee = deriveForType(hex.decode('a3'.padEnd(64, '0')), 'taproot', 'regtest');
+    c.faucetSend(source.address, 500_000_000);
+
+    const utxos = c.addressUtxos(source.address);
+    expect(utxos.length).toBeGreaterThan(0);
+
+    const build = (feeRateSatVb: number) =>
+      buildSignedTx({
+        utxos,
+        outputs: [{ address: payee.address, amountSats: 100_000 }],
+        feeRateSatVb,
+        changeAddress: source.address,
+        privateKeyHex: hex.encode(sourcePriv),
+        inputAddress: source.address,
+        inputType: 'segwit',
+      });
+
+    c.acceptTx(build(1).hex);
+    expect(c.addressUtxos(source.address)).toHaveLength(0);
+
+    expect(() => c.acceptTx(build(2).hex)).toThrow(/double-dépense mempool/);
+
+    c.mineTo(null, 6);
+    expect(c.addressUtxos(source.address).length).toBeGreaterThan(0);
   });
 });

@@ -1,5 +1,6 @@
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { hex } from '@scure/base';
+import bolt11 from 'bolt11';
 import { scriptToAddressOn } from './bitcoin/tx';
 import { parseFundingOutpoint, scidFromConfirmedStatus } from './bitcoin/scid';
 import { api } from './mempool';
@@ -72,6 +73,18 @@ export interface LnLabStatus {
 
 const SEEDS_KEY = (net: LnNetId) => `lnlab-seeds-${net}`;
 const KV_KEY = (net: LnNetId, node: NodeKey) => `lnlab-kv-${net}-${node}`;
+const PAID_HASHES_KEY = (net: LnNetId) => `lnlab-paid-hashes-${net}`;
+const PAID_HASHES_MAX = 500;
+
+export function bolt11PaymentHash(invoice: string): string | null {
+  try {
+    const d = bolt11.decode(invoice.trim());
+    const h = d.tagsObject.payment_hash;
+    return typeof h === 'string' && /^[0-9a-fA-F]{64}$/.test(h) ? h.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
 
 interface KvMap {
   [compositeKey: string]: Uint8Array;
@@ -167,6 +180,46 @@ class LnLabController {
   private kvEpoch = 0;
   private seq = 0;
   private desired = new Set<LnNetId>(readDesiredNets(localStorageStore()));
+  private paidHashes = new Set<string>();
+
+  hasPaidPaymentHash = (hash: string): boolean => this.paidHashes.has(hash.toLowerCase());
+
+  private loadPaidHashes(network: LnNetId) {
+    let stored: unknown = null;
+    try {
+      stored = JSON.parse(localStorageStore()?.getItem(PAID_HASHES_KEY(network)) ?? 'null');
+    } catch {
+      stored = null;
+    }
+    this.paidHashes = new Set(
+      Array.isArray(stored)
+        ? stored.filter((h): h is string => typeof h === 'string' && /^[0-9a-f]{64}$/.test(h))
+        : [],
+    );
+  }
+
+  private persistPaidHashes() {
+    const network = this.network;
+    if (!network) return;
+    try {
+      const list = [...this.paidHashes].slice(-PAID_HASHES_MAX);
+      localStorageStore()?.setItem(PAID_HASHES_KEY(network), JSON.stringify(list));
+    } catch {
+      return;
+    }
+  }
+
+  private recordPaidPaymentHash(hash: string | undefined) {
+    if (!hash || !/^[0-9a-fA-F]{64}$/.test(hash)) return;
+    const normalized = hash.toLowerCase();
+    this.paidHashes.add(normalized);
+    this.persistPaidHashes();
+  }
+
+  private forgetPaidPaymentHash(hash: string | undefined) {
+    if (!hash) return;
+    if (this.paidHashes.delete(hash.toLowerCase())) this.persistPaidHashes();
+  }
 
   getStatus = (): LnLabStatus => this.status;
 
@@ -217,12 +270,17 @@ class LnLabController {
     if (events.some((e) => e.type === 'channel_ready' || e.type === 'channel_closed')) {
       pendingFunding = null;
     }
+    for (const e of events) {
+      if (e.type === 'payment_sent') this.recordPaidPaymentHash(e.paymentHash);
+      else if (e.type === 'payment_failed') this.forgetPaidPaymentHash(e.paymentHash);
+    }
     this.patch({ events: merged, pendingFunding });
   }
 
   async activate(network: LnNetId): Promise<void> {
     if (this.status.phase === 'booting' || this.status.phase === 'ready') return;
     this.network = network;
+    this.loadPaidHashes(network);
     this.setDesired(network, true);
     this.patch({
       phase: 'booting',
@@ -318,6 +376,12 @@ class LnLabController {
     await idbDel(SEEDS_KEY(network));
     await idbDel(KV_KEY(network, 'A'));
     await idbDel(KV_KEY(network, 'B'));
+    this.paidHashes = new Set();
+    try {
+      localStorageStore()?.removeItem(PAID_HASHES_KEY(network));
+    } catch {
+      return;
+    }
     this.patch({
       phase: 'off',
       nodeA: null,
@@ -363,7 +427,10 @@ class LnLabController {
     });
   }
 
-  private onWorkerMessage(msg: { type: string; [field: string]: unknown }, sender: Worker | null) {
+  private onWorkerMessage(
+    msg: { type: string; [field: string]: unknown },
+    sender: Worker | null,
+  ) {
     if (sender && sender !== this.worker && msg.type !== 'stopped') return;
     switch (msg.type) {
       case 'ready':
@@ -594,15 +661,27 @@ class LnLabController {
   }
 
   payInvoice(node: NodeKey, invoice: string, amountMsat: number | null): Promise<void> {
+    const hash = bolt11PaymentHash(invoice);
+    if (hash !== null && this.hasPaidPaymentHash(hash)) {
+      return Promise.reject(
+        new Error(
+          tSync(
+            'Cette facture a déjà été payée par ce laboratoire : demandez une facture neuve au lieu de payer deux fois.',
+          ),
+        ),
+      );
+    }
+    this.recordPaidPaymentHash(hash ?? undefined);
     const requestId = this.nextRequestId('pay');
     return this.request<void>(
       { type: 'payInvoice', node: node === 'A' ? 0 : 1, invoice, amountMsat, requestId },
       (data) =>
-        (data.type === 'paymentInitiated' && data.requestId === requestId
-          ? true
-          : undefined) as void,
+        (data.type === 'paymentInitiated' && data.requestId === requestId ? true : undefined) as void,
       'délai du paiement dépassé',
-    );
+    ).catch((err: Error) => {
+      this.forgetPaidPaymentHash(hash ?? undefined);
+      throw err;
+    });
   }
 
   createOffer(node: NodeKey, amountMsat: number | null, description: string): Promise<string> {
