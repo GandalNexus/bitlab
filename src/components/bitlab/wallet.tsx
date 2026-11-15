@@ -34,6 +34,8 @@ import { QRCode } from '@/components/bitlab/qrcode';
 
 import { RegtestSettingsCard } from '@/components/bitlab/regtest-settings';
 import { EncryptedBackupButton } from '@/components/bitlab/encrypted-backup';
+import { WalletLockButton } from '@/components/bitlab/wallet-lock-button';
+import { useActiveWalletMeta } from '@/lib/store';
 import { Copyable, PageIntro, TypeBadge } from './bits';
 import { useLabStore, useActiveWallet } from '@/lib/store';
 import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
@@ -85,6 +87,37 @@ function TypeSelector({ value, onChange }: { value: AddrType; onChange: (t: Addr
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Affiché quand `useActiveWallet()` renvoie null parce que le wallet
+ * sélectionné est verrouillé et sans session unlock active (LOT 76).
+ * Donne le contexte + bouton Déverrouiller via WalletLockButton.
+ */
+function ActiveWalletLockedCard() {
+  const { t } = useT();
+  const meta = useActiveWalletMeta();
+  const wallets = useLabStore((s) => s.wallets);
+  if (!meta || !meta.locked) return null;
+  const fullWallet = wallets.find((w) => w.id === meta.id);
+  if (!fullWallet) return null;
+  return (
+    <Card className="border-amber-500/30 bg-amber-500/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <KeyRound className="h-3.5 w-3.5 text-amber-500" />
+          {t('Portefeuille actif · verrouillé')}
+        </CardTitle>
+        <CardDescription className="text-xs">
+          {t('Entre la passphrase pour reconstituer les secrets 30 min.')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Copyable label={t('Adresse')} value={meta.address} />
+        <WalletLockButton wallet={fullWallet} />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -166,8 +199,9 @@ function WalletDetail({ w }: { w: LabWallet }) {
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-600 dark:text-amber-400">
             <KeyRound className="h-3.5 w-3.5" /> {t('Secrets du laboratoire — ne jamais partager')}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <EncryptedBackupButton wallet={w} />
+            <WalletLockButton wallet={w} />
             <Button
               variant="outline"
               size="sm"
@@ -711,7 +745,9 @@ export function WalletModule() {
                       <WalletDetail w={active} />
                     </CardContent>
                   </Card>
-                ) : null}
+                ) : (
+                  <ActiveWalletLockedCard />
+                )}
               </div>
             </div>
           )}
