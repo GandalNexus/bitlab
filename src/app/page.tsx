@@ -12,6 +12,7 @@ import { TxBuilder } from '@/components/bitlab/tx-builder';
 import { LightningModule } from '@/components/bitlab/lightning';
 import { MiningModule } from '@/components/bitlab/mining-lab';
 import { ExplorerModule } from '@/components/bitlab/explorer';
+import { FaucetModule } from '@/components/bitlab/faucet';
 import { useLabStore } from '@/lib/store';
 import { NETWORKS } from '@/lib/networks';
 import { useT } from '@/lib/i18n';
@@ -79,6 +80,7 @@ export default function BitLabPage() {
           <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
             {tab === 'dashboard' ? <Dashboard onNavigate={(t) => setTab(t as TabId)} /> : null}
             {tab === 'portefeuille' ? <WalletModule /> : null}
+            {tab === 'faucet' ? <FaucetModule onNavigate={(t) => setTab(t as TabId)} /> : null}
             {tab === 'transactions' ? <TxBuilder /> : null}
             {tab === 'lightning' ? <LightningModule /> : null}
             {tab === 'mineur' ? <MiningModule /> : null}
