@@ -141,7 +141,8 @@ describe('désir d’activation persistant du laboratoire Lightning', () => {
   });
 });
 
-describe('maxPayableSats — limite HTLC par canal (10 % LDK)', () => {  const channel = (over: Partial<LnChannelView>): LnChannelView => ({
+describe('maxPayableSats — limite HTLC par canal (10 % LDK)', () => {
+  const channel = (over: Partial<LnChannelView>): LnChannelView => ({
     channelId: 'c',
     userChannelId: 'u',
     counterparty: '02ff',
@@ -158,9 +159,9 @@ describe('maxPayableSats — limite HTLC par canal (10 % LDK)', () => {  const c
   it('limite un paiement unique à 10 % de la capacité du meilleur canal utilisable', () => {
     expect(maxPayableSats([channel({ valueSats: '100000' })])).toBe(10000);
     expect(maxPayableSats([channel({ valueSats: '250000' })])).toBe(25000);
-    expect(maxPayableSats([channel({ valueSats: '50000' }), channel({ valueSats: '300000' })])).toBe(
-      30000,
-    );
+    expect(
+      maxPayableSats([channel({ valueSats: '50000' }), channel({ valueSats: '300000' })]),
+    ).toBe(30000);
   });
 
   it('ignore les canaux non prêts et répond zéro sans canal', () => {
