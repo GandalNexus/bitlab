@@ -5,7 +5,9 @@ import bolt11 from 'bolt11';
 import {
   AlertTriangle,
   ArrowDownLeft,
+  ArrowDownRight,
   ArrowUpRight,
+  ArrowUpDown,
   Bolt,
   CheckCircle2,
   Infinity as InfinityIcon,
@@ -17,6 +19,7 @@ import {
   ShieldCheck,
   Unplug,
   Wallet as WalletIcon,
+  XCircle,
   Zap,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +58,7 @@ import {
   type LnChannelView,
   type LnEventView,
   type LnLabStatus,
+  type LnMovement,
   type LnNetId,
   type LnOfferView,
   type LnPendingFunding,
@@ -222,7 +226,14 @@ function EventLine({ e }: { e: LnEventView }) {
       >
         {e.node}
       </Badge>
-      <span className="flex-1 truncate">{label}</span>
+      <span className="flex-1 truncate">
+        {label}
+        {e.replayed === 'true' ? (
+          <span className="text-muted-foreground/60 ml-1.5 text-[10px]">
+            ({t('déjà comptabilisé avant rechargement')})
+          </span>
+        ) : null}
+      </span>
       <span className="text-muted-foreground shrink-0 font-mono text-[10px]">{detail}</span>
     </div>
   );
@@ -272,6 +283,60 @@ function NodeSummaryCard({
             )}
           </p>
         ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MovementsCard({ movements }: { movements: LnMovement[] }) {
+  const { t } = useT();
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <ArrowUpDown className="text-primary h-4 w-4" /> {t('Mouvements Lightning')}
+        </CardTitle>
+        <CardDescription>
+          {t('Entrées et sorties de sats, conservées même après un rechargement de page.')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-1 text-xs">
+        {movements.length === 0 ? (
+          <p className="text-muted-foreground">
+            {t(
+              'Aucun mouvement pour le moment : payez une facture ou faites-vous payer pour voir les sats circuler.',
+            )}
+          </p>
+        ) : (
+          movements.slice(0, 8).map((m, i) => (
+            <div key={`${m.at}-${i}`} className="flex items-center gap-2">
+              {m.kind === 'claimed' ? (
+                <ArrowDownRight className="h-3.5 w-3.5 text-emerald-500" />
+              ) : m.kind === 'sent' ? (
+                <ArrowUpRight className="h-3.5 w-3.5 text-amber-500" />
+              ) : (
+                <XCircle className="text-muted-foreground h-3.5 w-3.5" />
+              )}
+              <Badge
+                variant="outline"
+                className={
+                  m.node === 'A'
+                    ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                    : 'border-sky-500/40 text-sky-600 dark:text-sky-400'
+                }
+              >
+                {m.node}
+              </Badge>
+              <span className="flex-1">
+                {m.kind === 'claimed' ? t('Entrée') : m.kind === 'sent' ? t('Sortie') : t('Échec')}
+              </span>
+              <span className="font-mono">{m.sats != null ? `${fmtInt(m.sats)} sats` : '—'}</span>
+              <span className="text-muted-foreground w-20 text-right font-mono text-[10px]">
+                {new Date(m.at).toLocaleTimeString()}
+              </span>
+            </div>
+          ))
+        )}
       </CardContent>
     </Card>
   );
@@ -1478,6 +1543,7 @@ export function LightningModule() {
 
   useEffect(() => {
     for (const e of st.events) {
+      if (e.replayed === 'true') continue;
       const key = `${e.node}|${e.type}|${e.paymentHash ?? ''}`;
       if (seenPayments.current.has(key)) continue;
       if (e.type !== 'payment_sent' && e.type !== 'payment_claimed' && e.type !== 'payment_failed')
@@ -1610,6 +1676,7 @@ export function LightningModule() {
             <div className="grid gap-4 md:grid-cols-2">
               <NodeSummaryCard label="A" nodeId={st.nodeA} channels={st.channelsA} />
               <NodeSummaryCard label="B" nodeId={st.nodeB} channels={st.channelsB} />
+              <MovementsCard movements={st.movements} />
             </div>
             <Tabs defaultValue="channels">
               <TabsList>
