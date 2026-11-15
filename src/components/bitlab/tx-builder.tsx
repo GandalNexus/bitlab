@@ -36,6 +36,7 @@ import { Copyable, JsonBlock, PageIntro } from './bits';
 import { useLabStore, useActiveWallet } from '@/lib/store';
 import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { TYPE_INFO, type LabWallet } from '@/lib/bitcoin/keys';
+import { isLocked } from '@/lib/bitcoin/wallet-lock';
 import { api, mpBroadcast, explorerBase } from '@/lib/mempool';
 import { DEFAULT_NET, NETWORKS } from '@/lib/networks';
 import {
@@ -945,8 +946,13 @@ export function TxBuilder() {
   const [signedFp, setSignedFp] = useState('');
   const [walletId, setWalletId] = useState<string | null>(null);
 
+  // LOT 76 : filtre les locked (tx-builder signe → privateKeyHex requis).
   const netWallets = useMemo(
-    () => wallets.filter((w) => (w.network ?? DEFAULT_NET) === net),
+    () =>
+      wallets.filter(
+        (w): w is LabWallet =>
+          (w.network ?? DEFAULT_NET) === net && !isLocked(w),
+      ),
     [wallets, net],
   );
   const wallet = useMemo(

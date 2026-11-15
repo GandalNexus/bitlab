@@ -36,6 +36,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Copyable, PageIntro } from './bits';
 import { QRCode } from './qrcode';
 import { useLabStore } from '@/lib/store';
+import type { LabWallet } from '@/lib/bitcoin/keys';
+import { isLocked } from '@/lib/bitcoin/wallet-lock';
 import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { buildReturnUrl, isValidReturnValue } from '@/lib/bitquest-bridge';
 import { NETWORKS, DEFAULT_NET } from '@/lib/networks';
@@ -188,7 +190,12 @@ function FundingBridge({
   const [walletId, setWalletId] = useState<string>('');
   const [busy, setBusy] = useState(false);
 
-  const usable = wallets.filter((w) => (w.network ?? DEFAULT_NET) === net);
+  // LOT 76 : lightning channel ouvre une TX de funding → requiert
+  // privateKeyHex. Filtre les wallets locked.
+  const usable = wallets.filter(
+    (w): w is LabWallet =>
+      (w.network ?? DEFAULT_NET) === net && !isLocked(w),
+  );
   const wallet = usable.find((w) => w.id === walletId) ?? usable[0] ?? null;
 
   const buildAndSubmit = async () => {

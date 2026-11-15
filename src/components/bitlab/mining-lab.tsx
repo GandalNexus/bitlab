@@ -24,6 +24,7 @@ import { DEFAULT_NET, NETWORKS, type NetId } from '@/lib/networks';
 import { api } from '@/lib/mempool';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import type { LabWallet } from '@/lib/bitcoin/keys';
+import { isLocked } from '@/lib/bitcoin/wallet-lock';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -80,8 +81,15 @@ export function MiningModule() {
   const busy =
     status.phase === 'mining' || status.phase === 'submitting' || status.phase === 'watching';
 
+  // LOT 76 : filtre les locked wallets qui ne peuvent pas signer
+  // (minage requiert privateKeyHex pour payout). Les locked sont
+  // visibles dans wallet.tsx mais pas éligibles ici.
   const netWallets = useMemo(
-    () => wallets.filter((w) => (w.network ?? DEFAULT_NET) === net),
+    () =>
+      wallets.filter(
+        (w): w is LabWallet =>
+          (w.network ?? DEFAULT_NET) === net && !isLocked(w),
+      ),
     [wallets, net],
   );
   const payout = useMemo(
