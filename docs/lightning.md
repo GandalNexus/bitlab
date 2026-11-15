@@ -157,7 +157,22 @@ shapes its Lightning flows:
   of a channel's capacity (`max_htlc_value_in_flight_percent_of_channel`);
   payments above `maxPayableSats()` are blocked with an explanation instead
   of failing after six routing retries, and invoice creation warns when no
-  channel of the payee could ever settle the requested amount.
+  channel of the candidate payer could settle the requested amount.
+- **An invoice can only be paid once.** The payment hash of every decoded
+  invoice is checked against a persisted registry of hashes this lab has
+  already paid (`lnlab-paid-hashes-<network>`); a second attempt is refused
+  before reaching LDK with an explicit message, because LDK 0.2 accepts a
+  duplicate `send_payment` carrying a fresh payment id and the payee would
+  claim both HTLCs. The hash is recorded when the send is accepted, removed
+  again if the payment fails (a retry stays possible) and cleared by a lab
+  reset.
+- **Every settlement is reported.** The `payment_sent`, `payment_claimed`
+  and `payment_failed` events of both nodes surface as toasts, so a payment
+  is never silently pending: the payer sees the amount leave its Lightning
+  balance, the payee sees the credit, and a routing failure shows the LDK
+  reason. Node summary cards display each node's spendable *Lightning
+  balance* and remaining receiving capacity, with a reminder that these
+  funds live inside the channel — not on chain.
 - **Payment initiation is acknowledged.** `payInvoice`/`payOffer` are
   request/response calls: an LDK rejection surfaces immediately as a toast
   with the node's own error, not as a buried journal line.
@@ -216,6 +231,21 @@ journal — exactly the kind of real error the lab exists to show.
 The offer decoder (`Vérifier` / "Verify") displays the description, the amount
 (or *montant libre*) and the issuer key before any payment is attempted; a
 payer note can be attached to the invoice request.
+
+## How long things take
+
+| Step | Embedded Regtest | Bitcoin mainnet |
+| --- | --- | --- |
+| Block mined | instant, on demand (difficulty 1, browser PoW) | ~10 minutes per block |
+| Funding transaction broadcast → mempool | < 1 s | seconds (propagation) |
+| Channel ready (6 confirmations) | ~10–15 s (8 blocks mined automatically) | ~60 minutes |
+| BOLT11/BOLT12 payment (one hop) | ~1–3 s, no block involved | ~1–3 s, no block involved |
+| Cooperative close spendable | 1 block (~1 s on Regtest) | ~10 minutes to 1 day (CSV delay) |
+
+A Lightning payment itself never waits for a miner: the HTLC settles as soon
+as the two peers exchange commitment signatures, which is why it feels instant
+even while the underlying funding transaction needed six confirmations to open
+the channel.
 
 ## Persistence and security
 

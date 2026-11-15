@@ -825,7 +825,26 @@ export const EN: Record<string, string> = {
   'Échec du financement': 'Funding failed',
   'Créer une facture BOLT11 (nœud {n})': 'Create a BOLT11 invoice (node {n})',
   'Nœud payé': 'Payee node',
+  'Nœud payé — reçoit': 'Payee node — receives',
   'Nœud payeur': 'Payer node',
+  'Nœud payeur — paie': 'Payer node — pays',
+  'Solde Lightning': 'Lightning balance',
+  'Peut encore recevoir': 'Can still receive',
+  'Ce solde vit à l’intérieur du canal : il ne passe pas par la chaîne et reste dépensable instantanément en Lightning.':
+    'This balance lives inside the channel: it never touches the chain and stays instantly spendable over Lightning.',
+  'Paiement Lightning envoyé': 'Lightning payment sent',
+  '{sats} sats quittent le nœud {n} via le canal — solde Lightning mis à jour.':
+    '{sats} sats left node {n} through the channel — Lightning balance updated.',
+  'Le HTLC a été réglé sur le canal.': 'The HTLC has settled on the channel.',
+  'Paiement Lightning reçu': 'Lightning payment received',
+  '{sats} sats ont crédité le solde Lightning du nœud {n}.':
+    '{sats} sats credited node {n}’s Lightning balance.',
+  'Le solde Lightning du destinataire a été crédité.':
+    'The recipient’s Lightning balance has been credited.',
+  'Paiement Lightning échoué': 'Lightning payment failed',
+  'Le HTLC a été annulé sans perte de fonds : {reason}':
+    'The HTLC was cancelled without losing funds: {reason}',
+  'routage impossible': 'no route available',
   Créer: 'Create',
   'Facture créée': 'Invoice created',
   'Signée par le nœud {n} — faites-la payer par l’autre nœud.':
@@ -840,6 +859,10 @@ export const EN: Record<string, string> = {
     'Node {n} has no outbound capacity: open and confirm a channel first.',
   'Cette facture est expirée : demandez-en une nouvelle.':
     'This invoice has expired: request a new one.',
+  'Cette facture a déjà été payée par ce laboratoire : demandez une facture neuve au lieu de payer deux fois.':
+    'This invoice was already paid by this lab: request a fresh invoice instead of paying twice.',
+  'Facture déjà payée : payer deux fois la même facture perdrait les sats du payeur.':
+    'Invoice already paid: paying the same invoice twice would lose the payer’s sats.',
   'Le nœud payeur est aussi le destinataire : choisissez l’autre nœud.':
     'The payer node is also the recipient: choose the other node.',
   'Facture à montant libre : indiquez combien payer.':

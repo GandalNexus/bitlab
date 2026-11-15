@@ -78,6 +78,7 @@ interface Bolt11Preview {
   description: string;
   payee: string | null;
   expiresAt: number | null;
+  paymentHash: string | null;
 }
 
 function decodeBolt11(raw: string): Bolt11Preview | null {
@@ -91,6 +92,8 @@ function decodeBolt11(raw: string): Bolt11Preview | null {
         typeof d.timestamp === 'number' && typeof d.tagsObject.expire_time === 'number'
           ? d.timestamp + d.tagsObject.expire_time
           : null,
+      paymentHash:
+        typeof d.tagsObject.payment_hash === 'string' ? d.tagsObject.payment_hash.toLowerCase() : null,
     };
   } catch {
     return null;
@@ -246,18 +249,27 @@ function NodeSummaryCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="text-muted-foreground space-y-1 text-xs">
+        <div className="flex items-baseline justify-between">
+          <span>{t('Solde Lightning')}</span>
+          <span className="text-foreground font-mono text-sm font-medium">
+            {fmtInt(totalOut)} sats
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span>{t('Peut encore recevoir')}</span>
+          <span className="font-mono">{fmtInt(totalIn)} sats</span>
+        </div>
         <div className="flex justify-between">
           <span>{t('Canaux')}</span>
           <span className="font-mono">{channels.length}</span>
         </div>
-        <div className="flex justify-between">
-          <span>{t('Capacité sortante')}</span>
-          <span className="font-mono">{fmtInt(totalOut)} sats</span>
-        </div>
-        <div className="flex justify-between">
-          <span>{t('Capacité entrante')}</span>
-          <span className="font-mono">{fmtInt(totalIn)} sats</span>
-        </div>
+        {channels.length > 0 ? (
+          <p className="text-muted-foreground/70 pt-1 text-[10px] leading-snug">
+            {t(
+              'Ce solde vit à l’intérieur du canal : il ne passe pas par la chaîne et reste dépensable instantanément en Lightning.',
+            )}
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -626,7 +638,7 @@ function NodePicker({
 function Bolt11Panel({ st }: { st: LnLabStatus }) {
   const { t } = useT();
   const { toast } = useToast();
-  const [amount, setAmount] = useState('21000');
+  const [amount, setAmount] = useState('8000');
   const [memo, setMemo] = useState('Café BitLab');
   const [payeeNode, setPayeeNode] = useState<NodeKey>('B');
   const [invoice, setInvoice] = useState('');
@@ -688,19 +700,24 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
 
   const selfPayment =
     decoded?.payee != null && decoded.payee === (payerNode === 'A' ? st.nodeA : st.nodeB);
+  const alreadyPaid =
+    decoded?.paymentHash != null && lnLab.hasPaidPaymentHash(decoded.paymentHash);
   const noLiquidity = outbound[payerNode] <= 0;
   const expired = decoded?.expiresAt != null && now != null && decoded.expiresAt * 1000 < now;
   const needsOpenAmount = decoded !== null && decoded.amountSats === null;
   const openMsat = parseInt(openAmount, 10);
   const payerChannels = payerNode === 'A' ? st.channelsA : st.channelsB;
-  const payeeChannels = payerNode === 'A' ? st.channelsB : st.channelsA;
   const payAmountSats = decoded?.amountSats ?? (Number.isInteger(openMsat) ? openMsat : null);
-  const exceedsHtlcLimit = payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
+  const exceedsHtlcLimit =
+    payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
   const createAmountSats = parseInt(amount, 10);
+  const invoicePayerCandidate: NodeKey = payeeNode === 'A' ? 'B' : 'A';
+  const invoicePayerCandidateChannels =
+    invoicePayerCandidate === 'A' ? st.channelsA : st.channelsB;
   const createExceedsLimit =
     Number.isInteger(createAmountSats) &&
     createAmountSats > 0 &&
-    createAmountSats > maxPayableSats(payeeChannels);
+    createAmountSats > maxPayableSats(invoicePayerCandidateChannels);
 
   const pay = async () => {
     const raw = payInput.trim();
@@ -708,6 +725,10 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
     setPaying(true);
     try {
       if (expired) throw new Error(t('Cette facture est expirée : demandez-en une nouvelle.'));
+      if (alreadyPaid)
+        throw new Error(
+          t('Cette facture a déjà été payée par ce laboratoire : demandez une facture neuve au lieu de payer deux fois.'),
+        );
       if (selfPayment)
         throw new Error(t('Le nœud payeur est aussi le destinataire : choisissez l’autre nœud.'));
       if (needsOpenAmount && (!Number.isInteger(openMsat) || openMsat <= 0))
@@ -756,7 +777,7 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
         <CardContent className="flex flex-wrap items-end gap-3">
           <NodePicker
             id="b11-payee"
-            label="Nœud payé"
+            label="Nœud payé — reçoit"
             value={payeeNode}
             onChange={setPayeeNode}
             liquidity={inbound}
@@ -797,7 +818,7 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
             <p className="text-xs text-amber-400">
               {t(
                 'Aucun canal du nœud {n} ne pourra payer {sats} sats d’un coup : un HTLC est limité à 10 % de la capacité du canal.',
-                { n: payeeNode, sats: fmtInt(createAmountSats) },
+                { n: invoicePayerCandidate, sats: fmtInt(createAmountSats) },
               )}
             </p>
           </CardContent>
@@ -826,7 +847,7 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
         <CardContent className="space-y-3">
           <NodePicker
             id="b11-payer"
-            label="Nœud payeur"
+            label="Nœud payeur — paie"
             value={payerNode}
             onChange={setPayerNode}
             liquidity={outbound}
@@ -862,6 +883,7 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
                 decoded === null ||
                 noLiquidity ||
                 selfPayment ||
+                alreadyPaid ||
                 expired ||
                 exceedsHtlcLimit ||
                 (needsOpenAmount && (!Number.isInteger(openMsat) || openMsat <= 0))
@@ -871,6 +893,11 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
               {t('Payer')}
             </Button>
           </div>
+          {payInput.trim() && alreadyPaid ? (
+            <p className="text-xs text-red-500">
+              {t('Facture déjà payée : payer deux fois la même facture perdrait les sats du payeur.')}
+            </p>
+          ) : null}
           {payInput.trim() && decoded === null ? (
             <p className="text-xs text-amber-400">
               {t('Facture illisible : vérifiez la chaîne complète copiée-collée.')}
@@ -880,7 +907,7 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
             <div
               className={cn(
                 'space-y-1 rounded-md border p-3 text-xs',
-                selfPayment || expired
+                selfPayment || expired || alreadyPaid
                   ? 'border-red-500/40 bg-red-500/5'
                   : 'border-amber-500/30 bg-amber-500/5',
               )}
@@ -983,7 +1010,7 @@ function ProtocolLegend() {
 function Bolt12Panel({ st }: { st: LnLabStatus }) {
   const { t } = useT();
   const { toast } = useToast();
-  const [amount, setAmount] = useState('21000');
+  const [amount, setAmount] = useState('8000');
   const [memo, setMemo] = useState('Café BitLab');
   const [payeeNode, setPayeeNode] = useState<NodeKey>('B');
   const [offer, setOffer] = useState('');
@@ -1050,19 +1077,22 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
   const noLiquidity = outbound[payerNode] <= 0;
   const freeAmount = !decoded || decoded.amountMsat === '';
   const payerChannels = payerNode === 'A' ? st.channelsA : st.channelsB;
-  const payeeChannels = payerNode === 'A' ? st.channelsB : st.channelsA;
   const enteredSats = parseInt(payAmount, 10);
   const payAmountSats = freeAmount
     ? Number.isInteger(enteredSats) && enteredSats > 0
       ? enteredSats
       : null
     : msatToSats(decoded.amountMsat);
-  const exceedsHtlcLimit = payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
+  const exceedsHtlcLimit =
+    payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
   const createAmountSats = parseInt(amount, 10);
+  const offerPayerCandidate: NodeKey = payeeNode === 'A' ? 'B' : 'A';
+  const offerPayerCandidateChannels =
+    offerPayerCandidate === 'A' ? st.channelsA : st.channelsB;
   const createExceedsLimit =
     Number.isInteger(createAmountSats) &&
     createAmountSats > 0 &&
-    createAmountSats > maxPayableSats(payeeChannels);
+    createAmountSats > maxPayableSats(offerPayerCandidateChannels);
 
   const pay = async () => {
     const raw = payInput.trim();
@@ -1081,7 +1111,9 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
       if (freeAmount) {
         const sats = parseInt(payAmount, 10);
         if (!Number.isInteger(sats) || sats <= 0) {
-          throw new Error(t('Cette offer ne fixe pas de montant : indiquez combien payer.'));
+          throw new Error(
+            t('Cette offer ne fixe pas de montant : indiquez combien payer.'),
+          );
         }
         amountMsat = sats * 1000;
       }
@@ -1132,7 +1164,7 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
         <CardContent className="flex flex-wrap items-end gap-3">
           <NodePicker
             id="b12-payee"
-            label="Nœud payé"
+            label="Nœud payé — reçoit"
             value={payeeNode}
             onChange={setPayeeNode}
             liquidity={inbound}
@@ -1173,7 +1205,7 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
             <p className="text-xs text-amber-400">
               {t(
                 'Aucun canal du nœud {n} ne pourra payer {sats} sats d’un coup : un HTLC est limité à 10 % de la capacité du canal.',
-                { n: payeeNode, sats: fmtInt(createAmountSats) },
+                { n: offerPayerCandidate, sats: fmtInt(createAmountSats) },
               )}
             </p>
           </CardContent>
@@ -1202,7 +1234,7 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
         <CardContent className="space-y-3">
           <NodePicker
             id="b12-payer"
-            label="Nœud payeur"
+            label="Nœud payeur — paie"
             value={payerNode}
             onChange={setPayerNode}
             liquidity={outbound}
@@ -1442,6 +1474,45 @@ export function LightningModule() {
   const scids = useChannelScids([...st.channelsA, ...st.channelsB]);
   useBitquestChannelCapture(scids);
   const autoTried = useRef(new Set<LnNetId>());
+  const seenPayments = useRef(new Set<string>());
+  const { toast } = useToast();
+
+  useEffect(() => {
+    for (const e of st.events) {
+      const key = `${e.node}|${e.type}|${e.paymentHash ?? ''}`;
+      if (seenPayments.current.has(key)) continue;
+      if (e.type !== 'payment_sent' && e.type !== 'payment_claimed' && e.type !== 'payment_failed')
+        continue;
+      seenPayments.current.add(key);
+      const sats = e.amountMsat != null ? fmtInt(msatToSats(e.amountMsat)) : null;
+      if (e.type === 'payment_sent') {
+        toast({
+          title: t('Paiement Lightning envoyé'),
+          description: sats
+            ? t('{sats} sats quittent le nœud {n} via le canal — solde Lightning mis à jour.', {
+                sats,
+                n: e.node,
+              })
+            : t('Le HTLC a été réglé sur le canal.'),
+        });
+      } else if (e.type === 'payment_claimed') {
+        toast({
+          title: t('Paiement Lightning reçu'),
+          description: sats
+            ? t('{sats} sats ont crédité le solde Lightning du nœud {n}.', { sats, n: e.node })
+            : t('Le solde Lightning du destinataire a été crédité.'),
+        });
+      } else {
+        toast({
+          title: t('Paiement Lightning échoué'),
+          description: t('Le HTLC a été annulé sans perte de fonds : {reason}', {
+            reason: (e.reason ?? '').slice(0, 120) || t('routage impossible'),
+          }),
+          variant: 'destructive',
+        });
+      }
+    }
+  }, [st.events, toast, t]);
 
   useEffect(() => {
     if (!lnNet) return;

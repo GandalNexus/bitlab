@@ -443,6 +443,7 @@ export class RegtestChain {
     for (const op of this.scriptUtxos.get(scriptHex) ?? []) {
       const u = this.utxos.get(op);
       if (!u) continue;
+      if (this.mempoolSpends.has(op)) continue;
       const sep = op.lastIndexOf(':');
       const txid = op.slice(0, sep);
       const vout = Number(op.slice(sep + 1));
