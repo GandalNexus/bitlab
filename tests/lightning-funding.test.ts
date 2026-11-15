@@ -6,6 +6,7 @@ import { registerNetGetter } from '../src/lib/networks';
 import { deriveForType } from '../src/lib/bitcoin/keys';
 import { buildSignedTx } from '../src/lib/bitcoin/tx';
 import {
+  applyMovement,
   classifyBroadcast,
   LN_CHAIN_BRIDGE_PATH_RX,
   LN_CHAIN_BRIDGE_TX_RX,
@@ -14,6 +15,8 @@ import {
   shouldBridgeChain,
   writeDesiredNets,
   type LnChannelView,
+  type LnEventView,
+  type LnMovement,
   type LnNetId,
 } from '../src/lib/lightning';
 
@@ -201,5 +204,52 @@ describe('addressUtxos — UTXO verrouillé par le mempool (financement Lightnin
 
     c.mineTo(null, 6);
     expect(c.addressUtxos(source.address).length).toBeGreaterThan(0);
+  });
+});
+
+describe('mouvements Lightning — déduplication des événements rejoués au rechargement', () => {
+  it('enregistre un mouvement neuf, puis marque le doublon comme rejoué', () => {
+    const list: LnMovement[] = [];
+    const keys = new Set<string>();
+    const claimed: LnEventView = {
+      node: 'B',
+      type: 'payment_claimed',
+      amountMsat: '1000000',
+      paymentHash: 'aa'.repeat(32),
+    };
+    const first = applyMovement(list, keys, claimed, 1000);
+    expect(first.replayed).toBe(false);
+    expect(first.list).toHaveLength(1);
+    expect(first.list[0]).toMatchObject({
+      node: 'B',
+      kind: 'claimed',
+      sats: 1000,
+      hash: 'aa'.repeat(32),
+    });
+
+    const replay = applyMovement(first.list, keys, claimed, 2000);
+    expect(replay.replayed).toBe(true);
+    expect(replay.list).toHaveLength(1);
+    expect(replay.list[0].at).toBe(1000);
+  });
+
+  it('ignore les événements hors paiement et borne l’historique à 100 entrées', () => {
+    let list: LnMovement[] = [];
+    const keys = new Set<string>();
+    expect(applyMovement(list, keys, { node: 'A', type: 'channel_ready' }, 0).list).toBe(list);
+    for (let i = 0; i < 120; i += 1) {
+      list = applyMovement(
+        list,
+        keys,
+        {
+          node: 'A',
+          type: 'payment_sent',
+          amountMsat: '1000',
+          paymentHash: i.toString(16).padStart(2, '0').repeat(32),
+        },
+        i,
+      ).list;
+    }
+    expect(list).toHaveLength(100);
   });
 });

@@ -173,6 +173,15 @@ shapes its Lightning flows:
   reason. Node summary cards display each node's spendable *Lightning
   balance* and remaining receiving capacity, with a reminder that these
   funds live inside the channel — not on chain.
+- **Movements survive the reload.** Every settled payment is appended to a
+  persisted per-network history (`lnlab-movements-<network>`) rendered as an
+  *Entrées / sorties* panel next to the node cards, so the sats flow stays
+  visible after a refresh. LDK replays the payment events of the channels it
+  restores from storage — a claim for a payment that settled before the
+  reload would otherwise fire a ghost toast. Each replay is detected through
+  the movement history (same node, same kind, same payment hash), excluded
+  from the toast stream and annotated *déjà comptabilisé* in the journal
+  instead of being counted twice.
 - **Payment initiation is acknowledged.** `payInvoice`/`payOffer` are
   request/response calls: an LDK rejection surfaces immediately as a toast
   with the node's own error, not as a buried journal line.

@@ -845,6 +845,14 @@ export const EN: Record<string, string> = {
   'Le HTLC a été annulé sans perte de fonds : {reason}':
     'The HTLC was cancelled without losing funds: {reason}',
   'routage impossible': 'no route available',
+  'Mouvements Lightning': 'Lightning movements',
+  'Entrées et sorties de sats, conservées même après un rechargement de page.':
+    'Sats in and out, kept even across a page reload.',
+  'Aucun mouvement pour le moment : payez une facture ou faites-vous payer pour voir les sats circuler.':
+    'No movement yet: pay an invoice or get paid to watch sats move.',
+  Entrée: 'In',
+  Sortie: 'Out',
+  'déjà comptabilisé avant rechargement': 'already counted before the reload',
   Créer: 'Create',
   'Facture créée': 'Invoice created',
   'Signée par le nœud {n} — faites-la payer par l’autre nœud.':

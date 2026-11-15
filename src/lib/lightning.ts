@@ -55,6 +55,46 @@ export interface LnOfferView {
   signingPubkey: string;
 }
 
+export interface LnMovement {
+  node: NodeKey;
+  kind: 'sent' | 'claimed' | 'failed';
+  sats: number | null;
+  hash: string | null;
+  at: number;
+}
+
+export const LN_MOVEMENT_KINDS: Record<string, LnMovement['kind']> = {
+  payment_sent: 'sent',
+  payment_claimed: 'claimed',
+  payment_failed: 'failed',
+};
+
+export function movementKeyOf(node: string, kind: LnMovement['kind'], hash: string | null): string {
+  return `${node}|${kind}|${hash ?? ''}`;
+}
+
+export function applyMovement(
+  list: LnMovement[],
+  keys: Set<string>,
+  event: LnEventView,
+  nowMs: number,
+): { list: LnMovement[]; replayed: boolean } {
+  const kind = LN_MOVEMENT_KINDS[event.type];
+  if (!kind) return { list, replayed: false };
+  const key = movementKeyOf(event.node, kind, event.paymentHash ?? null);
+  if (keys.has(key)) return { list, replayed: true };
+  keys.add(key);
+  const msat = event.amountMsat != null ? Number(event.amountMsat) : null;
+  const entry: LnMovement = {
+    node: (event.node === 'A' ? 'A' : 'B') as NodeKey,
+    kind,
+    sats: msat != null && Number.isFinite(msat) ? Math.round(msat / 1000) : null,
+    hash: event.paymentHash ?? null,
+    at: nowMs,
+  };
+  return { list: [entry, ...list].slice(0, 100), replayed: false };
+}
+
 export interface LnLabStatus {
   phase: 'off' | 'booting' | 'ready' | 'stopping';
   network: LnNetId | null;
@@ -69,12 +109,14 @@ export interface LnLabStatus {
   logs: LnLogLine[];
   broadcasts: { ok: boolean; detail: string; at: number }[];
   pendingFunding: LnPendingFunding | null;
+  movements: LnMovement[];
 }
 
 const SEEDS_KEY = (net: LnNetId) => `lnlab-seeds-${net}`;
 const KV_KEY = (net: LnNetId, node: NodeKey) => `lnlab-kv-${net}-${node}`;
 const PAID_HASHES_KEY = (net: LnNetId) => `lnlab-paid-hashes-${net}`;
 const PAID_HASHES_MAX = 500;
+const MOVEMENTS_KEY = (net: LnNetId) => `lnlab-movements-${net}`;
 
 export function bolt11PaymentHash(invoice: string): string | null {
   try {
@@ -109,6 +151,7 @@ const initialStatus: LnLabStatus = {
   logs: [],
   broadcasts: [],
   pendingFunding: null,
+  movements: [],
 };
 
 const MAX_EVENTS = 60;
@@ -221,6 +264,39 @@ class LnLabController {
     if (this.paidHashes.delete(hash.toLowerCase())) this.persistPaidHashes();
   }
 
+  private movements: LnMovement[] = [];
+  private movementKeys = new Set<string>();
+
+  private loadMovements(network: LnNetId | null) {
+    if (!network) return;
+    let stored: unknown = null;
+    try {
+      stored = JSON.parse(localStorageStore()?.getItem(MOVEMENTS_KEY(network)) ?? 'null');
+    } catch {
+      stored = null;
+    }
+    this.movements = Array.isArray(stored)
+      ? stored.filter(
+          (m): m is LnMovement =>
+            typeof m === 'object' &&
+            m !== null &&
+            ((m as LnMovement).node === 'A' || (m as LnMovement).node === 'B') &&
+            typeof (m as LnMovement).at === 'number',
+        )
+      : [];
+    this.movementKeys = new Set(this.movements.map((m) => movementKeyOf(m.node, m.kind, m.hash)));
+  }
+
+  private persistMovements() {
+    const network = this.network;
+    if (!network) return;
+    try {
+      localStorageStore()?.setItem(MOVEMENTS_KEY(network), JSON.stringify(this.movements));
+    } catch {
+      return;
+    }
+  }
+
   getStatus = (): LnLabStatus => this.status;
 
   isDesired = (network: LnNetId): boolean => this.desired.has(network);
@@ -270,17 +346,28 @@ class LnLabController {
     if (events.some((e) => e.type === 'channel_ready' || e.type === 'channel_closed')) {
       pendingFunding = null;
     }
+    let movements = this.status.movements;
     for (const e of events) {
       if (e.type === 'payment_sent') this.recordPaidPaymentHash(e.paymentHash);
       else if (e.type === 'payment_failed') this.forgetPaidPaymentHash(e.paymentHash);
+      const kind = LN_MOVEMENT_KINDS[e.type];
+      if (!kind) continue;
+      const applied = applyMovement(this.movements, this.movementKeys, e, Date.now());
+      if (applied.replayed) e.replayed = 'true';
+      else {
+        this.movements = applied.list;
+        movements = applied.list;
+        this.persistMovements();
+      }
     }
-    this.patch({ events: merged, pendingFunding });
+    this.patch({ events: merged, pendingFunding, movements });
   }
 
   async activate(network: LnNetId): Promise<void> {
     if (this.status.phase === 'booting' || this.status.phase === 'ready') return;
     this.network = network;
     this.loadPaidHashes(network);
+    this.loadMovements(network);
     this.setDesired(network, true);
     this.patch({
       phase: 'booting',
@@ -290,6 +377,7 @@ class LnLabController {
       events: [],
       broadcasts: [],
       pendingFunding: null,
+      movements: this.movements,
     });
     try {
       const seeds = await this.loadOrCreateSeeds(network);
@@ -379,6 +467,13 @@ class LnLabController {
     this.paidHashes = new Set();
     try {
       localStorageStore()?.removeItem(PAID_HASHES_KEY(network));
+    } catch {
+      return;
+    }
+    this.movements = [];
+    this.movementKeys = new Set();
+    try {
+      localStorageStore()?.removeItem(MOVEMENTS_KEY(network));
     } catch {
       return;
     }
