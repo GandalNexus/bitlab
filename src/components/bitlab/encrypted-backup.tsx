@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, Lock, Upload } from 'lucide-react';
+import { Download, Loader2, Lock, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -245,7 +245,11 @@ export function EncryptedBackupButton({ wallet }: { wallet: LabWallet }) {
 
         <DialogFooter>
           <Button onClick={onExport} disabled={pending} className="gap-1.5">
-            <Download className="h-4 w-4" />
+            {pending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
             {pending ? t('Chiffrement…') : t('Générer et télécharger')}
           </Button>
         </DialogFooter>

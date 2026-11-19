@@ -24,6 +24,13 @@ import type { BitquestMission } from './bitquest-bridge';
 
 export interface BitquestMissionState {
   mission: BitquestMission | null;
+  /**
+   * Bannière masquée par l'utilisateur ? La mission reste active dans le
+   * store — seul l'affichage est réduit à un pill flottant que l'apprenant
+   * peut rouvrir. L'abandon réel (clearMission) est une action séparée avec
+   * confirmation.
+   */
+  isBannerCollapsed: boolean;
   lastTxid: string | null;
   lastBolt11: string | null;
   lastBlockHash: string | null;
@@ -31,6 +38,7 @@ export interface BitquestMissionState {
   lastAddress: string | null;
   setMission: (mission: BitquestMission | null) => void;
   clearMission: () => void;
+  setBannerCollapsed: (collapsed: boolean) => void;
   setLastTxid: (txid: string) => void;
   setLastBolt11: (bolt11: string) => void;
   setLastBlockHash: (hash: string) => void;
@@ -40,6 +48,7 @@ export interface BitquestMissionState {
 
 const INITIAL_STATE = {
   mission: null,
+  isBannerCollapsed: false,
   lastTxid: null,
   lastBolt11: null,
   lastBlockHash: null,
@@ -53,8 +62,9 @@ export const useBitquestMissionStore = create<BitquestMissionState>()(
   persist(
     (set) => ({
       ...INITIAL_STATE,
-      setMission: (mission) => set({ mission }),
+      setMission: (mission) => set({ mission, isBannerCollapsed: false }),
       clearMission: () => set({ ...INITIAL_STATE }),
+      setBannerCollapsed: (isBannerCollapsed) => set({ isBannerCollapsed }),
       setLastTxid: (lastTxid) => set({ lastTxid }),
       setLastBolt11: (lastBolt11) => set({ lastBolt11 }),
       setLastBlockHash: (lastBlockHash) => set({ lastBlockHash }),
@@ -73,6 +83,7 @@ export const useBitquestMissionStore = create<BitquestMissionState>()(
       // Ne persiste que les données, pas les setters (sélection explicite).
       partialize: (state) => ({
         mission: state.mission,
+        isBannerCollapsed: state.isBannerCollapsed,
         lastTxid: state.lastTxid,
         lastBolt11: state.lastBolt11,
         lastBlockHash: state.lastBlockHash,

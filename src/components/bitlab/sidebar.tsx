@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
 import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { getBitquestUrl } from '@/lib/bitquest-user';
+import { appendThemeToUrl, useThemeStore } from '@/lib/theme';
 
 export type TabId =
   'dashboard' | 'portefeuille' | 'transactions' | 'lightning' | 'mineur' | 'explorateur';
@@ -224,7 +225,8 @@ export function SidebarNav({
 function GandalNexusSection({ collapsed }: { collapsed: boolean }) {
   const { t } = useT();
   const mission = useBitquestMissionStore((s) => s.mission);
-  const bitquestUrl = getBitquestUrl();
+  const theme = useThemeStore((s) => s.theme);
+  const bitquestUrl = appendThemeToUrl(getBitquestUrl(), theme);
 
   if (collapsed) {
     return (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, FlaskConical, Loader2, User, X } from 'lucide-react';
+import { ChevronDown, ExternalLink, FlaskConical, Loader2, Target, Trash2, User } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import {
   buildReturnUrl,
@@ -44,11 +44,43 @@ export function BitquestMissionBanner() {
   const mission = useBitquestMissionStore((s) => s.mission);
   const proofValue = useBitquestMissionStore(selectCurrentProofValue);
   const clearMission = useBitquestMissionStore((s) => s.clearMission);
+  const isCollapsed = useBitquestMissionStore((s) => s.isBannerCollapsed);
+  const setCollapsed = useBitquestMissionStore((s) => s.setBannerCollapsed);
   const user = useBitquestUserStore((s) => s.user);
   const launchStatus = useBitquestUserStore((s) => s.launchStatus);
   const [submitting, setSubmitting] = useState(false);
 
   if (!mission) return null;
+
+  // Masquée par l'utilisateur → petit pill flottant pour rouvrir.
+  if (isCollapsed) {
+    return (
+      <div className="pointer-events-none fixed right-4 bottom-4 z-50 sm:right-6 sm:bottom-6">
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-label={t('Rouvrir la mission BitQuest')}
+          className="border-primary/40 bg-primary text-primary-foreground pointer-events-auto flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold shadow-lg transition hover:brightness-110"
+        >
+          <Target className="h-3.5 w-3.5" aria-hidden />
+          <span className="max-w-[160px] truncate">
+            {mission.title ?? mission.questCode}
+          </span>
+          <span className="rounded-full bg-primary-foreground/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wide">
+            {mission.kind}
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  const onAbandon = () => {
+    if (submitting) return;
+    const ok = window.confirm(
+      t('Abandonner cette mission BitQuest ? Tu perdras le contexte en cours. Tu pourras la relancer depuis BitQuest.'),
+    );
+    if (ok) clearMission();
+  };
 
   const ready =
     proofValue !== null && proofValue.length > 0 && isValidReturnValue(mission.kind, proofValue);
@@ -161,13 +193,23 @@ export function BitquestMissionBanner() {
           </button>
           <button
             type="button"
-            onClick={clearMission}
+            onClick={onAbandon}
             disabled={submitting}
             aria-label={t('Abandonner la mission BitQuest')}
-            title={t('Abandonner la mission BitQuest')}
+            title={t('Abandonner la mission BitQuest (demande confirmation)')}
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive inline-flex h-7 w-7 items-center justify-center rounded-md disabled:opacity-40"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            disabled={submitting}
+            aria-label={t('Masquer la mission (elle reste active)')}
+            title={t('Masquer — la mission reste active, cliquable en bas à droite')}
             className="text-muted-foreground hover:bg-muted inline-flex h-7 w-7 items-center justify-center rounded-md disabled:opacity-40"
           >
-            <X className="h-3.5 w-3.5" aria-hidden />
+            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
           </button>
         </div>
       </div>
