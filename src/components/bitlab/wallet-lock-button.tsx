@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -174,11 +174,16 @@ export function WalletLockButton({ wallet }: { wallet: AnyWallet }) {
 
         <DialogFooter>
           <Button onClick={onSubmit} disabled={pending} className="gap-1.5">
-            {pending
-              ? t('…')
-              : locked
-                ? t('Déverrouiller')
-                : t('Verrouiller maintenant')}
+            {pending ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {locked ? t('Déverrouillage…') : t('Verrouillage…')}
+              </>
+            ) : locked ? (
+              t('Déverrouiller')
+            ) : (
+              t('Verrouiller maintenant')
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

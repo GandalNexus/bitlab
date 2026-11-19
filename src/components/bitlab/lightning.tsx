@@ -40,6 +40,7 @@ import type { LabWallet } from '@/lib/bitcoin/keys';
 import { isLocked } from '@/lib/bitcoin/wallet-lock';
 import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { buildReturnUrl, isValidReturnValue } from '@/lib/bitquest-bridge';
+import { appendThemeToUrl, useThemeStore } from '@/lib/theme';
 import { NETWORKS, DEFAULT_NET } from '@/lib/networks';
 import { api, mpBroadcast, type AddressUtxo } from '@/lib/mempool';
 import { buildSignedTx, estimateVsize, DUST_LIMIT } from '@/lib/bitcoin/tx';
@@ -344,13 +345,16 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
   const [capacity, setCapacity] = useState('100000');
   const [push, setPush] = useState('40000');
   const [opening, setOpening] = useState(false);
+  const [submitting, setSubmitting] = useState<string | null>(null);
   const channels = st.channelsA;
   // Mission CHANNEL BitQuest : active le CTA « Soumettre » sur chaque canal
   // prêt dont scidFormatted est connu (alias ou short_channel_id annoncé).
   const bitquestMission = useBitquestMissionStore((s) => s.mission);
+  const theme = useThemeStore((s) => s.theme);
 
   const submitToBitquest = (ch: LnChannelView) => {
     if (!bitquestMission || bitquestMission.kind !== 'CHANNEL') return;
+    if (submitting) return;
     const scid = ch.scidFormatted;
     if (!scid || !isValidReturnValue('CHANNEL', scid)) {
       toast({
@@ -362,7 +366,12 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
       });
       return;
     }
-    const url = buildReturnUrl(bitquestMission, scid);
+    setSubmitting(ch.channelId);
+    toast({
+      title: t('Soumission en cours…'),
+      description: t('Redirection vers BitQuest pour vérifier le canal.'),
+    });
+    const url = appendThemeToUrl(buildReturnUrl(bitquestMission, scid), theme);
     // Navigation top-level : conserve la session BitQuest (cookies SameSite=Lax).
     // `assign` au lieu d'une affectation directe `window.location.href = …`
     // pour satisfaire la règle `react-hooks/immutability` et expliciter que
@@ -524,11 +533,20 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
                       size="sm"
                       className="h-7 gap-1 text-[10px]"
                       onClick={() => submitToBitquest(ch)}
-                      disabled={!ch.scidFormatted}
+                      disabled={!ch.scidFormatted || submitting !== null}
                       aria-label={t('Soumettre ce canal à BitQuest')}
                     >
-                      <Zap className="h-3 w-3" />
-                      {t('Soumettre à BitQuest')}
+                      {submitting === ch.channelId ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          {t('Envoi…')}
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-3 w-3" />
+                          {t('Soumettre à BitQuest')}
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}

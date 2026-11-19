@@ -30,6 +30,7 @@ import { useBitquestUserStore } from '@/lib/bitquest-user-store';
 import { fetchMyAttempts, getBitquestUrl, type GandalNexusAttempt } from '@/lib/bitquest-user';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { appendThemeToUrl, useThemeStore } from '@/lib/theme';
 
 const STATE_META: Record<string, { label: string; icon: typeof Play; classes: string }> = {
   CREATED: { label: 'Lancée', icon: Play, classes: 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400' },
@@ -76,7 +77,8 @@ export function GandalNexusMissionsPanel() {
   const sessionToken = useBitquestUserStore((s) => s.sessionToken);
   const sessionExpiresAt = useBitquestUserStore((s) => s.sessionExpiresAt);
   const user = useBitquestUserStore((s) => s.user);
-  const bitquestUrl = getBitquestUrl();
+  const theme = useThemeStore((s) => s.theme);
+  const bitquestUrl = appendThemeToUrl(getBitquestUrl(), theme);
 
   // Considère le token expiré 30s avant son exp réel (clock skew tolérant).
   // `now` dans un state local pour que ESLint react-hooks/purity accepte
