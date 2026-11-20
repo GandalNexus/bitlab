@@ -16,6 +16,8 @@ node_modules
 # next.js
 /.next/
 /out/
+# Auto-généré par `next dev` à chaque démarrage (voir node_modules/next/dist/server/lib/generate-agent-files.js)
+AGENTS.md
 
 # production
 /build
