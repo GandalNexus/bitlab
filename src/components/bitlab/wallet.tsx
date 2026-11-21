@@ -209,6 +209,15 @@ function WalletDetail({ w }: { w: LabWallet }) {
         </div>
       </div>
 
+      <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-2 text-[11px] text-rose-700 dark:text-rose-300">
+        <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>
+          {t(
+            'Wallet non chiffré dans IndexedDB. Clique sur « Verrouiller » pour chiffrer les secrets (AES-GCM + PBKDF2 310k).',
+          )}
+        </span>
+      </div>
+
       <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-600 dark:text-amber-400">
