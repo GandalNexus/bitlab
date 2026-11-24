@@ -9,11 +9,7 @@ import {
   RETURN_FIELD_BY_KIND,
   type BitquestKind,
 } from '@/lib/bitquest-bridge';
-import {
-  selectCurrentProofValue,
-  useBitquestMissionStore,
-} from '@/lib/bitquest-mission-store';
-import { useBitquestUserStore } from '@/lib/bitquest-user-store';
+import { selectCurrentProofValue, useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { cn } from '@/lib/utils';
 
 /**
@@ -121,10 +117,10 @@ export function BitquestMissionBanner() {
                 </>
               )}
             </span>
-            <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide">
+            <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-[10px] tracking-wide uppercase">
               {mission.kind}
             </span>
-            <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide">
+            <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-[10px] tracking-wide uppercase">
               {mission.network}
             </span>
             {user && (

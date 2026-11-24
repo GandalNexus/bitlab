@@ -1,7 +1,8 @@
 import { hex } from '@scure/base';
 import { addressToScript } from '../bitcoin/tx';
 import { currentNet, type NetId } from '../networks';
-import { regtestHeaders } from '../regtest';
+import { regtestHeaders, regtestMode } from '../regtest';
+import { regtestChain } from '../regtest-chain';
 import { useLabStore } from '../store';
 import {
   COINBASE_MATURITY,
@@ -368,17 +369,24 @@ class MinerController {
     let ok = false;
     let detail = '';
     try {
-      const res = await fetch('/api/mine/submit', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          ...(this.net === 'regtest' ? regtestHeaders() : {}),
-        },
-        body: JSON.stringify({ net: this.net, block: blockHex }),
-      });
-      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; detail?: string };
-      ok = Boolean(body.ok);
-      detail = String(body.detail ?? '');
+      // On regtest-embedded, submit the block directly to the browser chain worker.
+      if (this.net === 'regtest' && regtestMode() === 'embedded') {
+        const result = await regtestChain.submit(blockHex);
+        ok = true;
+        detail = `bloc accepté par le moteur navigateur (#${result.height})`;
+      } else {
+        const res = await fetch('/api/mine/submit', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            ...(this.net === 'regtest' ? regtestHeaders() : {}),
+          },
+          body: JSON.stringify({ net: this.net, block: blockHex }),
+        });
+        const body = (await res.json().catch(() => ({}))) as { ok?: boolean; detail?: string };
+        ok = Boolean(body.ok);
+        detail = String(body.detail ?? '');
+      }
     } catch (err) {
       detail = (err as Error).message;
     }

@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import bolt11 from 'bolt11';
 import {
   AlertTriangle,
   ArrowDownLeft,
+  ArrowDownRight,
   ArrowUpRight,
+  ArrowUpDown,
   Bolt,
   CheckCircle2,
   Infinity as InfinityIcon,
@@ -16,6 +19,7 @@ import {
   ShieldCheck,
   Unplug,
   Wallet as WalletIcon,
+  XCircle,
   Zap,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -46,22 +50,117 @@ import { api, mpBroadcast, type AddressUtxo } from '@/lib/mempool';
 import { buildSignedTx, estimateVsize, DUST_LIMIT } from '@/lib/bitcoin/tx';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import { regtestMode } from '@/lib/regtest';
+import { regtestChain } from '@/lib/regtest-chain';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import {
   lnLab,
+  maxPayableSats,
   msatToSats,
+  resolveChannelScid,
   LN_NETWORKS,
   type LnChannelView,
   type LnEventView,
   type LnLabStatus,
+  type LnMovement,
   type LnNetId,
   type LnOfferView,
   type LnPendingFunding,
+  type NodeKey,
 } from '@/lib/lightning';
 
 function useLnStatus(): LnLabStatus {
   return useSyncExternalStore(lnLab.subscribe, lnLab.getStatus, lnLab.getStatus);
+}
+
+function outboundOf(channels: LnChannelView[]): number {
+  return channels.reduce((sum, c) => sum + msatToSats(c.outboundMsat), 0);
+}
+
+function inboundOf(channels: LnChannelView[]): number {
+  return channels.reduce((sum, c) => sum + msatToSats(c.inboundMsat), 0);
+}
+
+interface Bolt11Preview {
+  amountSats: number | null;
+  description: string;
+  payee: string | null;
+  expiresAt: number | null;
+  paymentHash: string | null;
+}
+
+function decodeBolt11(raw: string): Bolt11Preview | null {
+  try {
+    const d = bolt11.decode(raw.trim());
+    return {
+      amountSats: typeof d.satoshis === 'number' && d.satoshis > 0 ? d.satoshis : null,
+      description: d.tagsObject.description ?? '',
+      payee: d.payeeNodeKey ?? null,
+      expiresAt:
+        typeof d.timestamp === 'number' && typeof d.tagsObject.expire_time === 'number'
+          ? d.timestamp + d.tagsObject.expire_time
+          : null,
+      paymentHash:
+        typeof d.tagsObject.payment_hash === 'string'
+          ? d.tagsObject.payment_hash.toLowerCase()
+          : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function useChannelScids(channels: LnChannelView[]): Record<string, string> {
+  const [scids, setScids] = useState<Record<string, string>>({});
+  const resolving = useRef(new Set<string>());
+
+  useEffect(() => {
+    const pending = channels.filter(
+      (ch) =>
+        (ch.isReady || ch.isUsable) &&
+        ch.fundingTxo &&
+        !(ch.channelId in scids) &&
+        !resolving.current.has(ch.channelId),
+    );
+    if (pending.length === 0) return;
+    pending.forEach((ch) => resolving.current.add(ch.channelId));
+    let cancelled = false;
+    void Promise.all(
+      pending.map(async (ch) => [ch.channelId, await resolveChannelScid(ch)] as const),
+    ).then((results) => {
+      results.forEach(([id]) => resolving.current.delete(id));
+      if (cancelled) return;
+      const resolved = Object.fromEntries(
+        results.filter((r): r is [string, string] => r[1] !== null),
+      );
+      if (Object.keys(resolved).length === 0) return;
+      setScids((prev) => ({ ...prev, ...resolved }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [channels, scids]);
+
+  return scids;
+}
+
+function useBitquestChannelCapture(scids: Record<string, string>): void {
+  const mission = useBitquestMissionStore((s) => s.mission);
+  const setLastScid = useBitquestMissionStore((s) => s.setLastScid);
+  const capturedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    const current = mission;
+    if (!current || current.kind !== 'CHANNEL') {
+      capturedFor.current = null;
+      return;
+    }
+    if (capturedFor.current === current.questCode) return;
+    const first = Object.values(scids)[0];
+    if (!first) return;
+    setLastScid(first);
+    capturedFor.current = current.questCode;
+  }, [mission, scids, setLastScid]);
 }
 
 function PhaseBadge({ phase }: { phase: LnLabStatus['phase'] }) {
@@ -131,7 +230,14 @@ function EventLine({ e }: { e: LnEventView }) {
       >
         {e.node}
       </Badge>
-      <span className="flex-1 truncate">{label}</span>
+      <span className="flex-1 truncate">
+        {label}
+        {e.replayed === 'true' ? (
+          <span className="text-muted-foreground/60 ml-1.5 text-[10px]">
+            ({t('déjà comptabilisé avant rechargement')})
+          </span>
+        ) : null}
+      </span>
       <span className="text-muted-foreground shrink-0 font-mono text-[10px]">{detail}</span>
     </div>
   );
@@ -160,18 +266,81 @@ function NodeSummaryCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="text-muted-foreground space-y-1 text-xs">
+        <div className="flex items-baseline justify-between">
+          <span>{t('Solde Lightning')}</span>
+          <span className="text-foreground font-mono text-sm font-medium">
+            {fmtInt(totalOut)} sats
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span>{t('Peut encore recevoir')}</span>
+          <span className="font-mono">{fmtInt(totalIn)} sats</span>
+        </div>
         <div className="flex justify-between">
           <span>{t('Canaux')}</span>
           <span className="font-mono">{channels.length}</span>
         </div>
-        <div className="flex justify-between">
-          <span>{t('Capacité sortante')}</span>
-          <span className="font-mono">{fmtInt(totalOut)} sats</span>
-        </div>
-        <div className="flex justify-between">
-          <span>{t('Capacité entrante')}</span>
-          <span className="font-mono">{fmtInt(totalIn)} sats</span>
-        </div>
+        {channels.length > 0 ? (
+          <p className="text-muted-foreground/70 pt-1 text-[10px] leading-snug">
+            {t(
+              'Ce solde vit à l’intérieur du canal : il ne passe pas par la chaîne et reste dépensable instantanément en Lightning.',
+            )}
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MovementsCard({ movements }: { movements: LnMovement[] }) {
+  const { t } = useT();
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <ArrowUpDown className="text-primary h-4 w-4" /> {t('Mouvements Lightning')}
+        </CardTitle>
+        <CardDescription>
+          {t('Entrées et sorties de sats, conservées même après un rechargement de page.')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-1 text-xs">
+        {movements.length === 0 ? (
+          <p className="text-muted-foreground">
+            {t(
+              'Aucun mouvement pour le moment : payez une facture ou faites-vous payer pour voir les sats circuler.',
+            )}
+          </p>
+        ) : (
+          movements.slice(0, 8).map((m, i) => (
+            <div key={`${m.at}-${i}`} className="flex items-center gap-2">
+              {m.kind === 'claimed' ? (
+                <ArrowDownRight className="h-3.5 w-3.5 text-emerald-500" />
+              ) : m.kind === 'sent' ? (
+                <ArrowUpRight className="h-3.5 w-3.5 text-amber-500" />
+              ) : (
+                <XCircle className="text-muted-foreground h-3.5 w-3.5" />
+              )}
+              <Badge
+                variant="outline"
+                className={
+                  m.node === 'A'
+                    ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                    : 'border-sky-500/40 text-sky-600 dark:text-sky-400'
+                }
+              >
+                {m.node}
+              </Badge>
+              <span className="flex-1">
+                {m.kind === 'claimed' ? t('Entrée') : m.kind === 'sent' ? t('Sortie') : t('Échec')}
+              </span>
+              <span className="font-mono">{m.sats != null ? `${fmtInt(m.sats)} sats` : '—'}</span>
+              <span className="text-muted-foreground w-20 text-right font-mono text-[10px]">
+                {new Date(m.at).toLocaleTimeString()}
+              </span>
+            </div>
+          ))
+        )}
       </CardContent>
     </Card>
   );
@@ -243,25 +412,15 @@ function FundingBridge({
               ? /encore (\d+) bloc/.exec(detail)
               : null;
           if (!need || attempt >= 2) throw first;
-          const mineRes = await fetch('/api/regtest/mine', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ blocks: Math.min(Number(need[1]) + 2, 120) }),
-          });
-          if (!mineRes.ok) throw first;
+          await regtestChain.mine(Math.min(Number(need[1]) + 2, 120));
         }
       }
       await onSubmit(res.hex, pending.userChannelId);
       let minedNote = '';
       if (net === 'regtest' && regtestMode() === 'embedded') {
         try {
-          const mineRes = await fetch('/api/regtest/mine', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ blocks: 8 }),
-          });
-          const mineBody = (await mineRes.json().catch(() => ({}))) as { ok?: boolean };
-          minedNote = mineBody.ok ? ' ' + t('Blocs de confirmation minés automatiquement.') : '';
+          await regtestChain.mine(8);
+          minedNote = ' ' + t('Blocs de confirmation minés automatiquement.');
         } catch {
           minedNote = ' ' + t('Minez des blocs depuis l’onglet Mineur pour confirmer.');
         }
@@ -339,7 +498,7 @@ function FundingBridge({
   );
 }
 
-function ChannelsView({ st }: { st: LnLabStatus }) {
+function ChannelsView({ st, scids }: { st: LnLabStatus; scids: Record<string, string> }) {
   const { t } = useT();
   const { toast } = useToast();
   const [capacity, setCapacity] = useState('100000');
@@ -522,34 +681,14 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
                     <p className="font-mono">{fmtInt(msatToSats(ch.inboundMsat))} sats</p>
                   </div>
                 </div>
-                {bitquestMission?.kind === 'CHANNEL' && ready && (
-                  <div className="border-primary/30 bg-primary/5 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
-                    <span className="text-primary text-[10px]">
-                      {ch.scidFormatted
-                        ? t('Mission BitQuest : scid prêt à être soumis.')
-                        : t('Mission BitQuest : en attente du scid annoncé (~3 conf).')}
-                    </span>
-                    <Button
-                      size="sm"
-                      className="h-7 gap-1 text-[10px]"
-                      onClick={() => submitToBitquest(ch)}
-                      disabled={!ch.scidFormatted || submitting !== null}
-                      aria-label={t('Soumettre ce canal à BitQuest')}
-                    >
-                      {submitting === ch.channelId ? (
-                        <>
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          {t('Envoi…')}
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="h-3 w-3" />
-                          {t('Soumettre à BitQuest')}
-                        </>
-                      )}
-                    </Button>
+                {scids[ch.channelId] ? (
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <p className="text-muted-foreground text-[10px] uppercase">
+                      {t('Identifiant court de canal')}
+                    </p>
+                    <p className="font-mono text-[11px]">{scids[ch.channelId]}</p>
                   </div>
-                )}
+                ) : null}
                 <div className="mt-2 flex justify-end">
                   <Button
                     size="sm"
@@ -569,28 +708,87 @@ function ChannelsView({ st }: { st: LnLabStatus }) {
   );
 }
 
+function NodePicker({
+  id,
+  label,
+  value,
+  onChange,
+  liquidity,
+}: {
+  id: string;
+  label: string;
+  value: NodeKey;
+  onChange: (n: NodeKey) => void;
+  liquidity: Record<NodeKey, number>;
+}) {
+  const { t } = useT();
+  return (
+    <div className="w-56 space-y-1">
+      <Label htmlFor={id} className="text-muted-foreground text-[10px] uppercase">
+        {t(label)}
+      </Label>
+      <Select value={value} onValueChange={(v) => onChange(v as NodeKey)}>
+        <SelectTrigger id={id} className="h-8 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {(['A', 'B'] as NodeKey[]).map((n) => (
+            <SelectItem key={n} value={n} className="text-xs">
+              {t('Nœud {n}', { n })} — {fmtInt(liquidity[n])} sats
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 function Bolt11Panel({ st }: { st: LnLabStatus }) {
   const { t } = useT();
   const { toast } = useToast();
-  const [amount, setAmount] = useState('21000');
+  const [amount, setAmount] = useState('8000');
   const [memo, setMemo] = useState('Café BitLab');
+  const [payeeNode, setPayeeNode] = useState<NodeKey>('B');
   const [invoice, setInvoice] = useState('');
+  const [payerNode, setPayerNode] = useState<NodeKey>('A');
   const [payInput, setPayInput] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [decoded, setDecoded] = useState<Bolt11Preview | null>(null);
+  const [openAmount, setOpenAmount] = useState('1000');
+  const [creating, setCreating] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    const update = () => setNow(Date.now());
+    update();
+    const timer = setInterval(update, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const outbound: Record<NodeKey, number> = {
+    A: outboundOf(st.channelsA),
+    B: outboundOf(st.channelsB),
+  };
+  const inbound: Record<NodeKey, number> = {
+    A: inboundOf(st.channelsA),
+    B: inboundOf(st.channelsB),
+  };
 
   const create = async () => {
-    setBusy(true);
+    setCreating(true);
     setInvoice('');
     try {
       const sats = parseInt(amount, 10);
       if (!Number.isInteger(sats) || sats <= 0) throw new Error(t('Montant invalide.'));
-      const bolt11 = await lnLab.createInvoice('B', sats * 1000, memo, 3600);
-      setInvoice(bolt11);
+      const bolt11str = await lnLab.createInvoice(payeeNode, sats * 1000, memo, 3600);
+      setInvoice(bolt11str);
       // Expose au banner mission BitQuest (kind=INVOICE)
-      useBitquestMissionStore.getState().setLastBolt11(bolt11);
+      useBitquestMissionStore.getState().setLastBolt11(bolt11str);
       toast({
         title: t('Facture créée'),
-        description: t('Signée par le nœud B — faites-la payer par A.'),
+        description: t('Signée par le nœud {n} — faites-la payer par l’autre nœud.', {
+          n: payeeNode,
+        }),
       });
     } catch (e) {
       toast({
@@ -599,15 +797,76 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
         variant: 'destructive',
       });
     } finally {
-      setBusy(false);
+      setCreating(false);
     }
   };
 
-  const pay = () => {
-    if (!payInput.trim()) return;
-    lnLab.payInvoice('A', payInput.trim(), null);
-    setPayInput('');
-    toast({ title: t('Paiement lancé'), description: t('Le HTLC circule sur le canal A → B.') });
+  const onPayInput = (raw: string) => {
+    setPayInput(raw);
+    setDecoded(raw.trim() ? decodeBolt11(raw) : null);
+  };
+
+  const selfPayment =
+    decoded?.payee != null && decoded.payee === (payerNode === 'A' ? st.nodeA : st.nodeB);
+  const alreadyPaid = decoded?.paymentHash != null && lnLab.hasPaidPaymentHash(decoded.paymentHash);
+  const noLiquidity = outbound[payerNode] <= 0;
+  const expired = decoded?.expiresAt != null && now != null && decoded.expiresAt * 1000 < now;
+  const needsOpenAmount = decoded !== null && decoded.amountSats === null;
+  const openMsat = parseInt(openAmount, 10);
+  const payerChannels = payerNode === 'A' ? st.channelsA : st.channelsB;
+  const payAmountSats = decoded?.amountSats ?? (Number.isInteger(openMsat) ? openMsat : null);
+  const exceedsHtlcLimit = payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
+  const createAmountSats = parseInt(amount, 10);
+  const invoicePayerCandidate: NodeKey = payeeNode === 'A' ? 'B' : 'A';
+  const invoicePayerCandidateChannels = invoicePayerCandidate === 'A' ? st.channelsA : st.channelsB;
+  const createExceedsLimit =
+    Number.isInteger(createAmountSats) &&
+    createAmountSats > 0 &&
+    createAmountSats > maxPayableSats(invoicePayerCandidateChannels);
+
+  const pay = async () => {
+    const raw = payInput.trim();
+    if (!raw) return;
+    setPaying(true);
+    try {
+      if (expired) throw new Error(t('Cette facture est expirée : demandez-en une nouvelle.'));
+      if (alreadyPaid)
+        throw new Error(
+          t(
+            'Cette facture a déjà été payée par ce laboratoire : demandez une facture neuve au lieu de payer deux fois.',
+          ),
+        );
+      if (selfPayment)
+        throw new Error(t('Le nœud payeur est aussi le destinataire : choisissez l’autre nœud.'));
+      if (needsOpenAmount && (!Number.isInteger(openMsat) || openMsat <= 0))
+        throw new Error(t('Facture à montant libre : indiquez combien payer.'));
+      if (exceedsHtlcLimit)
+        throw new Error(
+          t(
+            'Montant au-dessus de la limite HTLC du canal ({max} sats par paiement) : ouvrez un canal d’une capacité au moins 10 fois supérieure.',
+            { max: fmtInt(maxPayableSats(payerChannels)) },
+          ),
+        );
+      await lnLab.payInvoice(payerNode, raw, needsOpenAmount ? openMsat * 1000 : null);
+      toast({
+        title: t('Paiement lancé'),
+        description: t('Le HTLC circule sur le canal {a} → {b}.', {
+          a: payerNode,
+          b: payerNode === 'A' ? 'B' : 'A',
+        }),
+      });
+      setPayInput('');
+      setDecoded(null);
+      setOpenAmount('1000');
+    } catch (e) {
+      toast({
+        title: t('Paiement impossible'),
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      });
+    } finally {
+      setPaying(false);
+    }
   };
 
   return (
@@ -615,13 +874,21 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <QrCode className="h-4 w-4 text-amber-400" /> {t('Créer une facture BOLT11 (nœud B)')}
+            <QrCode className="h-4 w-4 text-amber-400" />{' '}
+            {t('Créer une facture BOLT11 (nœud {n})', { n: payeeNode })}
           </CardTitle>
           <CardDescription>
             {t('Une facture neuve à chaque paiement : montant verrouillé, expiration d’une heure.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
+          <NodePicker
+            id="b11-payee"
+            label="Nœud payé — reçoit"
+            value={payeeNode}
+            onChange={setPayeeNode}
+            liquidity={inbound}
+          />
           <div className="w-36 space-y-1">
             <Label htmlFor="amt" className="text-muted-foreground text-[10px] uppercase">
               {t('Montant (sats)')}
@@ -644,8 +911,8 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
               className="h-8 text-xs"
             />
           </div>
-          <Button size="sm" onClick={create} disabled={busy || !st.connected}>
-            {busy ? (
+          <Button size="sm" onClick={create} disabled={creating || !st.connected}>
+            {creating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Zap className="h-3.5 w-3.5" />
@@ -653,6 +920,16 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
             {t('Créer')}
           </Button>
         </CardContent>
+        {createExceedsLimit ? (
+          <CardContent className="pb-4">
+            <p className="text-xs text-amber-400">
+              {t(
+                'Aucun canal du nœud {n} ne pourra payer {sats} sats d’un coup : un HTLC est limité à 10 % de la capacité du canal.',
+                { n: invoicePayerCandidate, sats: fmtInt(createAmountSats) },
+              )}
+            </p>
+          </CardContent>
+        ) : null}
         {invoice ? (
           <CardContent className="border-border/40 space-y-2 border-t pt-3">
             <div className="mx-auto w-fit rounded-lg bg-white p-2">
@@ -666,30 +943,134 @@ function Bolt11Panel({ st }: { st: LnLabStatus }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <ArrowUpRight className="h-4 w-4 text-amber-400" /> {t('Payer une facture (nœud A)')}
+            <ArrowUpRight className="h-4 w-4 text-amber-400" /> {t('Payer une facture BOLT11')}
           </CardTitle>
           <CardDescription>
             {t(
-              'Collez une facture Lightning (lntb…, lntbs…, lnbcrt…) : le montant est déjà inscrit dedans.',
+              'Choisissez d’abord le nœud payeur, collez la facture (lntb…, lntbs…, lnbcrt…), vérifiez l’aperçu puis payez.',
             )}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-3">
-          <div className="min-w-64 flex-1 space-y-1">
-            <Label htmlFor="b11" className="text-muted-foreground text-[10px] uppercase">
-              BOLT11
-            </Label>
-            <Input
-              id="b11"
-              value={payInput}
-              onChange={(e) => setPayInput(e.target.value)}
-              placeholder="lntb… / lntbs… / lnbcrt…"
-              className="h-8 font-mono text-xs"
-            />
+        <CardContent className="space-y-3">
+          <NodePicker
+            id="b11-payer"
+            label="Nœud payeur — paie"
+            value={payerNode}
+            onChange={setPayerNode}
+            liquidity={outbound}
+          />
+          {noLiquidity ? (
+            <p className="text-xs text-amber-400">
+              {t(
+                'Le nœud {n} n’a aucune capacité sortante : ouvrez et confirmez d’abord un canal.',
+                { n: payerNode },
+              )}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-64 flex-1 space-y-1">
+              <Label htmlFor="b11" className="text-muted-foreground text-[10px] uppercase">
+                BOLT11
+              </Label>
+              <Input
+                id="b11"
+                value={payInput}
+                onChange={(e) => onPayInput(e.target.value)}
+                placeholder="lntb… / lntbs… / lnbcrt…"
+                className="h-8 font-mono text-xs"
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={() => void pay()}
+              disabled={
+                !st.connected ||
+                paying ||
+                !payInput.trim() ||
+                decoded === null ||
+                noLiquidity ||
+                selfPayment ||
+                alreadyPaid ||
+                expired ||
+                exceedsHtlcLimit ||
+                (needsOpenAmount && (!Number.isInteger(openMsat) || openMsat <= 0))
+              }
+            >
+              {paying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              {t('Payer')}
+            </Button>
           </div>
-          <Button size="sm" onClick={pay} disabled={!st.connected || !payInput.trim()}>
-            {t('Payer')}
-          </Button>
+          {payInput.trim() && alreadyPaid ? (
+            <p className="text-xs text-red-500">
+              {t(
+                'Facture déjà payée : payer deux fois la même facture perdrait les sats du payeur.',
+              )}
+            </p>
+          ) : null}
+          {payInput.trim() && decoded === null ? (
+            <p className="text-xs text-amber-400">
+              {t('Facture illisible : vérifiez la chaîne complète copiée-collée.')}
+            </p>
+          ) : null}
+          {decoded ? (
+            <div
+              className={cn(
+                'space-y-1 rounded-md border p-3 text-xs',
+                selfPayment || expired || alreadyPaid
+                  ? 'border-red-500/40 bg-red-500/5'
+                  : 'border-amber-500/30 bg-amber-500/5',
+              )}
+            >
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">{t('Description')}</span>
+                <span className="truncate">{decoded.description || '—'}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">{t('Montant')}</span>
+                <span className="font-mono">
+                  {decoded.amountSats != null
+                    ? `${fmtInt(decoded.amountSats)} sats`
+                    : t('montant libre')}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">{t('Expiration')}</span>
+                <span>
+                  {expired
+                    ? t('facture expirée')
+                    : decoded.expiresAt
+                      ? new Date(decoded.expiresAt * 1000).toLocaleTimeString()
+                      : '—'}
+                </span>
+              </div>
+              {decoded.payee ? (
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">{t('Destination')}</span>
+                  <span className="truncate font-mono text-[10px]">
+                    {decoded.payee.slice(0, 24)}…
+                  </span>
+                </div>
+              ) : null}
+              {selfPayment ? (
+                <p className="text-xs text-red-400">
+                  {t('Le nœud payeur est aussi le destinataire : choisissez l’autre nœud.')}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {needsOpenAmount && !selfPayment ? (
+            <div className="w-40 space-y-1">
+              <Label htmlFor="b11-open" className="text-muted-foreground text-[10px] uppercase">
+                {t('Montant (sats)')}
+              </Label>
+              <Input
+                id="b11-open"
+                value={openAmount}
+                onChange={(e) => setOpenAmount(e.target.value)}
+                className="h-8 font-mono text-xs"
+              />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>
@@ -738,26 +1119,40 @@ function ProtocolLegend() {
 function Bolt12Panel({ st }: { st: LnLabStatus }) {
   const { t } = useT();
   const { toast } = useToast();
-  const [amount, setAmount] = useState('21000');
+  const [amount, setAmount] = useState('8000');
   const [memo, setMemo] = useState('Café BitLab');
+  const [payeeNode, setPayeeNode] = useState<NodeKey>('B');
   const [offer, setOffer] = useState('');
+  const [payerNode, setPayerNode] = useState<NodeKey>('A');
   const [payInput, setPayInput] = useState('');
   const [payAmount, setPayAmount] = useState('');
   const [payNote, setPayNote] = useState('');
   const [decoded, setDecoded] = useState<LnOfferView | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [paying, setPaying] = useState(false);
+
+  const outbound: Record<NodeKey, number> = {
+    A: outboundOf(st.channelsA),
+    B: outboundOf(st.channelsB),
+  };
+  const inbound: Record<NodeKey, number> = {
+    A: inboundOf(st.channelsA),
+    B: inboundOf(st.channelsB),
+  };
 
   const create = async () => {
-    setBusy(true);
+    setCreating(true);
     setOffer('');
     try {
       const sats = parseInt(amount, 10);
       if (!Number.isInteger(sats) || sats < 0) throw new Error(t('Montant invalide.'));
-      const lno = await lnLab.createOffer('B', sats > 0 ? sats * 1000 : null, memo);
+      const lno = await lnLab.createOffer(payeeNode, sats > 0 ? sats * 1000 : null, memo);
       setOffer(lno);
       toast({
         title: t('Offer créée'),
-        description: t('Signée par le nœud B — réutilisable autant de fois que voulu.'),
+        description: t('Signée par le nœud {n} — réutilisable autant de fois que voulu.', {
+          n: payeeNode,
+        }),
       });
     } catch (e) {
       toast({
@@ -766,7 +1161,7 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
         variant: 'destructive',
       });
     } finally {
-      setBusy(false);
+      setCreating(false);
     }
   };
 
@@ -785,37 +1180,77 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
     }
   };
 
-  const pay = () => {
+  const selfPayment =
+    decoded?.signingPubkey != null &&
+    decoded.signingPubkey === (payerNode === 'A' ? st.nodeA : st.nodeB);
+  const noLiquidity = outbound[payerNode] <= 0;
+  const freeAmount = !decoded || decoded.amountMsat === '';
+  const payerChannels = payerNode === 'A' ? st.channelsA : st.channelsB;
+  const enteredSats = parseInt(payAmount, 10);
+  const payAmountSats = freeAmount
+    ? Number.isInteger(enteredSats) && enteredSats > 0
+      ? enteredSats
+      : null
+    : msatToSats(decoded.amountMsat);
+  const exceedsHtlcLimit = payAmountSats != null && payAmountSats > maxPayableSats(payerChannels);
+  const createAmountSats = parseInt(amount, 10);
+  const offerPayerCandidate: NodeKey = payeeNode === 'A' ? 'B' : 'A';
+  const offerPayerCandidateChannels = offerPayerCandidate === 'A' ? st.channelsA : st.channelsB;
+  const createExceedsLimit =
+    Number.isInteger(createAmountSats) &&
+    createAmountSats > 0 &&
+    createAmountSats > maxPayableSats(offerPayerCandidateChannels);
+
+  const pay = async () => {
     const raw = payInput.trim();
     if (!raw) return;
-    const freeAmount = !decoded || decoded.amountMsat === '';
-    let amountMsat: number | null = null;
-    if (freeAmount) {
-      const sats = parseInt(payAmount, 10);
-      if (!Number.isInteger(sats) || sats <= 0) {
-        toast({
-          title: t('Montant requis'),
-          description: t('Cette offer ne fixe pas de montant : indiquez combien payer.'),
-          variant: 'destructive',
-        });
-        return;
+    setPaying(true);
+    try {
+      if (selfPayment)
+        throw new Error(t('Le nœud payeur est aussi le destinataire : choisissez l’autre nœud.'));
+      if (noLiquidity)
+        throw new Error(
+          t('Le nœud {n} n’a aucune capacité sortante : ouvrez et confirmez d’abord un canal.', {
+            n: payerNode,
+          }),
+        );
+      let amountMsat: number | null = null;
+      if (freeAmount) {
+        const sats = parseInt(payAmount, 10);
+        if (!Number.isInteger(sats) || sats <= 0) {
+          throw new Error(t('Cette offer ne fixe pas de montant : indiquez combien payer.'));
+        }
+        amountMsat = sats * 1000;
       }
-      amountMsat = sats * 1000;
+      if (exceedsHtlcLimit)
+        throw new Error(
+          t(
+            'Montant au-dessus de la limite HTLC du canal ({max} sats par paiement) : ouvrez un canal d’une capacité au moins 10 fois supérieure.',
+            { max: fmtInt(maxPayableSats(payerChannels)) },
+          ),
+        );
+      await lnLab.payOffer(payerNode, raw, amountMsat, payNote.trim() || null);
+      toast({
+        title: t('Demande de facture envoyée'),
+        description: t(
+          'Le nœud {a} interroge {b} via messages onion chiffrés, puis paie la facture retournée. Suivez le journal.',
+          { a: payerNode, b: payerNode === 'A' ? 'B' : 'A' },
+        ),
+      });
+      setPayInput('');
+      setPayAmount('');
+      setPayNote('');
+      setDecoded(null);
+    } catch (e) {
+      toast({
+        title: t('Paiement impossible'),
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      });
+    } finally {
+      setPaying(false);
     }
-    lnLab.payOffer('A', raw, amountMsat, payNote.trim() || null);
-    setPayInput('');
-    setPayAmount('');
-    setPayNote('');
-    setDecoded(null);
-    toast({
-      title: t('Demande de facture envoyée'),
-      description: t(
-        'A interroge B via messages onion chiffrés, puis paie la facture retournée. Suivez le journal.',
-      ),
-    });
   };
-
-  const freeAmount = !decoded || decoded.amountMsat === '';
 
   return (
     <div className="space-y-4">
@@ -823,7 +1258,7 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
             <InfinityIcon className="h-4 w-4 text-violet-400" />{' '}
-            {t('Créer une offer BOLT12 (nœud B)')}
+            {t('Créer une offer BOLT12 (nœud {n})', { n: payeeNode })}
           </CardTitle>
           <CardDescription>
             {t(
@@ -832,6 +1267,13 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
+          <NodePicker
+            id="b12-payee"
+            label="Nœud payé — reçoit"
+            value={payeeNode}
+            onChange={setPayeeNode}
+            liquidity={inbound}
+          />
           <div className="w-44 space-y-1">
             <Label htmlFor="oamt" className="text-muted-foreground text-[10px] uppercase">
               {t('Montant (sats, 0 = libre)')}
@@ -854,8 +1296,8 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
               className="h-8 text-xs"
             />
           </div>
-          <Button size="sm" onClick={create} disabled={busy || !st.connected}>
-            {busy ? (
+          <Button size="sm" onClick={create} disabled={creating || !st.connected}>
+            {creating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <InfinityIcon className="h-3.5 w-3.5" />
@@ -863,6 +1305,16 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
             {t('Créer l’offer')}
           </Button>
         </CardContent>
+        {createExceedsLimit ? (
+          <CardContent className="pb-4">
+            <p className="text-xs text-amber-400">
+              {t(
+                'Aucun canal du nœud {n} ne pourra payer {sats} sats d’un coup : un HTLC est limité à 10 % de la capacité du canal.',
+                { n: offerPayerCandidate, sats: fmtInt(createAmountSats) },
+              )}
+            </p>
+          </CardContent>
+        ) : null}
         {offer ? (
           <CardContent className="border-border/40 space-y-2 border-t pt-3">
             <div className="mx-auto w-fit rounded-lg bg-white p-2">
@@ -876,15 +1328,30 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <ArrowUpRight className="h-4 w-4 text-violet-400" /> {t('Payer une offer (nœud A)')}
+            <ArrowUpRight className="h-4 w-4 text-violet-400" /> {t('Payer une offer BOLT12')}
           </CardTitle>
           <CardDescription>
             {t(
-              'Le nœud A demande d’abord une facture au destinataire via messages onion chiffrés, puis la paie sur le canal.',
+              'Choisissez d’abord le nœud payeur : il demande une facture au destinataire via messages onion chiffrés, puis la paie sur le canal.',
             )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          <NodePicker
+            id="b12-payer"
+            label="Nœud payeur — paie"
+            value={payerNode}
+            onChange={setPayerNode}
+            liquidity={outbound}
+          />
+          {noLiquidity ? (
+            <p className="text-xs text-amber-400">
+              {t(
+                'Le nœud {n} n’a aucune capacité sortante : ouvrez et confirmez d’abord un canal.',
+                { n: payerNode },
+              )}
+            </p>
+          ) : null}
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-64 flex-1 space-y-1">
               <Label htmlFor="b12" className="text-muted-foreground text-[10px] uppercase">
@@ -904,14 +1371,21 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
             <Button
               size="sm"
               variant="outline"
-              onClick={decode}
+              onClick={() => void decode()}
               disabled={!st.connected || !payInput.trim()}
             >
               {t('Vérifier')}
             </Button>
           </div>
           {decoded ? (
-            <div className="space-y-1 rounded-md border border-violet-500/30 bg-violet-500/5 p-3 text-xs">
+            <div
+              className={cn(
+                'space-y-1 rounded-md border p-3 text-xs',
+                selfPayment
+                  ? 'border-red-500/40 bg-red-500/5'
+                  : 'border-violet-500/30 bg-violet-500/5',
+              )}
+            >
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">{t('Description')}</span>
                 <span className="truncate">{decoded.description || '—'}</span>
@@ -932,10 +1406,15 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
                   </span>
                 </div>
               ) : null}
+              {selfPayment ? (
+                <p className="text-xs text-red-400">
+                  {t('Le nœud payeur est aussi le destinataire : choisissez l’autre nœud.')}
+                </p>
+              ) : null}
             </div>
           ) : null}
           <div className="flex flex-wrap items-end gap-3">
-            {freeAmount ? (
+            {freeAmount && !selfPayment ? (
               <div className="w-40 space-y-1">
                 <Label htmlFor="payamt" className="text-muted-foreground text-[10px] uppercase">
                   {t('Montant (sats)')}
@@ -961,9 +1440,18 @@ function Bolt12Panel({ st }: { st: LnLabStatus }) {
             </div>
             <Button
               size="sm"
-              onClick={pay}
-              disabled={!st.connected || !payInput.trim() || (freeAmount && !payAmount.trim())}
+              onClick={() => void pay()}
+              disabled={
+                !st.connected ||
+                paying ||
+                !payInput.trim() ||
+                noLiquidity ||
+                selfPayment ||
+                exceedsHtlcLimit ||
+                (freeAmount && !payAmount.trim())
+              }
             >
+              {paying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
               {t('Demander et payer')}
             </Button>
           </div>
@@ -1087,6 +1575,59 @@ export function LightningModule() {
   const lnNet = supported ? (net as LnNetId) : null;
   const active = st.phase === 'ready' || st.phase === 'booting' || st.phase === 'stopping';
   const onSameNetwork = st.network === lnNet;
+  const busyElsewhere = active && !onSameNetwork;
+  const scids = useChannelScids([...st.channelsA, ...st.channelsB]);
+  useBitquestChannelCapture(scids);
+  const autoTried = useRef(new Set<LnNetId>());
+  const seenPayments = useRef(new Set<string>());
+  const { toast } = useToast();
+
+  useEffect(() => {
+    for (const e of st.events) {
+      if (e.replayed === 'true') continue;
+      const key = `${e.node}|${e.type}|${e.paymentHash ?? ''}`;
+      if (seenPayments.current.has(key)) continue;
+      if (e.type !== 'payment_sent' && e.type !== 'payment_claimed' && e.type !== 'payment_failed')
+        continue;
+      seenPayments.current.add(key);
+      const sats = e.amountMsat != null ? fmtInt(msatToSats(e.amountMsat)) : null;
+      if (e.type === 'payment_sent') {
+        toast({
+          title: t('Paiement Lightning envoyé'),
+          description: sats
+            ? t('{sats} sats quittent le nœud {n} via le canal — solde Lightning mis à jour.', {
+                sats,
+                n: e.node,
+              })
+            : t('Le HTLC a été réglé sur le canal.'),
+        });
+      } else if (e.type === 'payment_claimed') {
+        toast({
+          title: t('Paiement Lightning reçu'),
+          description: sats
+            ? t('{sats} sats ont crédité le solde Lightning du nœud {n}.', { sats, n: e.node })
+            : t('Le solde Lightning du destinataire a été crédité.'),
+        });
+      } else {
+        toast({
+          title: t('Paiement Lightning échoué'),
+          description: t('Le HTLC a été annulé sans perte de fonds : {reason}', {
+            reason: (e.reason ?? '').slice(0, 120) || t('routage impossible'),
+          }),
+          variant: 'destructive',
+        });
+      }
+    }
+  }, [st.events, toast, t]);
+
+  useEffect(() => {
+    if (!lnNet) return;
+    if (autoTried.current.has(lnNet)) return;
+    if (st.phase !== 'off' || st.error) return;
+    if (!lnLab.isDesired(lnNet)) return;
+    autoTried.current.add(lnNet);
+    void lnLab.activate(lnNet);
+  }, [lnNet, st.phase, st.error]);
 
   const toggle = (on: boolean) => {
     if (!lnNet) return;
@@ -1119,35 +1660,51 @@ export function LightningModule() {
         <Card>
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
             <div className="flex items-center gap-3">
-              <Switch checked={active && onSameNetwork} onCheckedChange={toggle} />
+              <Switch
+                checked={active && onSameNetwork}
+                disabled={busyElsewhere}
+                onCheckedChange={toggle}
+              />
               <div>
                 <p className="text-sm font-medium">{t('Activer le laboratoire')}</p>
                 <p className="text-muted-foreground text-xs">
-                  {t(
-                    'Démarre deux nœuds Lightning dans ce navigateur ({net}). Désactivé, aucune ressource n’est consommée.',
-                    { net: NETWORKS[lnNet].label },
-                  )}
+                  {busyElsewhere
+                    ? t(
+                        'Le laboratoire tourne sur {other}. Arrêtez-le sur ce réseau avant de le démarrer ici.',
+                        { other: NETWORKS[st.network as LnNetId].label },
+                      )
+                    : t(
+                        'Les nœuds restent actifs après un rechargement de page et se réactivent automatiquement ; seul l’interrupteur les arrête.',
+                      )}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {st.phase === 'ready' && onSameNetwork ? (
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'gap-1 text-[9px]',
-                    st.connected
-                      ? 'border-emerald-500/40 text-emerald-400'
-                      : 'border-amber-500/40 text-amber-400',
-                  )}
-                >
-                  {st.connected ? (
-                    <Link2 className="h-2.5 w-2.5" />
-                  ) : (
-                    <Unplug className="h-2.5 w-2.5" />
-                  )}
-                  {st.connected ? t('A connecté à B') : t('pairs déconnectés')}
-                </Badge>
+                <>
+                  {st.best ? (
+                    <Badge variant="outline" className="gap-1 text-[9px]">
+                      <Bolt className="h-2.5 w-2.5" />
+                      {t('Bloc {h}', { h: st.best.height })}
+                    </Badge>
+                  ) : null}
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      'gap-1 text-[9px]',
+                      st.connected
+                        ? 'border-emerald-500/40 text-emerald-400'
+                        : 'border-amber-500/40 text-amber-400',
+                    )}
+                  >
+                    {st.connected ? (
+                      <Link2 className="h-2.5 w-2.5" />
+                    ) : (
+                      <Unplug className="h-2.5 w-2.5" />
+                    )}
+                    {st.connected ? t('A connecté à B') : t('pairs déconnectés')}
+                  </Badge>
+                </>
               ) : null}
             </div>
           </CardContent>
@@ -1160,6 +1717,7 @@ export function LightningModule() {
             <div className="grid gap-4 md:grid-cols-2">
               <NodeSummaryCard label="A" nodeId={st.nodeA} channels={st.channelsA} />
               <NodeSummaryCard label="B" nodeId={st.nodeB} channels={st.channelsB} />
+              <MovementsCard movements={st.movements} />
             </div>
             <Tabs defaultValue="channels">
               <TabsList>
@@ -1168,7 +1726,7 @@ export function LightningModule() {
                 <TabsTrigger value="journal">{t('Journal')}</TabsTrigger>
               </TabsList>
               <TabsContent value="channels" className="mt-4">
-                <ChannelsView st={st} />
+                <ChannelsView st={st} scids={scids} />
               </TabsContent>
               <TabsContent value="payments" className="mt-4">
                 <PaymentsView st={st} />

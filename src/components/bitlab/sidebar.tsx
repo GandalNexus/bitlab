@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Blocks,
   BookOpen,
+  Droplets,
   ExternalLink,
   FlaskConical,
   Hammer,
@@ -24,7 +25,7 @@ import { getBitquestUrl } from '@/lib/bitquest-user';
 import { appendThemeToUrl, useThemeStore } from '@/lib/theme';
 
 export type TabId =
-  'dashboard' | 'portefeuille' | 'transactions' | 'lightning' | 'mineur' | 'explorateur';
+  'dashboard' | 'portefeuille' | 'faucet' | 'transactions' | 'lightning' | 'mineur' | 'explorateur';
 
 export const COLLAPSE_KEY = 'bitlab-sidebar-collapsed';
 
@@ -74,6 +75,7 @@ const SECTIONS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Modules',
     items: [
+      { id: 'faucet', label: 'Faucet', icon: Droplets },
       { id: 'transactions', label: 'Transactions', icon: Hammer },
       { id: 'lightning', label: 'Lightning Network', icon: Radio },
       { id: 'mineur', label: 'Mineur', icon: Pickaxe },

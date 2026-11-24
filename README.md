@@ -1,7 +1,6 @@
 <div align="center">
   <a href="https://github.com/GandalNexus/bitlab">
-    <img src="public/icon-light.svg#gh-light-mode-only" alt="BitLab" width="140" />
-    <img src="public/icon-dark.svg#gh-dark-mode-only" alt="BitLab" width="140" />
+    <img src="public/icon-dark.svg" alt="BitLab" width="140" />
   </a>
 
   <h1>BitLab</h1>
@@ -54,7 +53,7 @@ Quality gates:
 bun run lint          # ESLint
 bun run typecheck     # tsc --noEmit
 bun run format:check  # Prettier
-bun run test          # Vitest — 97 offline tests (Bitcoin core + Lightning e2e)
+bun run test          # Vitest — 163 offline tests (Bitcoin core, scid, BitQuest bridge, Lightning e2e)
 ```
 
 ## Lightning lab — regtest workflow
@@ -64,10 +63,11 @@ The recommended path to try Lightning end-to-end:
 1. Select **Regtest** in the network selector.
 2. Go to **Wallet** → generate a SegWit wallet → use the **Faucet** to fund it (the embedded chain mines to your address automatically).
 3. Go to **Lightning** → activate the lab → click **Open channel**, pick your wallet as the funding source.
-4. The UI builds and signs the funding transaction, broadcasts it, mines 8 confirmation blocks, and waits for `channel_ready` — all automatically.
-5. Create a **BOLT11 invoice** on node B and pay it from node A. Create a **BOLT12 offer** on node B and pay it from node A.
+4. The UI builds and signs the funding transaction, broadcasts it, mines 8 confirmation blocks, and waits for `channel_ready` — all automatically. The ready channel then displays its canonical BOLT-03 short channel ID (`h x t x v`), derived from the funding output placement on the embedded chain.
+5. Create a **BOLT11 invoice** on the payee node (pick it first — live inbound liquidity is shown), then pay it from the **payer node** you select at the top of the pay card: the invoice is decoded before payment (description, amount, expiry, destination), self-payment is refused, and single-HTLC amounts above 10% of the channel capacity are blocked with an explanation (LDK's `max_htlc_value_in_flight` rule). Create a **BOLT12 offer** and pay it the same way.
+6. Reload the page, browse other modules, come back — the lab stays up and reactivates automatically. Only the toggle stops it.
 
-No external node, no faucet, no waiting. The full BOLT11/BOLT12 loop runs in under a minute on the embedded chain.
+No external node, no faucet, no waiting. The full BOLT11/BOLT12 loop runs in under a minute on the embedded chain. On Regtest the Lightning worker pulls blocks and broadcasts through the embedded chain worker itself (chain bridge), so the lab needs nothing beyond the browser.
 
 > On **Testnet4** / **Signet** funding confirmation depends on real-network block times (~10 min). Fund the lab wallet from an external testnet faucet and wait for 6 on-chain confirmations before the channel becomes usable.
 
@@ -153,17 +153,21 @@ Key design decisions:
 bun run test
 ```
 
-97 tests across 7 suites:
+155 tests across 11 suites:
 
 | Suite | What it covers |
 |---|---|
 | `bitcoin.test.ts` | Wallet generation (Legacy/SegWit/Taproot), WIF/mnemonic import, tx build/sign/decode, multisig, fee estimation |
+| `scid.test.ts` | Canonical BOLT-03 short channel id: encoding bounds, `h x t x v` formatting, outpoint parsing, Esplora status derivation |
 | `mining.test.ts` | BIP 34, `compactBitsToTarget`, `blockSubsidy`, `assembleHeader76`, `headerMeetsTarget`, `windowStatus`, JS fallback engine |
 | `regtest.test.ts` | Embedded chain: genesis, PoW, faucet, confirmations, Esplora adapter |
 | `engine-hot-reload.test.ts` | Server-side chain singleton hot-reload detection |
-| `tx-spend.test.ts` | Full spend cycle (UTXO → sign → broadcast → mine → confirm) on the embedded chain |
-| `lightning-e2e.test.ts` | Real LDK WASM: boot → Noise handshake → open channel → fund → 6-conf `channel_ready` → BOLT11 pay/claim → BOLT12 offer pay/claim → cooperative close → `boot_restore` |
-| `lightning-funding.test.ts` | `classifyBroadcast` — duplicate funding tx treated as success |
+| `tx-spend.test.ts` | Full spend cycle (UTXO → sign → broadcast → mine → confirm) on the embedded chain, plus `block_index` placement exposed to the scid resolver |
+| `lightning-e2e.test.ts` | Real LDK WASM: boot → Noise handshake → open channel → fund → 6-conf `channel_ready` → canonical scid reconciliation → BOLT11 pay/claim → BOLT12 offer pay/claim → cooperative close → `boot_restore` |
+| `lightning-funding.test.ts` | `classifyBroadcast` — duplicate funding tx treated as success; chain-bridge allow-list and activation rules |
+| `bitquest-bridge.test.ts` | Deep-link parsing, return-URL building, proof validation per kind |
+| `bitquest-mission-store.test.ts` | Mission store persistence (sessionStorage), proof selection per kind |
+| `wallet-balance-refresh.test.ts` | Regtest wallet balance derivation from the UTXO set |
 
 The Lightning e2e suite drives the committed WASM binary directly (no mocks, no network).
 

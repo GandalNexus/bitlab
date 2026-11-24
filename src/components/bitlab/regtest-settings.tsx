@@ -2,22 +2,16 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Coins, Hammer, RotateCcw, Server, XCircle } from 'lucide-react';
+import { Hammer, RotateCcw, Server, XCircle, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useActiveWallet, useLabStore } from '@/lib/store';
 import { api } from '@/lib/mempool';
+import { regtestChain } from '@/lib/regtest-chain';
 import {
   loadRegtestCfg,
   isLocalHost,
@@ -40,8 +34,6 @@ interface EmbeddedInfo {
   mempoolCount: number;
   faucet: { address: string; matureSats: number; immatureSats: number };
 }
-
-const FAUCET_AMOUNTS = [100_000_000, 500_000_000, 1_000_000_000, 5_000_000_000];
 
 export function RegtestSettingsCard() {
   const { t } = useT();
@@ -95,13 +87,13 @@ function EmbeddedPanel() {
   const { t } = useT();
   const active = useActiveWallet();
   const queryClient = useQueryClient();
-  const [amount, setAmount] = useState(String(FAUCET_AMOUNTS[0]));
-  const [busy, setBusy] = useState<'faucet' | 'mine' | 'reset' | null>(null);
+  const [busy, setBusy] = useState<'mine' | 'reset' | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
   const info = useQuery({
     queryKey: ['regtest-info'],
     queryFn: async () => {
+      if (regtestMode() === 'embedded') return regtestChain.info();
       const res = await fetch('/api/regtest/info', { cache: 'no-store' });
       if (!res.ok) throw new Error(String(res.status));
       return (await res.json()) as EmbeddedInfo;
@@ -115,57 +107,32 @@ function EmbeddedPanel() {
       void queryClient.invalidateQueries({ queryKey: ['address', 'regtest', active.address] });
   };
 
-  const runFaucet = async () => {
-    if (!active) return;
-    setBusy('faucet');
-    setFeedback(null);
-    try {
-      const res = await fetch('/api/regtest/faucet', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ address: active.address, sats: Number(amount) }),
-      });
-      const body = (await res.json()) as {
-        ok?: boolean;
-        detail?: string;
-        txid?: string;
-        blockHeight?: number;
-      };
-      if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
-      setFeedback({
-        ok: true,
-        text: t('{sats} sats envoyés — confirmés au bloc #{h}.', {
-          sats: Number(amount).toLocaleString('fr-FR'),
-          h: body.blockHeight ?? '?',
-        }),
-      });
-      invalidate();
-    } catch (err) {
-      setFeedback({ ok: false, text: (err as Error).message });
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const runMine = async () => {
     setBusy('mine');
     setFeedback(null);
     try {
-      const res = await fetch('/api/regtest/mine', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ blocks: 10, address: active?.address }),
-      });
-      const body = (await res.json()) as {
-        ok?: boolean;
-        detail?: string;
-        tip?: { height: number };
-      };
-      if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
+      let tip: { height: number } | undefined;
+      if (regtestMode() === 'embedded') {
+        const result = await regtestChain.mine(10, active?.address);
+        tip = result.tip;
+      } else {
+        const res = await fetch('/api/regtest/mine', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ blocks: 10, address: active?.address }),
+        });
+        const body = (await res.json()) as {
+          ok?: boolean;
+          detail?: string;
+          tip?: { height: number };
+        };
+        if (!res.ok || !body.ok) throw new Error(body.detail ?? `HTTP ${res.status}`);
+        tip = body.tip;
+      }
       setFeedback({
         ok: true,
         text: t('10 blocs minés — hauteur {h}. La récompense mûrit après 100 blocs.', {
-          h: body.tip?.height ?? '?',
+          h: tip?.height ?? '?',
         }),
       });
       invalidate();
@@ -180,7 +147,11 @@ function EmbeddedPanel() {
     setBusy('reset');
     setFeedback(null);
     try {
-      await fetch('/api/regtest/reset', { method: 'POST' });
+      if (regtestMode() === 'embedded') {
+        await regtestChain.reset();
+      } else {
+        await fetch('/api/regtest/reset', { method: 'POST' });
+      }
       setFeedback({
         ok: true,
         text: t('Chaîne réinitialisée — genèse neuf, pool faucet reconstitué.'),
@@ -209,40 +180,7 @@ function EmbeddedPanel() {
       </div>
 
       <div className="border-border space-y-2 rounded-md border p-3">
-        <div className="flex items-center gap-2 text-[13px] font-medium">
-          <Coins className="text-primary h-3.5 w-3.5" />{' '}
-          {t('Faucet intégré — sats de test instantanés')}
-        </div>
-        <p className="text-muted-foreground text-[11px] leading-snug">
-          {t(
-            'Le serveur signe une vraie transaction depuis son pool préminé puis mine 1 bloc : le solde est dépensable immédiatement.',
-          )}
-        </p>
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="min-w-40 flex-1 space-y-1">
-            <Label className="text-xs">{t('Montant')}</Label>
-            <Select value={amount} onValueChange={setAmount}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FAUCET_AMOUNTS.map((s) => (
-                  <SelectItem key={s} value={String(s)} className="text-xs">
-                    {satsToBtc(s)} BTC
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button
-            size="sm"
-            className="gap-1.5"
-            disabled={!active || busy !== null}
-            onClick={() => void runFaucet()}
-          >
-            <Coins className="h-3.5 w-3.5" />{' '}
-            {t('Recevoir sur {a}', { a: active ? `${active.address.slice(0, 10)}…` : '—' })}
-          </Button>
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant="outline"
@@ -252,6 +190,11 @@ function EmbeddedPanel() {
           >
             <Hammer className="h-3.5 w-3.5" /> {t('Miner 10 blocs')}
           </Button>
+          <p className="text-muted-foreground text-[11px] leading-snug sm:flex-1">
+            {t(
+              'Le faucet a son propre module : ouvrez « Faucet » dans la barre latérale pour alimenter chacun de vos portefeuilles.',
+            )}
+          </p>
         </div>
         {!active ? (
           <p className="text-[11px] text-amber-600 dark:text-amber-400">
