@@ -16,11 +16,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { StatCard, timeAgo } from './bits';
 import { ActivityLog } from './activity-log';
+import { GandalNexusMissionCard } from './gandalnexus-mission-card';
+import { GandalNexusMissionsPanel } from './gandalnexus-missions-panel';
 import { useLabStore } from '@/lib/store';
 import { api } from '@/lib/mempool';
 import { NETWORKS } from '@/lib/networks';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import { useT } from '@/lib/i18n';
+import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 
 const WORKFLOW = [
   {
@@ -72,11 +75,13 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
     retry: 1,
   });
   const wallets = useLabStore((s) => s.wallets);
+  const mission = useBitquestMissionStore((s) => s.mission);
 
   const tip = blocks.data?.[0];
 
   return (
     <div className="space-y-8">
+      {mission && <GandalNexusMissionCard onNavigate={onNavigate} />}
       <section className="lab-glow border-border/60 -mx-4 -mt-6 border-b px-4 pt-8 pb-10 text-center sm:-mx-6 sm:px-6 sm:pt-14">
         <div className="mx-auto max-w-3xl">
           <h1 className="lab-display text-3xl leading-tight sm:text-[40px] sm:leading-[48px]">
@@ -209,6 +214,8 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
           })}
         </div>
       </section>
+
+      <GandalNexusMissionsPanel />
 
       <section aria-label={t('Journal d’activité')}>
         <ActivityLog />

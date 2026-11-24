@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Inconsolata } from 'next/font/google';
+import { Inter, Inconsolata, Orbitron } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { LangProvider } from '@/lib/i18n';
@@ -16,6 +16,15 @@ const inconsolata = Inconsolata({
   variable: '--font-inconsolata',
   subsets: ['latin'],
   display: 'swap',
+});
+
+// Police display GandalNexus — identité visuelle partagée avec BitQuest
+// (utilisée sur le wordmark BITLAB, les titres de section et les badges de niveau).
+const orbitron = Orbitron({
+  variable: '--font-orbitron',
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -53,7 +62,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="dark" suppressHydrationWarning>
       <body
-        className={`${inter.className} ${inconsolata.variable} bg-background text-foreground flex min-h-screen flex-col antialiased`}
+        className={`${inter.className} ${inconsolata.variable} ${orbitron.variable} bg-background text-foreground flex min-h-screen flex-col antialiased`}
       >
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <LangProvider>

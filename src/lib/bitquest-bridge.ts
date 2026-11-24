@@ -48,6 +48,18 @@ export interface BitquestMission {
    * ne l'a pas transmise (ex. ancienne version du serveur).
    */
   instructions: string | null;
+  /**
+   * ID de la MissionAttempt côté BitQuest (LOT 1). Permet de tracer la
+   * tentative de bout en bout et d'afficher un statut côté BitLab.
+   * Null si deep-link émise par une version antérieure du serveur.
+   */
+  attemptId: string | null;
+  /**
+   * Launch token GandalNexus (LOT 2). JWT court TTL 60s, à échanger
+   * contre le profil utilisateur via BitQuest. On ne l'affiche jamais ;
+   * on le consomme une fois au mount puis on l'efface du store.
+   */
+  launchToken: string | null;
 }
 
 /** Limites d'affichage BitLab — défensif même si BitQuest tronque déjà. */
@@ -113,6 +125,18 @@ export function parseBitquestMission(params: URLSearchParams): BitquestMission |
   const title = sanitizeHint(params.get('title'), TITLE_MAX);
   const instructions = sanitizeHint(params.get('instructions'), INSTRUCTIONS_MAX);
 
+  // Attempt (LOT 1) + launch token (LOT 2). Formats stricts : cuid-ish
+  // (24+ chars alphanum) + JWT à 3 segments base64url.
+  const attemptIdRaw = params.get('attemptId')?.trim() ?? '';
+  const attemptId = /^[a-z0-9]{20,64}$/i.test(attemptIdRaw) ? attemptIdRaw : null;
+  const launchTokenRaw = params.get('launch_token')?.trim() ?? '';
+  const launchToken =
+    launchTokenRaw.length >= 32 &&
+    launchTokenRaw.length <= 4096 &&
+    launchTokenRaw.split('.').length === 3
+      ? launchTokenRaw
+      : null;
+
   return {
     questCode,
     kind: kindRaw,
@@ -122,6 +146,8 @@ export function parseBitquestMission(params: URLSearchParams): BitquestMission |
     sig,
     title,
     instructions,
+    attemptId,
+    launchToken,
   };
 }
 

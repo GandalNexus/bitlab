@@ -8,6 +8,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-inconsolata);
+  --font-display: var(--font-orbitron);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -145,6 +146,49 @@
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* -------------------  Starfield (dark mode ambiance GandalNexus)  ------------------- */
+
+/* Fond étoilé statique, visible uniquement en mode sombre. Positionné en
+ * fixed derrière tout le contenu (via z-index 0 et content:z-10). Trois
+ * couches de gradients radiaux simulent une poussière d'étoiles sans images
+ * ni animations (respecte prefers-reduced-motion par défaut). */
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background-color: transparent;
+  background-image:
+    radial-gradient(1px 1px at 18% 24%, oklch(0.98 0.02 85 / 70%), transparent 60%),
+    radial-gradient(1px 1px at 72% 12%, oklch(0.96 0.03 80 / 55%), transparent 60%),
+    radial-gradient(1.2px 1.2px at 38% 68%, oklch(0.97 0.02 85 / 60%), transparent 65%),
+    radial-gradient(1px 1px at 86% 52%, oklch(0.95 0.03 80 / 50%), transparent 60%),
+    radial-gradient(1px 1px at 12% 82%, oklch(0.96 0.02 85 / 55%), transparent 60%),
+    radial-gradient(1.4px 1.4px at 54% 34%, oklch(0.755 0.16 65 / 35%), transparent 70%),
+    radial-gradient(1px 1px at 92% 88%, oklch(0.93 0.03 80 / 45%), transparent 60%),
+    radial-gradient(1px 1px at 26% 46%, oklch(0.94 0.02 85 / 50%), transparent 60%),
+    radial-gradient(1px 1px at 64% 78%, oklch(0.95 0.025 80 / 50%), transparent 60%),
+    radial-gradient(1.6px 1.6px at 48% 8%, oklch(0.755 0.16 65 / 30%), transparent 70%);
+  background-size:
+    720px 720px,
+    520px 520px,
+    860px 860px,
+    640px 640px,
+    580px 580px,
+    1020px 1020px,
+    780px 780px,
+    460px 460px,
+    560px 560px,
+    1100px 1100px;
+  background-repeat: repeat;
+  transition: opacity 400ms ease-out;
+}
+
+.dark .starfield {
+  opacity: 1;
 }
 
 /* -------------------  BitLab - lab-specific styles  ------------------- */

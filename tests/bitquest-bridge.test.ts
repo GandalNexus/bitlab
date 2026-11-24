@@ -31,7 +31,28 @@ describe('parseBitquestMission', () => {
       sig: null,
       title: null,
       instructions: null,
+      attemptId: null,
+      launchToken: null,
     });
+  });
+
+  it('parses attemptId (LOT 1) et launch_token (LOT 2) quand fournis', () => {
+    const jwt = 'a'.repeat(50) + '.' + 'b'.repeat(80) + '.' + 'c'.repeat(43);
+    const m = parseBitquestMission(
+      params({ attemptId: 'clxxxxxxxxxxxxxxxxxxxxxxxx', launch_token: jwt }),
+    );
+    expect(m?.attemptId).toBe('clxxxxxxxxxxxxxxxxxxxxxxxx');
+    expect(m?.launchToken).toBe(jwt);
+  });
+
+  it('rejette attemptId mal formé (anti-injection)', () => {
+    const m = parseBitquestMission(params({ attemptId: '../../etc/passwd' }));
+    expect(m?.attemptId).toBeNull();
+  });
+
+  it('rejette launch_token qui n\'a pas 3 segments JWT', () => {
+    const m = parseBitquestMission(params({ launch_token: 'not-a-jwt.only-two' }));
+    expect(m?.launchToken).toBeNull();
   });
 
   it('parses title + instructions quand fournis (hints I2)', () => {
@@ -136,6 +157,8 @@ describe('buildReturnUrl', () => {
     sig: null,
     title: null,
     instructions: null,
+    attemptId: null,
+    launchToken: null,
   };
 
   it('appends bitlab_result + kind + network + value field', () => {

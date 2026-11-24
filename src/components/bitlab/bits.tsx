@@ -98,20 +98,31 @@ export function StatCard({
   accent?: boolean;
 }) {
   return (
-    <Card className={cn('border-border/80', accent && 'border-primary/40')}>
+    <Card
+      className={cn(
+        'border-border/80 hover:border-primary/30 transition-colors',
+        accent && 'border-primary/40 bg-primary/[0.03]',
+      )}
+    >
       <CardContent className="p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-muted-foreground text-[13px] font-medium">{title}</div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 space-y-2.5">
+            <div className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">
+              {title}
+            </div>
+            <div className="font-mono text-2xl font-semibold tracking-tight tabular-nums">
+              {loading ? <Skeleton className="h-7 w-24" /> : value}
+            </div>
+          </div>
           {icon ? (
-            <div className="border-border bg-card text-primary flex h-7 w-7 items-center justify-center rounded-[6px] border">
+            <div className="border-border/60 bg-card text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-[7px] border">
               {icon}
             </div>
           ) : null}
         </div>
-        <div className="mt-2.5 font-mono text-2xl font-semibold tabular-nums">
-          {loading ? <Skeleton className="h-7 w-24" /> : value}
-        </div>
-        {sub ? <div className="text-muted-foreground mt-1 text-xs">{sub}</div> : null}
+        {sub ? (
+          <div className="text-muted-foreground mt-2 text-xs leading-relaxed">{sub}</div>
+        ) : null}
       </CardContent>
     </Card>
   );

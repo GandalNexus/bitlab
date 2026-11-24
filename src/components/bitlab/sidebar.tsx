@@ -7,17 +7,22 @@ import {
   BookOpen,
   Droplets,
   ExternalLink,
+  FlaskConical,
   Hammer,
   PanelLeftClose,
   PanelLeftOpen,
   Pickaxe,
   Radio,
   ScanSearch,
+  Target,
   Wallet,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
+import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
+import { getBitquestUrl } from '@/lib/bitquest-user';
+import { appendThemeToUrl, useThemeStore } from '@/lib/theme';
 
 export type TabId =
   'dashboard' | 'portefeuille' | 'faucet' | 'transactions' | 'lightning' | 'mineur' | 'explorateur';
@@ -192,6 +197,8 @@ export function SidebarNav({
         </div>
       ))}
 
+      <GandalNexusSection collapsed={collapsed} />
+
       <div className="border-border/60 space-y-0.5 border-t pt-4">
         {RESOURCE_LINKS.map((r) => (
           <NavButton
@@ -205,6 +212,65 @@ export function SidebarNav({
         ))}
       </div>
     </nav>
+  );
+}
+
+/**
+ * Section GandalNexus (LOT 3) — matérialise l'appartenance de BitLab à
+ * l'écosystème. Montre :
+ *   - La mission en cours (si set) avec badge d'état visuel actif.
+ *   - Un lien externe vers BitQuest (dashboard GandalNexus).
+ *
+ * Section complète masquée en mode "collapsed" iconique pour préserver
+ * la lisibilité (les icônes resteraient ambiguës).
+ */
+function GandalNexusSection({ collapsed }: { collapsed: boolean }) {
+  const { t } = useT();
+  const mission = useBitquestMissionStore((s) => s.mission);
+  const theme = useThemeStore((s) => s.theme);
+  const bitquestUrl = appendThemeToUrl(getBitquestUrl(), theme);
+
+  if (collapsed) {
+    return (
+      <div className="border-border/60 space-y-0.5 border-t pt-4">
+        <NavButton
+          icon={FlaskConical}
+          label={t('BitQuest')}
+          collapsed
+          href={bitquestUrl}
+          external
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-border/60 space-y-0.5 border-t pt-4">
+      <div className="nav-section-label text-muted-foreground/70 px-3 pb-1.5">
+        GandalNexus
+      </div>
+      {mission && (
+        <div className="border-primary/30 bg-primary/5 mx-1 rounded-[6px] border px-3 py-2">
+          <div className="text-primary flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+            <Target className="h-3 w-3" aria-hidden />
+            {t('Mission active')}
+          </div>
+          <div className="text-foreground mt-0.5 truncate text-sm font-medium">
+            {mission.title ?? mission.questCode}
+          </div>
+          <div className="text-muted-foreground mt-0.5 text-[10px] uppercase tracking-wide">
+            {mission.kind} · {mission.network}
+          </div>
+        </div>
+      )}
+      <NavButton
+        icon={FlaskConical}
+        label={t('Ouvrir BitQuest')}
+        collapsed={false}
+        href={bitquestUrl}
+        external
+      />
+    </div>
   );
 }
 
@@ -352,6 +418,16 @@ export function BrandMark({
   return (
     <div className="flex items-center gap-2">
       <OrbitMark className="text-foreground h-8 w-8 shrink-0" />
+      <span
+        className={cn(
+          'font-[family-name:var(--font-display)] text-[15px] font-bold tracking-wide',
+          responsive && 'hidden min-[480px]:inline-block',
+        )}
+        aria-label="BitLab"
+      >
+        <span className="text-primary">BIT</span>
+        <span className="text-foreground">LAB</span>
+      </span>
       {pill ? (
         <span
           className={cn(

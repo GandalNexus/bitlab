@@ -17,15 +17,21 @@ import { useLabStore } from '@/lib/store';
 import { NETWORKS } from '@/lib/networks';
 import { useT } from '@/lib/i18n';
 import { useBitquestMission } from '@/lib/use-bitquest-mission';
+import { useSilentSso } from '@/lib/silent-sso';
 import { cn } from '@/lib/utils';
 
 /**
- * Sous-composant isolé pour l'amorçage mission BitQuest. Vit sous une
- * Suspense boundary car useSearchParams() impose ce contrat en App Router.
- * Rend `null` — c'est un pur effet (store Zustand + bascule onglet).
+ * Sous-composant isolé pour l'amorçage mission BitQuest + SSO silent.
+ * Vit sous une Suspense boundary car useSearchParams() impose ce contrat
+ * en App Router. Rend `null` — c'est un pur effet (store Zustand +
+ * bascule onglet + redirect SSO éventuel).
  */
 function BitquestMissionBoot({ onTab }: { onTab: (tab: TabId) => void }) {
   useBitquestMission((t) => onTab(t as TabId));
+  // SSO silent : vérifie passivement si l'utilisateur a déjà une session
+  // BitQuest et l'amorce sans action manuelle. No-op si une mission est
+  // en cours (useBitquestMission prend le dessus).
+  useSilentSso();
   return null;
 }
 
@@ -51,7 +57,10 @@ export default function BitLabPage() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen flex-col">
+      {/* Fond étoilé GandalNexus (mode sombre uniquement, pointer-events none) */}
+      <div aria-hidden className="starfield" />
+
+      <div className="relative z-10 flex min-h-screen flex-col">
         <LabSidebar
           active={tab}
           onNavigate={(id) => setTab(id)}
@@ -77,7 +86,7 @@ export default function BitLabPage() {
             sidebarCollapsed ? 'lg:pl-[68px]' : 'lg:pl-64',
           )}
         >
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
             {tab === 'dashboard' ? <Dashboard onNavigate={(t) => setTab(t as TabId)} /> : null}
             {tab === 'portefeuille' ? <WalletModule /> : null}
             {tab === 'faucet' ? <FaucetModule onNavigate={(t) => setTab(t as TabId)} /> : null}
@@ -88,7 +97,7 @@ export default function BitLabPage() {
           </main>
 
           <footer className="border-border/70 bg-card/40 mt-auto border-t py-3.5">
-            <div className="text-muted-foreground mx-auto flex max-w-5xl justify-center px-4 text-[11px] sm:px-6">
+            <div className="text-muted-foreground mx-auto flex max-w-6xl justify-center px-4 text-[11px] sm:px-6">
               <span
                 className={cn(
                   'text-muted-foreground/70',

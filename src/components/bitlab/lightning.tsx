@@ -40,7 +40,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Copyable, PageIntro } from './bits';
 import { QRCode } from './qrcode';
 import { useLabStore } from '@/lib/store';
+import type { LabWallet } from '@/lib/bitcoin/keys';
+import { isLocked } from '@/lib/bitcoin/wallet-lock';
 import { useBitquestMissionStore } from '@/lib/bitquest-mission-store';
+import { buildReturnUrl, isValidReturnValue } from '@/lib/bitquest-bridge';
+import { appendThemeToUrl, useThemeStore } from '@/lib/theme';
 import { NETWORKS, DEFAULT_NET } from '@/lib/networks';
 import { api, mpBroadcast, type AddressUtxo } from '@/lib/mempool';
 import { buildSignedTx, estimateVsize, DUST_LIMIT } from '@/lib/bitcoin/tx';
@@ -356,7 +360,12 @@ function FundingBridge({
   const [walletId, setWalletId] = useState<string>('');
   const [busy, setBusy] = useState(false);
 
-  const usable = wallets.filter((w) => (w.network ?? DEFAULT_NET) === net);
+  // LOT 76 : lightning channel ouvre une TX de funding → requiert
+  // privateKeyHex. Filtre les wallets locked.
+  const usable = wallets.filter(
+    (w): w is LabWallet =>
+      (w.network ?? DEFAULT_NET) === net && !isLocked(w),
+  );
   const wallet = usable.find((w) => w.id === walletId) ?? usable[0] ?? null;
 
   const buildAndSubmit = async () => {
@@ -495,7 +504,39 @@ function ChannelsView({ st, scids }: { st: LnLabStatus; scids: Record<string, st
   const [capacity, setCapacity] = useState('100000');
   const [push, setPush] = useState('40000');
   const [opening, setOpening] = useState(false);
+  const [submitting, setSubmitting] = useState<string | null>(null);
   const channels = st.channelsA;
+  // Mission CHANNEL BitQuest : active le CTA « Soumettre » sur chaque canal
+  // prêt dont scidFormatted est connu (alias ou short_channel_id annoncé).
+  const bitquestMission = useBitquestMissionStore((s) => s.mission);
+  const theme = useThemeStore((s) => s.theme);
+
+  const submitToBitquest = (ch: LnChannelView) => {
+    if (!bitquestMission || bitquestMission.kind !== 'CHANNEL') return;
+    if (submitting) return;
+    const scid = ch.scidFormatted;
+    if (!scid || !isValidReturnValue('CHANNEL', scid)) {
+      toast({
+        title: t('scid indisponible'),
+        description: t(
+          'Ce canal n’a pas encore de short_channel_id annoncé ni d’alias. Attends ~3 confirmations.',
+        ),
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSubmitting(ch.channelId);
+    toast({
+      title: t('Soumission en cours…'),
+      description: t('Redirection vers BitQuest pour vérifier le canal.'),
+    });
+    const url = appendThemeToUrl(buildReturnUrl(bitquestMission, scid), theme);
+    // Navigation top-level : conserve la session BitQuest (cookies SameSite=Lax).
+    // `assign` au lieu d'une affectation directe `window.location.href = …`
+    // pour satisfaire la règle `react-hooks/immutability` et expliciter que
+    // c'est un effet de bord navigation volontaire.
+    window.location.assign(url);
+  };
 
   const open = async () => {
     const cap = parseInt(capacity, 10);

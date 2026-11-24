@@ -213,13 +213,6 @@ let wasm_bindgen;
             wasm.__wbg_lnlab_free(ptr, 0);
         }
         /**
-         * @returns {any}
-         */
-        best_block() {
-            const ret = wasm.lnlab_best_block(this.__wbg_ptr);
-            return ret;
-        }
-        /**
          * @param {string} network
          * @param {Uint8Array} seed_a
          * @param {Uint8Array} seed_b
@@ -242,39 +235,6 @@ let wasm_bindgen;
                 throw takeFromExternrefTable0(ret[1]);
             }
             return LnLab.__wrap(ret[0]);
-        }
-        connect_ab() {
-            const ret = wasm.lnlab_connect_ab(this.__wbg_ptr);
-            if (ret[1]) {
-                throw takeFromExternrefTable0(ret[0]);
-            }
-        }
-        /**
-         * @param {number} height
-         * @param {string} block_hex
-         * @returns {Array<any>}
-         */
-        chain_block(height, block_hex) {
-            const ptr0 = passStringToWasm0(block_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.lnlab_chain_block(this.__wbg_ptr, height, ptr0, len0);
-            if (ret[2]) {
-                throw takeFromExternrefTable0(ret[1]);
-            }
-            return takeFromExternrefTable0(ret[0]);
-        }
-        /**
-         * @param {number} node
-         * @param {string} invoice
-         * @param {bigint | null} [amount_msat_override]
-         */
-        pay_invoice(node, invoice, amount_msat_override) {
-            const ptr0 = passStringToWasm0(invoice, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.lnlab_pay_invoice(this.__wbg_ptr, node, ptr0, len0, !isLikeNone(amount_msat_override), isLikeNone(amount_msat_override) ? BigInt(0) : amount_msat_override);
-            if (ret[1]) {
-                throw takeFromExternrefTable0(ret[0]);
-            }
         }
         /**
          * @param {string} network
@@ -300,42 +260,57 @@ let wasm_bindgen;
         }
         /**
          * @param {number} node
-         * @param {bigint | null | undefined} amount_msat
-         * @param {string} description
          * @returns {string}
          */
-        create_offer(node, amount_msat, description) {
-            let deferred3_0;
-            let deferred3_1;
+        node_id(node) {
+            let deferred2_0;
+            let deferred2_1;
             try {
-                const ptr0 = passStringToWasm0(description, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-                const len0 = WASM_VECTOR_LEN;
-                const ret = wasm.lnlab_create_offer(this.__wbg_ptr, node, !isLikeNone(amount_msat), isLikeNone(amount_msat) ? BigInt(0) : amount_msat, ptr0, len0);
-                var ptr2 = ret[0];
-                var len2 = ret[1];
+                const ret = wasm.lnlab_node_id(this.__wbg_ptr, node);
+                var ptr1 = ret[0];
+                var len1 = ret[1];
                 if (ret[3]) {
-                    ptr2 = 0; len2 = 0;
+                    ptr1 = 0; len1 = 0;
                     throw takeFromExternrefTable0(ret[2]);
                 }
-                deferred3_0 = ptr2;
-                deferred3_1 = len2;
-                return getStringFromWasm0(ptr2, len2);
+                deferred2_0 = ptr1;
+                deferred2_1 = len1;
+                return getStringFromWasm0(ptr1, len1);
             } finally {
-                wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+                wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
             }
         }
         /**
-         * @param {string} offer
          * @returns {any}
          */
-        static decode_offer(offer) {
-            const ptr0 = passStringToWasm0(offer, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.lnlab_decode_offer(ptr0, len0);
+        best_block() {
+            const ret = wasm.lnlab_best_block(this.__wbg_ptr);
+            return ret;
+        }
+        /**
+         * @param {number} fast
+         * @param {number} normal
+         * @param {number} slow
+         */
+        set_fees(fast, normal, slow) {
+            wasm.lnlab_set_fees(this.__wbg_ptr, fast, normal, slow);
+        }
+        /**
+         * @param {number} node
+         * @returns {Array<any>}
+         */
+        logs(node) {
+            const ret = wasm.lnlab_logs(this.__wbg_ptr, node);
             if (ret[2]) {
                 throw takeFromExternrefTable0(ret[1]);
             }
             return takeFromExternrefTable0(ret[0]);
+        }
+        connect_ab() {
+            const ret = wasm.lnlab_connect_ab(this.__wbg_ptr);
+            if (ret[1]) {
+                throw takeFromExternrefTable0(ret[0]);
+            }
         }
         /**
          * @returns {boolean}
@@ -345,23 +320,14 @@ let wasm_bindgen;
             return ret !== 0;
         }
         /**
-         * @param {number} node
-         * @param {string} channel_id_hex
-         */
-        close_channel(node, channel_id_hex) {
-            const ptr0 = passStringToWasm0(channel_id_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.lnlab_close_channel(this.__wbg_ptr, node, ptr0, len0);
-            if (ret[1]) {
-                throw takeFromExternrefTable0(ret[0]);
-            }
-        }
-        /**
-         * @param {number} node
+         * @param {number} height
+         * @param {string} block_hex
          * @returns {Array<any>}
          */
-        list_channels(node) {
-            const ret = wasm.lnlab_list_channels(this.__wbg_ptr, node);
+        chain_block(height, block_hex) {
+            const ptr0 = passStringToWasm0(block_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.lnlab_chain_block(this.__wbg_ptr, height, ptr0, len0);
             if (ret[2]) {
                 throw takeFromExternrefTable0(ret[1]);
             }
@@ -374,6 +340,18 @@ let wasm_bindgen;
          */
         create_channel(value_sats, push_msat, user_channel_id) {
             const ret = wasm.lnlab_create_channel(this.__wbg_ptr, value_sats, push_msat, user_channel_id);
+            if (ret[1]) {
+                throw takeFromExternrefTable0(ret[0]);
+            }
+        }
+        /**
+         * @param {bigint} user_channel_id
+         * @param {string} tx_hex
+         */
+        funding_transaction_generated(user_channel_id, tx_hex) {
+            const ptr0 = passStringToWasm0(tx_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.lnlab_funding_transaction_generated(this.__wbg_ptr, user_channel_id, ptr0, len0);
             if (ret[1]) {
                 throw takeFromExternrefTable0(ret[0]);
             }
@@ -407,87 +385,43 @@ let wasm_bindgen;
             }
         }
         /**
+         * @param {number} node
          * @param {string} invoice
-         * @returns {any}
+         * @param {bigint | null} [amount_msat_override]
          */
-        static decode_invoice(invoice) {
+        pay_invoice(node, invoice, amount_msat_override) {
             const ptr0 = passStringToWasm0(invoice, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.lnlab_decode_invoice(ptr0, len0);
-            if (ret[2]) {
-                throw takeFromExternrefTable0(ret[1]);
-            }
-            return takeFromExternrefTable0(ret[0]);
-        }
-        /**
-         * @param {bigint} user_channel_id
-         * @param {string} tx_hex
-         */
-        funding_transaction_generated(user_channel_id, tx_hex) {
-            const ptr0 = passStringToWasm0(tx_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.lnlab_funding_transaction_generated(this.__wbg_ptr, user_channel_id, ptr0, len0);
+            const ret = wasm.lnlab_pay_invoice(this.__wbg_ptr, node, ptr0, len0, !isLikeNone(amount_msat_override), isLikeNone(amount_msat_override) ? BigInt(0) : amount_msat_override);
             if (ret[1]) {
                 throw takeFromExternrefTable0(ret[0]);
             }
         }
         /**
          * @param {number} node
-         * @returns {Array<any>}
-         */
-        logs(node) {
-            const ret = wasm.lnlab_logs(this.__wbg_ptr, node);
-            if (ret[2]) {
-                throw takeFromExternrefTable0(ret[1]);
-            }
-            return takeFromExternrefTable0(ret[0]);
-        }
-        /**
-         * @returns {Array<any>}
-         */
-        tick() {
-            const ret = wasm.lnlab_tick(this.__wbg_ptr);
-            if (ret[2]) {
-                throw takeFromExternrefTable0(ret[1]);
-            }
-            return takeFromExternrefTable0(ret[0]);
-        }
-        /**
-         * @param {number} node
+         * @param {bigint | null | undefined} amount_msat
+         * @param {string} description
          * @returns {string}
          */
-        node_id(node) {
-            let deferred2_0;
-            let deferred2_1;
+        create_offer(node, amount_msat, description) {
+            let deferred3_0;
+            let deferred3_1;
             try {
-                const ret = wasm.lnlab_node_id(this.__wbg_ptr, node);
-                var ptr1 = ret[0];
-                var len1 = ret[1];
+                const ptr0 = passStringToWasm0(description, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                const len0 = WASM_VECTOR_LEN;
+                const ret = wasm.lnlab_create_offer(this.__wbg_ptr, node, !isLikeNone(amount_msat), isLikeNone(amount_msat) ? BigInt(0) : amount_msat, ptr0, len0);
+                var ptr2 = ret[0];
+                var len2 = ret[1];
                 if (ret[3]) {
-                    ptr1 = 0; len1 = 0;
+                    ptr2 = 0; len2 = 0;
                     throw takeFromExternrefTable0(ret[2]);
                 }
-                deferred2_0 = ptr1;
-                deferred2_1 = len1;
-                return getStringFromWasm0(ptr1, len1);
+                deferred3_0 = ptr2;
+                deferred3_1 = len2;
+                return getStringFromWasm0(ptr2, len2);
             } finally {
-                wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+                wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
             }
-        }
-        /**
-         * @returns {Array<any>}
-         */
-        kv_dirty() {
-            const ret = wasm.lnlab_kv_dirty(this.__wbg_ptr);
-            return ret;
-        }
-        /**
-         * @param {number} fast
-         * @param {number} normal
-         * @param {number} slow
-         */
-        set_fees(fast, normal, slow) {
-            wasm.lnlab_set_fees(this.__wbg_ptr, fast, normal, slow);
         }
         /**
          * @param {number} node
@@ -504,6 +438,72 @@ let wasm_bindgen;
             if (ret[1]) {
                 throw takeFromExternrefTable0(ret[0]);
             }
+        }
+        /**
+         * @param {string} offer
+         * @returns {any}
+         */
+        static decode_offer(offer) {
+            const ptr0 = passStringToWasm0(offer, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.lnlab_decode_offer(ptr0, len0);
+            if (ret[2]) {
+                throw takeFromExternrefTable0(ret[1]);
+            }
+            return takeFromExternrefTable0(ret[0]);
+        }
+        /**
+         * @param {string} invoice
+         * @returns {any}
+         */
+        static decode_invoice(invoice) {
+            const ptr0 = passStringToWasm0(invoice, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.lnlab_decode_invoice(ptr0, len0);
+            if (ret[2]) {
+                throw takeFromExternrefTable0(ret[1]);
+            }
+            return takeFromExternrefTable0(ret[0]);
+        }
+        /**
+         * @param {number} node
+         * @param {string} channel_id_hex
+         */
+        close_channel(node, channel_id_hex) {
+            const ptr0 = passStringToWasm0(channel_id_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.lnlab_close_channel(this.__wbg_ptr, node, ptr0, len0);
+            if (ret[1]) {
+                throw takeFromExternrefTable0(ret[0]);
+            }
+        }
+        /**
+         * @param {number} node
+         * @returns {Array<any>}
+         */
+        list_channels(node) {
+            const ret = wasm.lnlab_list_channels(this.__wbg_ptr, node);
+            if (ret[2]) {
+                throw takeFromExternrefTable0(ret[1]);
+            }
+            return takeFromExternrefTable0(ret[0]);
+        }
+        /**
+         * @returns {Array<any>}
+         */
+        kv_dirty() {
+            const ret = wasm.lnlab_kv_dirty(this.__wbg_ptr);
+            return ret;
+        }
+        /**
+         * @returns {Array<any>}
+         */
+        tick() {
+            const ret = wasm.lnlab_tick(this.__wbg_ptr);
+            if (ret[2]) {
+                throw takeFromExternrefTable0(ret[1]);
+            }
+            return takeFromExternrefTable0(ret[0]);
         }
     }
     __exports.LnLab = LnLab;
