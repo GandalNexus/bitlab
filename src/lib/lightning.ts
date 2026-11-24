@@ -1,7 +1,11 @@
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { hex } from '@scure/base';
+import bolt11 from 'bolt11';
 import { scriptToAddressOn } from './bitcoin/tx';
+import { parseFundingOutpoint, scidFromConfirmedStatus } from './bitcoin/scid';
+import { api } from './mempool';
 import { regtestHeaderValue, regtestMode } from './regtest';
+import { regtestChain } from './regtest-chain';
 import { tSync } from './i18n';
 
 export type LnNetId = 'testnet4' | 'testnet3' | 'signet' | 'regtest';
@@ -66,6 +70,46 @@ export interface LnOfferView {
   signingPubkey: string;
 }
 
+export interface LnMovement {
+  node: NodeKey;
+  kind: 'sent' | 'claimed' | 'failed';
+  sats: number | null;
+  hash: string | null;
+  at: number;
+}
+
+export const LN_MOVEMENT_KINDS: Record<string, LnMovement['kind']> = {
+  payment_sent: 'sent',
+  payment_claimed: 'claimed',
+  payment_failed: 'failed',
+};
+
+export function movementKeyOf(node: string, kind: LnMovement['kind'], hash: string | null): string {
+  return `${node}|${kind}|${hash ?? ''}`;
+}
+
+export function applyMovement(
+  list: LnMovement[],
+  keys: Set<string>,
+  event: LnEventView,
+  nowMs: number,
+): { list: LnMovement[]; replayed: boolean } {
+  const kind = LN_MOVEMENT_KINDS[event.type];
+  if (!kind) return { list, replayed: false };
+  const key = movementKeyOf(event.node, kind, event.paymentHash ?? null);
+  if (keys.has(key)) return { list, replayed: true };
+  keys.add(key);
+  const msat = event.amountMsat != null ? Number(event.amountMsat) : null;
+  const entry: LnMovement = {
+    node: (event.node === 'A' ? 'A' : 'B') as NodeKey,
+    kind,
+    sats: msat != null && Number.isFinite(msat) ? Math.round(msat / 1000) : null,
+    hash: event.paymentHash ?? null,
+    at: nowMs,
+  };
+  return { list: [entry, ...list].slice(0, 100), replayed: false };
+}
+
 export interface LnLabStatus {
   phase: 'off' | 'booting' | 'ready' | 'stopping';
   network: LnNetId | null;
@@ -80,10 +124,24 @@ export interface LnLabStatus {
   logs: LnLogLine[];
   broadcasts: { ok: boolean; detail: string; at: number }[];
   pendingFunding: LnPendingFunding | null;
+  movements: LnMovement[];
 }
 
 const SEEDS_KEY = (net: LnNetId) => `lnlab-seeds-${net}`;
 const KV_KEY = (net: LnNetId, node: NodeKey) => `lnlab-kv-${net}-${node}`;
+const PAID_HASHES_KEY = (net: LnNetId) => `lnlab-paid-hashes-${net}`;
+const PAID_HASHES_MAX = 500;
+const MOVEMENTS_KEY = (net: LnNetId) => `lnlab-movements-${net}`;
+
+export function bolt11PaymentHash(invoice: string): string | null {
+  try {
+    const d = bolt11.decode(invoice.trim());
+    const h = d.tagsObject.payment_hash;
+    return typeof h === 'string' && /^[0-9a-fA-F]{64}$/.test(h) ? h.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
 
 interface KvMap {
   [compositeKey: string]: Uint8Array;
@@ -108,6 +166,7 @@ const initialStatus: LnLabStatus = {
   logs: [],
   broadcasts: [],
   pendingFunding: null,
+  movements: [],
 };
 
 const MAX_EVENTS = 60;
@@ -116,6 +175,51 @@ const MAX_LOGS = 200;
 export function classifyBroadcast(ok: boolean, detail: string): { ok: boolean; detail: string } {
   if (!ok && /déjà connue|already known/i.test(detail)) return { ok: true, detail: '' };
   return { ok, detail };
+}
+
+export const LN_CHAIN_BRIDGE_TX_RX = /^[0-9a-fA-F]{120,}$/;
+
+export const LN_CHAIN_BRIDGE_PATH_RX =
+  /^(?:blocks\/tip\/(?:height|hash)|block-height\/\d{1,7}|block\/[0-9a-f]{64}\/raw|v1\/fees\/recommended)$/i;
+
+export function shouldBridgeChain(network: LnNetId, mode: string): boolean {
+  return network === 'regtest' && mode === 'embedded';
+}
+
+const DESIRED_KEY = 'lnlab-desired-nets';
+
+interface NetStore {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+export function readDesiredNets(store: NetStore | null): LnNetId[] {
+  if (!store) return [];
+  try {
+    const raw = store.getItem(DESIRED_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((n): n is LnNetId => (LN_NETWORKS as string[]).includes(String(n)));
+  } catch {
+    return [];
+  }
+}
+
+export function writeDesiredNets(store: NetStore | null, nets: LnNetId[]): void {
+  if (!store) return;
+  try {
+    if (nets.length === 0) store.removeItem(DESIRED_KEY);
+    else store.setItem(DESIRED_KEY, JSON.stringify(nets));
+  } catch {
+    return;
+  }
+}
+
+function localStorageStore(): NetStore | null {
+  if (typeof localStorage === 'undefined') return null;
+  return localStorage;
 }
 
 class LnLabController {
@@ -132,8 +236,97 @@ class LnLabController {
   private network: LnNetId | null = null;
   private kvQueue: Promise<void> = Promise.resolve();
   private kvEpoch = 0;
+  private seq = 0;
+  private desired = new Set<LnNetId>(readDesiredNets(localStorageStore()));
+  private paidHashes = new Set<string>();
+
+  hasPaidPaymentHash = (hash: string): boolean => this.paidHashes.has(hash.toLowerCase());
+
+  private loadPaidHashes(network: LnNetId) {
+    let stored: unknown = null;
+    try {
+      stored = JSON.parse(localStorageStore()?.getItem(PAID_HASHES_KEY(network)) ?? 'null');
+    } catch {
+      stored = null;
+    }
+    this.paidHashes = new Set(
+      Array.isArray(stored)
+        ? stored.filter((h): h is string => typeof h === 'string' && /^[0-9a-f]{64}$/.test(h))
+        : [],
+    );
+  }
+
+  private persistPaidHashes() {
+    const network = this.network;
+    if (!network) return;
+    try {
+      const list = [...this.paidHashes].slice(-PAID_HASHES_MAX);
+      localStorageStore()?.setItem(PAID_HASHES_KEY(network), JSON.stringify(list));
+    } catch {
+      return;
+    }
+  }
+
+  private recordPaidPaymentHash(hash: string | undefined) {
+    if (!hash || !/^[0-9a-fA-F]{64}$/.test(hash)) return;
+    const normalized = hash.toLowerCase();
+    this.paidHashes.add(normalized);
+    this.persistPaidHashes();
+  }
+
+  private forgetPaidPaymentHash(hash: string | undefined) {
+    if (!hash) return;
+    if (this.paidHashes.delete(hash.toLowerCase())) this.persistPaidHashes();
+  }
+
+  private movements: LnMovement[] = [];
+  private movementKeys = new Set<string>();
+
+  private loadMovements(network: LnNetId | null) {
+    if (!network) return;
+    let stored: unknown = null;
+    try {
+      stored = JSON.parse(localStorageStore()?.getItem(MOVEMENTS_KEY(network)) ?? 'null');
+    } catch {
+      stored = null;
+    }
+    this.movements = Array.isArray(stored)
+      ? stored.filter(
+          (m): m is LnMovement =>
+            typeof m === 'object' &&
+            m !== null &&
+            ((m as LnMovement).node === 'A' || (m as LnMovement).node === 'B') &&
+            typeof (m as LnMovement).at === 'number',
+        )
+      : [];
+    this.movementKeys = new Set(this.movements.map((m) => movementKeyOf(m.node, m.kind, m.hash)));
+  }
+
+  private persistMovements() {
+    const network = this.network;
+    if (!network) return;
+    try {
+      localStorageStore()?.setItem(MOVEMENTS_KEY(network), JSON.stringify(this.movements));
+    } catch {
+      return;
+    }
+  }
 
   getStatus = (): LnLabStatus => this.status;
+
+  isDesired = (network: LnNetId): boolean => this.desired.has(network);
+
+  desiredNets = (): LnNetId[] => [...this.desired];
+
+  private setDesired(network: LnNetId, on: boolean) {
+    if (on) {
+      this.desired.delete(network);
+      this.desired.add(network);
+    } else {
+      this.desired.delete(network);
+    }
+    writeDesiredNets(localStorageStore(), [...this.desired]);
+  }
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -168,12 +361,29 @@ class LnLabController {
     if (events.some((e) => e.type === 'channel_ready' || e.type === 'channel_closed')) {
       pendingFunding = null;
     }
-    this.patch({ events: merged, pendingFunding });
+    let movements = this.status.movements;
+    for (const e of events) {
+      if (e.type === 'payment_sent') this.recordPaidPaymentHash(e.paymentHash);
+      else if (e.type === 'payment_failed') this.forgetPaidPaymentHash(e.paymentHash);
+      const kind = LN_MOVEMENT_KINDS[e.type];
+      if (!kind) continue;
+      const applied = applyMovement(this.movements, this.movementKeys, e, Date.now());
+      if (applied.replayed) e.replayed = 'true';
+      else {
+        this.movements = applied.list;
+        movements = applied.list;
+        this.persistMovements();
+      }
+    }
+    this.patch({ events: merged, pendingFunding, movements });
   }
 
   async activate(network: LnNetId): Promise<void> {
     if (this.status.phase === 'booting' || this.status.phase === 'ready') return;
     this.network = network;
+    this.loadPaidHashes(network);
+    this.loadMovements(network);
+    this.setDesired(network, true);
     this.patch({
       phase: 'booting',
       network,
@@ -182,6 +392,7 @@ class LnLabController {
       events: [],
       broadcasts: [],
       pendingFunding: null,
+      movements: this.movements,
     });
     try {
       const seeds = await this.loadOrCreateSeeds(network);
@@ -189,44 +400,37 @@ class LnLabController {
       const kvB = await this.loadKvMap(network, 'B');
       const restore = Object.keys(kvA).length > 0 || Object.keys(kvB).length > 0;
 
+      if (this.worker) {
+        this.kvEpoch += 1;
+        const stale = this.worker;
+        this.worker = null;
+        stale.terminate();
+      }
+
       const worker = new Worker('/lnlab/worker.js', { type: 'module' });
       this.worker = worker;
-      let watchdog: ReturnType<typeof setTimeout> | null = null;
-      const armWatchdog = () => {
-        if (watchdog) clearTimeout(watchdog);
-        watchdog = setTimeout(() => {
-          watchdog = null;
-          if (this.worker === worker && this.status.phase === 'booting') {
-            this.patch({
-              phase: 'off',
-              error: `worker: ${tSync('aucune réponse du module — vérifiez votre connexion puis réactivez le laboratoire')}`,
-            });
-            worker.terminate();
-            this.worker = null;
-          }
-        }, 60000);
-      };
-      const disarmWatchdog = () => {
-        if (watchdog) {
-          clearTimeout(watchdog);
-          watchdog = null;
+      const deadline = setTimeout(() => {
+        if (this.worker === worker && this.status.phase === 'booting') {
+          this.patch({
+            phase: 'off',
+            error: `worker: ${tSync('aucune réponse du module — vérifiez votre connexion puis réactivez le laboratoire')}`,
+          });
+          worker.terminate();
+          if (this.worker === worker) this.worker = null;
         }
-      };
-      armWatchdog();
+      }, 60000);
       worker.onmessage = (event) => {
-        if (this.status.phase === 'booting') armWatchdog();
-        else disarmWatchdog();
-        this.onWorkerMessage(event.data);
+        this.onWorkerMessage(event.data, worker);
       };
       worker.onerror = (event) => {
-        disarmWatchdog();
+        clearTimeout(deadline);
         this.patch({
           phase: 'off',
           error: `worker: ${event.message || tSync('script du worker non chargé — rechargez la page et réessayez')}`,
         });
       };
       worker.onmessageerror = () => {
-        disarmWatchdog();
+        clearTimeout(deadline);
         this.patch({ phase: 'off', error: `worker: ${tSync('message illisible du module')}` });
       };
       worker.postMessage({
@@ -237,6 +441,7 @@ class LnLabController {
         kv: { a: this.kvToArray(kvA), b: this.kvToArray(kvB) },
         regtestHeader:
           network === 'regtest' && regtestMode() === 'external' ? regtestHeaderValue() : '',
+        chainBridge: shouldBridgeChain(network, regtestMode()),
       });
     } catch (err) {
       this.patch({ phase: 'off', error: `activation: ${(err as Error).message}` });
@@ -244,6 +449,7 @@ class LnLabController {
   }
 
   deactivate(): void {
+    if (this.network) this.setDesired(this.network, false);
     const worker = this.worker;
     if (!worker) {
       this.patch({ phase: 'off' });
@@ -268,10 +474,24 @@ class LnLabController {
 
   async reset(network: LnNetId): Promise<void> {
     this.kvEpoch += 1;
+    this.setDesired(network, false);
     this.deactivate();
     await idbDel(SEEDS_KEY(network));
     await idbDel(KV_KEY(network, 'A'));
     await idbDel(KV_KEY(network, 'B'));
+    this.paidHashes = new Set();
+    try {
+      localStorageStore()?.removeItem(PAID_HASHES_KEY(network));
+    } catch {
+      return;
+    }
+    this.movements = [];
+    this.movementKeys = new Set();
+    try {
+      localStorageStore()?.removeItem(MOVEMENTS_KEY(network));
+    } catch {
+      return;
+    }
     this.patch({
       phase: 'off',
       nodeA: null,
@@ -317,7 +537,8 @@ class LnLabController {
     });
   }
 
-  private onWorkerMessage(msg: { type: string; [field: string]: unknown }) {
+  private onWorkerMessage(msg: { type: string; [field: string]: unknown }, sender: Worker | null) {
+    if (sender && sender !== this.worker && msg.type !== 'stopped') return;
     switch (msg.type) {
       case 'ready':
         this.patch({
@@ -379,16 +600,25 @@ class LnLabController {
           this.patch({ pendingFunding: null });
         }
         break;
+      case 'chainBridgeRequest':
+        void this.serveChainBridge(
+          msg as unknown as {
+            id: string;
+            path: string;
+            tx?: string;
+          },
+        );
+        break;
       case 'error': {
         const message = String(msg.message ?? 'erreur inconnue');
-        if (this.status.phase === 'booting') {
+        if (sender === this.worker && this.status.phase === 'booting') {
           this.patch({ phase: 'off', error: message });
         }
         this.pushLog('sys', message);
         break;
       }
       case 'stopped':
-        this.finishStop(this.worker);
+        this.finishStop(sender);
         break;
       default:
         break;
@@ -412,6 +642,36 @@ class LnLabController {
     }
     await idbSet(KV_KEY(network, 'A'), perNode.A);
     await idbSet(KV_KEY(network, 'B'), perNode.B);
+  }
+
+  private async serveChainBridge(req: { id: string; path: string; tx?: string }) {
+    const id = String(req.id ?? '');
+    const reply = (ok: boolean, body?: unknown, detail?: string) => {
+      if (this.worker) {
+        this.worker.postMessage({ type: 'chainBridgeReply', id, ok, body, detail });
+      }
+    };
+    const path = String(req.path ?? '');
+    try {
+      if (path === 'tx') {
+        const raw = String(req.tx ?? '').trim();
+        if (!LN_CHAIN_BRIDGE_TX_RX.test(raw)) {
+          reply(false, undefined, 'transaction brute invalide');
+          return;
+        }
+        await regtestChain.broadcast(raw);
+        reply(true, '');
+        return;
+      }
+      if (!LN_CHAIN_BRIDGE_PATH_RX.test(path)) {
+        reply(false, undefined, 'chemin interdit pour le pont Lightning');
+        return;
+      }
+      const body = await regtestChain.query<unknown>(path);
+      reply(true, body);
+    } catch (err) {
+      reply(false, undefined, (err as Error).message);
+    }
   }
 
   private send(payload: Record<string, unknown>) {
@@ -458,6 +718,11 @@ class LnLabController {
     });
   }
 
+  private nextRequestId(prefix: string): string {
+    this.seq += 1;
+    return `${prefix}-${Date.now()}-${this.seq}`;
+  }
+
   openChannel(valueSats: number, pushMsat: number): Promise<void> {
     const userChannelId = Date.now();
     return this.request<void>(
@@ -487,7 +752,7 @@ class LnLabController {
     description: string,
     expirySecs: number,
   ): Promise<string> {
-    const id = `inv-${Date.now()}`;
+    const id = this.nextRequestId('inv');
     return this.request<string>(
       {
         type: 'createInvoice',
@@ -502,12 +767,34 @@ class LnLabController {
     );
   }
 
-  payInvoice(node: NodeKey, invoice: string, amountMsat: number | null): void {
-    this.send({ type: 'payInvoice', node: node === 'A' ? 0 : 1, invoice, amountMsat });
+  payInvoice(node: NodeKey, invoice: string, amountMsat: number | null): Promise<void> {
+    const hash = bolt11PaymentHash(invoice);
+    if (hash !== null && this.hasPaidPaymentHash(hash)) {
+      return Promise.reject(
+        new Error(
+          tSync(
+            'Cette facture a déjà été payée par ce laboratoire : demandez une facture neuve au lieu de payer deux fois.',
+          ),
+        ),
+      );
+    }
+    this.recordPaidPaymentHash(hash ?? undefined);
+    const requestId = this.nextRequestId('pay');
+    return this.request<void>(
+      { type: 'payInvoice', node: node === 'A' ? 0 : 1, invoice, amountMsat, requestId },
+      (data) =>
+        (data.type === 'paymentInitiated' && data.requestId === requestId
+          ? true
+          : undefined) as void,
+      'délai du paiement dépassé',
+    ).catch((err: Error) => {
+      this.forgetPaidPaymentHash(hash ?? undefined);
+      throw err;
+    });
   }
 
   createOffer(node: NodeKey, amountMsat: number | null, description: string): Promise<string> {
-    const id = `offer-${Date.now()}`;
+    const id = this.nextRequestId('offer');
     return this.request<string>(
       { type: 'createOffer', id, node: node === 'A' ? 0 : 1, amountMsat, description },
       (data) => (data.type === 'offer' && data.id === id ? (data.offer as string) : undefined),
@@ -520,12 +807,20 @@ class LnLabController {
     offer: string,
     amountMsat: number | null,
     payerNote: string | null,
-  ): void {
-    this.send({ type: 'payOffer', node: node === 'A' ? 0 : 1, offer, amountMsat, payerNote });
+  ): Promise<void> {
+    const requestId = this.nextRequestId('payoffer');
+    return this.request<void>(
+      { type: 'payOffer', node: node === 'A' ? 0 : 1, offer, amountMsat, payerNote, requestId },
+      (data) =>
+        (data.type === 'offerPaymentInitiated' && data.requestId === requestId
+          ? true
+          : undefined) as void,
+      'délai du paiement offer dépassé',
+    );
   }
 
   decodeOffer(offer: string): Promise<LnOfferView> {
-    const id = `decode-${Date.now()}`;
+    const id = this.nextRequestId('decode');
     return this.request<LnOfferView>(
       { type: 'decodeOffer', id, offer },
       (data) =>
@@ -541,8 +836,28 @@ class LnLabController {
 
 export const lnLab = new LnLabController();
 
+export async function resolveChannelScid(channel: LnChannelView): Promise<string | null> {
+  const outpoint = parseFundingOutpoint(channel.fundingTxo ?? '');
+  if (!outpoint) return null;
+  try {
+    const tx = await api.tx(outpoint.txid);
+    return scidFromConfirmedStatus(tx.status, outpoint.vout);
+  } catch {
+    return null;
+  }
+}
+
 export function msatToSats(msat: string | number | null | undefined): number {
   const value = typeof msat === 'string' ? Number(msat) : msat;
   if (!Number.isFinite(value)) return 0;
   return Math.floor((value ?? 0) / 1000);
+}
+
+export function maxPayableSats(channels: LnChannelView[]): number {
+  const usable = channels.filter((c) => c.isReady || c.isUsable);
+  if (usable.length === 0) return 0;
+  const values = usable.map((c) => Math.floor(Number(c.valueSats) / 10));
+  const finite = values.filter((v) => Number.isFinite(v) && v > 0);
+  if (finite.length === 0) return 0;
+  return Math.max(...finite);
 }

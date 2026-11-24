@@ -1,5 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { classifyBroadcast } from '../src/lib/lightning';
+import { readFileSync } from 'node:fs';
+import { hex } from '@scure/base';
+import { RegtestChain } from '../src/lib/regtest-engine/chain';
+import { registerNetGetter } from '../src/lib/networks';
+import { deriveForType } from '../src/lib/bitcoin/keys';
+import { buildSignedTx } from '../src/lib/bitcoin/tx';
+import {
+  applyMovement,
+  classifyBroadcast,
+  LN_CHAIN_BRIDGE_PATH_RX,
+  LN_CHAIN_BRIDGE_TX_RX,
+  maxPayableSats,
+  readDesiredNets,
+  shouldBridgeChain,
+  writeDesiredNets,
+  type LnChannelView,
+  type LnEventView,
+  type LnMovement,
+  type LnNetId,
+} from '../src/lib/lightning';
 
 describe('classifyBroadcast — duplicate funding broadcast', () => {
   it('treats a duplicate (already in chain) as success', () => {
@@ -24,5 +43,213 @@ describe('classifyBroadcast — duplicate funding broadcast', () => {
   it('preserves successes unchanged', () => {
     expect(classifyBroadcast(true, '')).toEqual({ ok: true, detail: '' });
     expect(classifyBroadcast(true, 'txid')).toEqual({ ok: true, detail: 'txid' });
+  });
+});
+
+describe('pont chaîne du laboratoire Lightning (regtest embarqué)', () => {
+  it('active le pont uniquement en regtest embarqué', () => {
+    expect(shouldBridgeChain('regtest', 'embedded')).toBe(true);
+    expect(shouldBridgeChain('regtest', 'external')).toBe(false);
+    expect(shouldBridgeChain('testnet4', 'embedded')).toBe(false);
+    expect(shouldBridgeChain('signet', 'external')).toBe(false);
+  });
+
+  it('n’autorise que les chemins Esplora requis par le worker Lightning', () => {
+    const allowed = [
+      'blocks/tip/height',
+      'blocks/tip/hash',
+      'block-height/102',
+      `block/${'a'.repeat(64)}/raw`,
+      'v1/fees/recommended',
+    ];
+    for (const path of allowed) {
+      expect(LN_CHAIN_BRIDGE_PATH_RX.test(path)).toBe(true);
+    }
+    const rejected = [
+      'address/bcrt1qabc/utxo',
+      'tx/a'.padEnd(66, '0'),
+      `block/${'a'.repeat(64)}`,
+      'v1/lightning/statistics/latest',
+      'mempool',
+      'blocks/tip/height/extra',
+      'block-height/abc',
+      `tx/${'a'.repeat(64)}`,
+      '',
+      '../admin',
+    ];
+    for (const path of rejected) {
+      expect(LN_CHAIN_BRIDGE_PATH_RX.test(path)).toBe(false);
+    }
+  });
+
+  it('accepte uniquement les transactions brutes hexadécimales complètes', () => {
+    const fundingTxHex = 'ab'.repeat(110);
+    expect(LN_CHAIN_BRIDGE_TX_RX.test(fundingTxHex)).toBe(true);
+    expect(LN_CHAIN_BRIDGE_TX_RX.test('ab'.repeat(59))).toBe(false);
+    expect(LN_CHAIN_BRIDGE_TX_RX.test('')).toBe(false);
+    expect(LN_CHAIN_BRIDGE_TX_RX.test(`${'ab'.repeat(60)}zz`)).toBe(false);
+    expect(LN_CHAIN_BRIDGE_TX_RX.test('0x' + 'ab'.repeat(110))).toBe(false);
+  });
+
+  it('le worker Lightning et le pont hôte partagent le même champ de transaction', () => {
+    const worker = readFileSync(new URL('../public/lnlab/worker.js', import.meta.url), 'utf8');
+    expect(worker).toContain("askBridge({ path: 'tx', tx: txHex })");
+    expect(worker).not.toContain("path: 'tx', txHex");
+    const host = readFileSync(new URL('../src/lib/lightning.ts', import.meta.url), 'utf8');
+    expect(host).toContain("String(req.tx ?? '')");
+  });
+});
+
+describe('désir d’activation persistant du laboratoire Lightning', () => {
+  const fakeStore = (initial: Record<string, string> = {}) => {
+    const backing = new Map(Object.entries(initial));
+    return {
+      getItem: (key: string) => backing.get(key) ?? null,
+      setItem: (key: string, value: string) => backing.set(key, value),
+      removeItem: (key: string) => backing.delete(key),
+    };
+  };
+
+  it('retourne une liste vide sans stockage ou sans valeur enregistrée', () => {
+    expect(readDesiredNets(null)).toEqual([]);
+    expect(readDesiredNets(fakeStore())).toEqual([]);
+  });
+
+  it('filtre les réseaux inconnus et les charges corrompues', () => {
+    expect(readDesiredNets(fakeStore({ 'lnlab-desired-nets': 'not json' }))).toEqual([]);
+    expect(
+      readDesiredNets(fakeStore({ 'lnlab-desired-nets': '["regtest","mainnet",42]' })),
+    ).toEqual<LnNetId[]>(['regtest']);
+  });
+
+  it('écrit puis relit le désir d’activation, et efface la clé au dernier retrait', () => {
+    const store = fakeStore();
+    writeDesiredNets(store, ['regtest']);
+    expect(readDesiredNets(store)).toEqual<LnNetId[]>(['regtest']);
+    writeDesiredNets(store, ['regtest', 'testnet4']);
+    expect(readDesiredNets(store)).toEqual<LnNetId[]>(['regtest', 'testnet4']);
+    writeDesiredNets(store, []);
+    expect(store.getItem('lnlab-desired-nets')).toBeNull();
+  });
+
+  it('tolère un stockage qui lève sur écriture', () => {
+    const hostile = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('quota exceeded');
+      },
+      removeItem: () => undefined,
+    };
+    expect(() => writeDesiredNets(hostile, ['regtest'])).not.toThrow();
+  });
+});
+
+describe('maxPayableSats — limite HTLC par canal (10 % LDK)', () => {
+  const channel = (over: Partial<LnChannelView>): LnChannelView => ({
+    channelId: 'c',
+    userChannelId: 'u',
+    counterparty: '02ff',
+    valueSats: '100000',
+    outboundMsat: '50000000',
+    inboundMsat: '49000000',
+    isOutbound: true,
+    isReady: true,
+    isUsable: true,
+    isAnnounced: false,
+    ...over,
+  });
+
+  it('limite un paiement unique à 10 % de la capacité du meilleur canal utilisable', () => {
+    expect(maxPayableSats([channel({ valueSats: '100000' })])).toBe(10000);
+    expect(maxPayableSats([channel({ valueSats: '250000' })])).toBe(25000);
+    expect(
+      maxPayableSats([channel({ valueSats: '50000' }), channel({ valueSats: '300000' })]),
+    ).toBe(30000);
+  });
+
+  it('ignore les canaux non prêts et répond zéro sans canal', () => {
+    expect(maxPayableSats([channel({ isReady: false, isUsable: false })])).toBe(0);
+    expect(maxPayableSats([])).toBe(0);
+  });
+});
+
+describe('addressUtxos — UTXO verrouillé par le mempool (financement Lightning)', () => {
+  registerNetGetter(() => 'regtest');
+
+  it('masque un UTXO dépensé dans le mempool puis le restitue après minage', () => {
+    const c = new RegtestChain();
+    const sourcePriv = hex.decode('a2'.padEnd(64, '0'));
+    const source = deriveForType(sourcePriv, 'segwit', 'regtest');
+    const payee = deriveForType(hex.decode('a3'.padEnd(64, '0')), 'taproot', 'regtest');
+    c.faucetSend(source.address, 500_000_000);
+
+    const utxos = c.addressUtxos(source.address);
+    expect(utxos.length).toBeGreaterThan(0);
+
+    const build = (feeRateSatVb: number) =>
+      buildSignedTx({
+        utxos,
+        outputs: [{ address: payee.address, amountSats: 100_000 }],
+        feeRateSatVb,
+        changeAddress: source.address,
+        privateKeyHex: hex.encode(sourcePriv),
+        inputAddress: source.address,
+        inputType: 'segwit',
+      });
+
+    c.acceptTx(build(1).hex);
+    expect(c.addressUtxos(source.address)).toHaveLength(0);
+
+    expect(() => c.acceptTx(build(2).hex)).toThrow(/double-dépense mempool/);
+
+    c.mineTo(null, 6);
+    expect(c.addressUtxos(source.address).length).toBeGreaterThan(0);
+  });
+});
+
+describe('mouvements Lightning — déduplication des événements rejoués au rechargement', () => {
+  it('enregistre un mouvement neuf, puis marque le doublon comme rejoué', () => {
+    const list: LnMovement[] = [];
+    const keys = new Set<string>();
+    const claimed: LnEventView = {
+      node: 'B',
+      type: 'payment_claimed',
+      amountMsat: '1000000',
+      paymentHash: 'aa'.repeat(32),
+    };
+    const first = applyMovement(list, keys, claimed, 1000);
+    expect(first.replayed).toBe(false);
+    expect(first.list).toHaveLength(1);
+    expect(first.list[0]).toMatchObject({
+      node: 'B',
+      kind: 'claimed',
+      sats: 1000,
+      hash: 'aa'.repeat(32),
+    });
+
+    const replay = applyMovement(first.list, keys, claimed, 2000);
+    expect(replay.replayed).toBe(true);
+    expect(replay.list).toHaveLength(1);
+    expect(replay.list[0].at).toBe(1000);
+  });
+
+  it('ignore les événements hors paiement et borne l’historique à 100 entrées', () => {
+    let list: LnMovement[] = [];
+    const keys = new Set<string>();
+    expect(applyMovement(list, keys, { node: 'A', type: 'channel_ready' }, 0).list).toBe(list);
+    for (let i = 0; i < 120; i += 1) {
+      list = applyMovement(
+        list,
+        keys,
+        {
+          node: 'A',
+          type: 'payment_sent',
+          amountMsat: '1000',
+          paymentHash: i.toString(16).padStart(2, '0').repeat(32),
+        },
+        i,
+      ).list;
+    }
+    expect(list).toHaveLength(100);
   });
 });

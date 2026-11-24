@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
         // WASM and worker JS in public/ — never cache; always revalidate.
         // This ensures a freshly rebuilt lnlab_bg.wasm / miner_bg.wasm is
         // picked up immediately after deployment without a hard-refresh.
-        source: '/(lnlab|miner)/:file*',
+        source: '/(lnlab|miner|regtest)/:file*',
         headers: [
           { key: 'Cache-Control', value: 'no-store, must-revalidate' },
           { key: 'Cross-Origin-Embedder-Policy', value: 'require-corp' },

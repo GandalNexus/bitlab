@@ -772,8 +772,11 @@ export const EN: Record<string, string> = {
   'Capacité sortante': 'Outbound capacity',
   'Capacité entrante': 'Inbound capacity',
   'Activer le laboratoire': 'Activate the lab',
-  'Démarre deux nœuds Lightning dans ce navigateur ({net}). Désactivé, aucune ressource n’est consommée.':
-    'Boots two Lightning nodes inside this browser ({net}). When off, no resource is consumed.',
+  'Les nœuds restent actifs après un rechargement de page et se réactivent automatiquement ; seul l’interrupteur les arrête.':
+    'Nodes stay active across page reloads and reactivate automatically; only the switch stops them.',
+  'Le laboratoire tourne sur {other}. Arrêtez-le sur ce réseau avant de le démarrer ici.':
+    'The lab is running on {other}. Stop it there before starting it on this network.',
+  'Bloc {h}': 'Block {h}',
   'A connecté à B': 'A connected to B',
   'pairs déconnectés': 'peers disconnected',
   'laboratoire inactif': 'lab is not active',
@@ -804,6 +807,7 @@ export const EN: Record<string, string> = {
   'Canaux du nœud A': 'Node A channels',
   'Aucun canal pour le moment.': 'No channels yet.',
   '{c}/{r} confirmations': '{c}/{r} confirmations',
+  'Identifiant court de canal': 'Short channel ID',
   Capacité: 'Capacity',
   Sortant: 'Outbound',
   Entrant: 'Inbound',
@@ -819,18 +823,69 @@ export const EN: Record<string, string> = {
   'La transaction de financement est sur la chaîne — attendez les confirmations.':
     'The funding transaction is on-chain — wait for confirmations.',
   'Échec du financement': 'Funding failed',
-  'Créer une facture BOLT11 (nœud B)': 'Create a BOLT11 invoice (node B)',
+  'Créer une facture BOLT11 (nœud {n})': 'Create a BOLT11 invoice (node {n})',
+  'Nœud payé': 'Payee node',
+  'Nœud payé — reçoit': 'Payee node — receives',
+  'Nœud payeur': 'Payer node',
+  'Nœud payeur — paie': 'Payer node — pays',
+  'Solde Lightning': 'Lightning balance',
+  'Peut encore recevoir': 'Can still receive',
+  'Ce solde vit à l’intérieur du canal : il ne passe pas par la chaîne et reste dépensable instantanément en Lightning.':
+    'This balance lives inside the channel: it never touches the chain and stays instantly spendable over Lightning.',
+  'Paiement Lightning envoyé': 'Lightning payment sent',
+  '{sats} sats quittent le nœud {n} via le canal — solde Lightning mis à jour.':
+    '{sats} sats left node {n} through the channel — Lightning balance updated.',
+  'Le HTLC a été réglé sur le canal.': 'The HTLC has settled on the channel.',
+  'Paiement Lightning reçu': 'Lightning payment received',
+  '{sats} sats ont crédité le solde Lightning du nœud {n}.':
+    '{sats} sats credited node {n}’s Lightning balance.',
+  'Le solde Lightning du destinataire a été crédité.':
+    'The recipient’s Lightning balance has been credited.',
+  'Paiement Lightning échoué': 'Lightning payment failed',
+  'Le HTLC a été annulé sans perte de fonds : {reason}':
+    'The HTLC was cancelled without losing funds: {reason}',
+  'routage impossible': 'no route available',
+  'Mouvements Lightning': 'Lightning movements',
+  'Entrées et sorties de sats, conservées même après un rechargement de page.':
+    'Sats in and out, kept even across a page reload.',
+  'Aucun mouvement pour le moment : payez une facture ou faites-vous payer pour voir les sats circuler.':
+    'No movement yet: pay an invoice or get paid to watch sats move.',
+  Entrée: 'In',
+  Sortie: 'Out',
+  'déjà comptabilisé avant rechargement': 'already counted before the reload',
   Créer: 'Create',
   'Facture créée': 'Invoice created',
-  'Signée par le nœud B — faites-la payer par A.': 'Signed by node B — have node A pay it.',
+  'Signée par le nœud {n} — faites-la payer par l’autre nœud.':
+    'Signed by node {n} — have the other node pay it.',
   'Montant invalide.': 'Invalid amount.',
-  'Payer une facture (nœud A)': 'Pay an invoice (node A)',
   'Paiement lancé': 'Payment started',
-  'Le HTLC circule sur le canal A → B.': 'The HTLC is travelling over the A → B channel.',
+  'Paiement impossible': 'Payment failed',
+  'Le HTLC circule sur le canal {a} → {b}.': 'The HTLC is travelling over the {a} → {b} channel.',
+  'Choisissez d’abord le nœud payeur, collez la facture (lntb…, lntbs…, lnbcrt…), vérifiez l’aperçu puis payez.':
+    'Pick the payer node first, paste the invoice (lntb…, lntbs…, lnbcrt…), review the preview, then pay.',
+  'Le nœud {n} n’a aucune capacité sortante : ouvrez et confirmez d’abord un canal.':
+    'Node {n} has no outbound capacity: open and confirm a channel first.',
+  'Cette facture est expirée : demandez-en une nouvelle.':
+    'This invoice has expired: request a new one.',
+  'Cette facture a déjà été payée par ce laboratoire : demandez une facture neuve au lieu de payer deux fois.':
+    'This invoice was already paid by this lab: request a fresh invoice instead of paying twice.',
+  'Facture déjà payée : payer deux fois la même facture perdrait les sats du payeur.':
+    'Invoice already paid: paying the same invoice twice would lose the payer’s sats.',
+  'Le nœud payeur est aussi le destinataire : choisissez l’autre nœud.':
+    'The payer node is also the recipient: choose the other node.',
+  'Facture à montant libre : indiquez combien payer.':
+    'Invoice with a free amount: enter how much to pay.',
+  'Facture illisible : vérifiez la chaîne complète copiée-collée.':
+    'Unreadable invoice: check the complete string you pasted.',
+  'Montant au-dessus de la limite HTLC du canal ({max} sats par paiement) : ouvrez un canal d’une capacité au moins 10 fois supérieure.':
+    'Amount above the channel HTLC limit ({max} sats per payment): open a channel with at least 10 times more capacity.',
+  'Aucun canal du nœud {n} ne pourra payer {sats} sats d’un coup : un HTLC est limité à 10 % de la capacité du canal.':
+    'No channel of node {n} will be able to pay {sats} sats at once: a single HTLC is capped at 10% of the channel capacity.',
+  Expiration: 'Expiry',
+  'facture expirée': 'invoice expired',
+  Destination: 'Destination',
   'Une facture neuve à chaque paiement : montant verrouillé, expiration d’une heure.':
     'A fresh invoice for every payment: locked amount, one-hour expiry.',
-  'Collez une facture Lightning (lntb…, lntbs…, lnbcrt…) : le montant est déjà inscrit dedans.':
-    'Paste a Lightning invoice (lntb…, lntbs…, lnbcrt…): the amount is already encoded in it.',
   'Facture à usage unique': 'Single-use invoice',
   'Un montant fixe, une expiration, un seul paiement — comme un ticket de caisse.':
     'A fixed amount, an expiry, a single payment — like a cashier’s receipt.',
@@ -839,30 +894,29 @@ export const EN: Record<string, string> = {
     'A reusable payment code, sometimes with a free amount — the invoice is requested at payment time.',
   facture: 'invoice',
   offer: 'offer',
-  'Créer une offer BOLT12 (nœud B)': 'Create a BOLT12 offer (node B)',
+  'Créer une offer BOLT12 (nœud {n})': 'Create a BOLT12 offer (node {n})',
   'Un même code lno1… pour un nombre illimité de paiements. Montant facultatif : laissez 0 pour un paiement libre.':
     'One lno1… code for unlimited payments. Amount optional: leave 0 for a free-amount payment.',
   'Montant (sats, 0 = libre)': 'Amount (sats, 0 = free)',
   'Créer l’offer': 'Create offer',
   'Offer créée': 'Offer created',
-  'Signée par le nœud B — réutilisable autant de fois que voulu.':
-    'Signed by node B — reusable as many times as you like.',
+  'Signée par le nœud {n} — réutilisable autant de fois que voulu.':
+    'Signed by node {n} — reusable as many times as you like.',
   'Offer illisible': 'Unreadable offer',
-  'Payer une offer (nœud A)': 'Pay an offer (node A)',
-  'Le nœud A demande d’abord une facture au destinataire via messages onion chiffrés, puis la paie sur le canal.':
-    'Node A first requests an invoice from the recipient over encrypted onion messages, then pays it over the channel.',
+  'Payer une offer BOLT12': 'Pay a BOLT12 offer',
+  'Choisissez d’abord le nœud payeur : il demande une facture au destinataire via messages onion chiffrés, puis la paie sur le canal.':
+    'Pick the payer node first: it requests an invoice from the recipient over encrypted onion messages, then pays it over the channel.',
   Vérifier: 'Verify',
   Montant: 'Amount',
   'montant libre': 'free amount',
   Émetteur: 'Issuer',
   'Note au payeur (facultatif)': 'Payer note (optional)',
   'Demander et payer': 'Request & pay',
-  'Montant requis': 'Amount required',
   'Cette offer ne fixe pas de montant : indiquez combien payer.':
     'This offer has no fixed amount: enter how much to pay.',
   'Demande de facture envoyée': 'Invoice request sent',
-  'A interroge B via messages onion chiffrés, puis paie la facture retournée. Suivez le journal.':
-    'A asks B over encrypted onion messages, then pays the returned invoice. Watch the journal.',
+  'Le nœud {a} interroge {b} via messages onion chiffrés, puis paie la facture retournée. Suivez le journal.':
+    'Node {a} queries {b} over encrypted onion messages, then pays the returned invoice. Watch the journal.',
   'Deux nœuds LDK réels compilés en WebAssembly tournent dans votre navigateur : canaux financés on-chain, factures BOLT11, offers BOLT12 réutilisables via messages onion, paiements HTLC authentiques. Vos clés et vos données restent dans votre navigateur.':
     'Two real LDK nodes compiled to WebAssembly run in your browser: on-chain funded channels, BOLT11 invoices, reusable BOLT12 offers over onion messages, authentic HTLC payments. Your keys and data stay in your browser.',
   'Événements Lightning': 'Lightning events',
@@ -1015,4 +1069,42 @@ export const EN: Record<string, string> = {
   'Aucune entrée pour ce module pour le moment.': 'No entries for this module yet.',
   'Sorties brutes des nœuds (niveau LDK) : A en émeraude, B en violet, messages système en bleu.':
     'Raw node output (LDK level): A in emerald, B in violet, system messages in blue.',
+  Faucet: 'Faucet',
+  'Distribuez des sats de test sur chacun de vos portefeuilles, en trois clics.':
+    'Hand out test sats to each of your wallets in three clicks.',
+  'Comment ça marche ?': 'How does it work?',
+  '1 — Choisissez le montant de sats de test à recevoir.':
+    '1 — Pick the amount of test sats to receive.',
+  '2 — Cliquez « Recevoir » sur le portefeuille visé.':
+    '2 — Click “Receive” on the wallet you target.',
+  '3 — Les sats arrivent confirmés : rien d’autre à faire.':
+    '3 — The sats arrive confirmed: nothing else to do.',
+  'Montant par distribution': 'Amount per distribution',
+  'Le moteur signe une vraie transaction depuis son pool préminé puis mine 1 bloc : le solde est immédiatement dépensable.':
+    'The engine signs a real transaction from its premined pool then mines 1 block: the balance is instantly spendable.',
+  '« Miner 10 blocs » fait aussi avancer la chaîne : utile pour confirmer un canal Lightning.':
+    '“Mine 10 blocks” also advances the chain: useful to confirm a Lightning channel.',
+  'Vos portefeuilles ({n})': 'Your wallets ({n})',
+  'Chaque portefeuille reçoit ses propres sats sur sa propre adresse.':
+    'Each wallet receives its own sats on its own address.',
+  'Aucun portefeuille pour le moment. Créez-en un dans le module Portefeuille, puis revenez ici pour le remplir.':
+    'No wallet yet. Create one in the Wallet module, then come back here to fill it.',
+  'Créer un portefeuille': 'Create a wallet',
+  vide: 'empty',
+  'Recevoir {sats} sats': 'Receive {sats} sats',
+  'Hauteur de la chaîne : {h}': 'Chain height: {h}',
+  'Sats reçus sur {label}': 'Sats received on {label}',
+  '{sats} sats confirmés au bloc #{h} — le solde du portefeuille est dépensable immédiatement.':
+    '{sats} sats confirmed at block #{h} — the wallet balance is instantly spendable.',
+  'Échec du faucet': 'Faucet failed',
+  '10 blocs minés': '10 blocks mined',
+  'Nouvelle hauteur : {h}.': 'New height: {h}.',
+  'Échec du minage': 'Mining failed',
+  'Le faucet a son propre module : ouvrez « Faucet » dans la barre latérale pour alimenter chacun de vos portefeuilles.':
+    'The faucet has its own module: open “Faucet” in the sidebar to fund each of your wallets.',
+  'Pas de faucet intégré sur ce réseau': 'No built-in faucet on this network',
+  'Le faucet intégré sert la chaîne regtest embarquée dans BitLab. Sur testnet4, les sats viennent d’un faucet public externe.':
+    'The built-in faucet serves the regtest chain embedded in BitLab. On testnet4, sats come from an external public faucet.',
+  'Basculez sur Regtest dans le sélecteur de réseau pour disposer de sats de test instantanés, ou alimentez vos adresses testnet depuis un service externe.':
+    'Switch to Regtest in the network selector to get instant test sats, or fund your testnet addresses from an external service.',
 };

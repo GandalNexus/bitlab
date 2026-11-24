@@ -314,3 +314,56 @@ describe('sélection multi-UTXO, drain sans change et garde-fous', () => {
     expect(balanceOf(r2)).toBe(0);
   });
 });
+
+describe('placement Esplora des transactions (block_index pour le scid BOLT-03)', () => {
+  it('txInfo expose block_height, block_hash et block_index cohérents avec le bloc', () => {
+    const alice = makeWallet(0xa1, 'segwit');
+    const bob = makeWallet(0xa2, 'segwit');
+    fund(alice.address);
+    const { res } = spend(alice, [{ address: bob.address, amountSats: SEND }]);
+
+    const info = chain.txInfo(res.txid) as {
+      txid: string;
+      status: {
+        confirmed: boolean;
+        block_height?: number;
+        block_hash?: string;
+        block_index?: number;
+      };
+    };
+    expect(info.txid).toBe(res.txid);
+    expect(info.status.confirmed).toBe(true);
+    expect(info.status.block_height).toBeGreaterThan(0);
+    expect(info.status.block_hash).toBeTruthy();
+    expect(info.status.block_index).toBeGreaterThan(0);
+
+    const hash = chain.blockHashAtHeight(info.status.block_height!);
+    expect(hash).toBe(info.status.block_hash);
+    const record = chain.blockByHash(hash!);
+    expect(record!.txids[info.status.block_index!]).toBe(res.txid);
+  });
+
+  it('tx mempool : confirmed=false sans aucun champ de placement', () => {
+    const alice = makeWallet(0xa3, 'segwit');
+    const bob = makeWallet(0xa4, 'segwit');
+    fund(alice.address);
+    const res = buildSignedTx({
+      utxos: chain.addressUtxos(alice.address),
+      outputs: [{ address: bob.address, amountSats: SEND }],
+      feeRateSatVb: 1,
+      changeAddress: alice.address,
+      privateKeyHex: alice.privHex,
+      inputAddress: alice.address,
+      inputType: alice.type,
+    });
+    chain.acceptTx(res.hex);
+
+    const info = chain.txInfo(res.txid) as {
+      status: { confirmed: boolean; block_height?: number; block_index?: number };
+    };
+    expect(info.status.confirmed).toBe(false);
+    expect(info.status.block_height).toBeUndefined();
+    expect(info.status.block_index).toBeUndefined();
+    chain.mineTo(null, 1);
+  });
+});
