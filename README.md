@@ -11,7 +11,7 @@
       <img alt="CI" src="https://github.com/GandalNexus/bitlab/actions/workflows/ci.yml/badge.svg" />
     </a>
     <a href="./LICENSE">
-      <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" />
+      <img alt="License: AGPL v3" src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" />
     </a>
   </p>
 </div>
@@ -188,4 +188,6 @@ Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for the w
 
 ## License
 
-[MIT](./LICENSE) © GandalNexus
+[AGPL-3.0-or-later](./LICENSE) © GandalNexus
+
+BitLab is Free Software under the **GNU Affero General Public License v3 or later**. Any fork — modified UI, custom WASM modules, or a hosted instance — must remain open source and offer its full source (including the `rust/lnlab` and `rust/miner` crate sources) to its users, per sections 6 and 13 of the license. Third-party dependencies keep their own permissive licenses and are inventoried in [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
