@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useBitquestUserStore } from './bitquest-user-store';
-import { getBitquestUrl } from './bitquest-user';
+import { getBitquestUrl, isBitquestConfigured } from './bitquest-user';
 import { useLabStore } from './store';
 
 /**
@@ -109,6 +109,20 @@ export function useSilentSso(): void {
     }
 
     if (alreadyTriedRecently()) return;
+
+    // BitQuest non configuré (NEXT_PUBLIC_BITQUEST_URL absente) :
+    // getBitquestUrl() retombe sur l'origine locale où l'endpoint SSO
+    // n'existe pas — naviguer afficherait une 404 au démarrage. On
+    // ignore le SSO silencieux, l'app se charge normalement.
+    if (!isBitquestConfigured()) {
+      addLog({
+        kind: 'op',
+        module: 'bitquest',
+        label: 'SSO silent ignoré : NEXT_PUBLIC_BITQUEST_URL non configurée.',
+        detail: {},
+      });
+      return;
+    }
 
     const returnTo = window.location.href;
     const ssoUrl = new URL('/api/auth/bitlab-sso', getBitquestUrl());

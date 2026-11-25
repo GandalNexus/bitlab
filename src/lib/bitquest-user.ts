@@ -36,6 +36,16 @@ export function getBitquestUrl(): string {
 }
 
 /**
+ * true uniquement si NEXT_PUBLIC_BITQUEST_URL est réellement définie.
+ * Sans elle, le fallback localhost:3000 désigne BitLab lui-même : les
+ * endpoints SSO/logout n'y existent pas, toute navigation les visant
+ * doit être évitée (sinon 404).
+ */
+export function isBitquestConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_BITQUEST_URL?.trim());
+}
+
+/**
  * Résultat de l'échange launch_token : profil utilisateur + session
  * token longue durée (2h) pour appels CORS user-scoped ultérieurs.
  */

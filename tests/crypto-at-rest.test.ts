@@ -74,9 +74,12 @@ describe("encryptWithPassphrase / decryptWithPassphrase", () => {
   it("refuse un ciphertext altéré (tag AES-GCM invalide)", async () => {
     const blob = await encryptWithPassphrase(MNEMONIC_12, "pw");
     const parts = blob.split(".");
-    // Flip le dernier caractère du ciphertext (reste base64url valide)
+    // Flip le PREMIER caractère du ciphertext : il encode les 6 bits de poids
+    // fort du premier octet, donc l'octet change toujours et le tag GCM
+    // échoue de façon déterministe. (Le dernier caractère serait ambigu :
+    // ses bits de bourrage base64 peuvent être ignorés au décodage.)
     const ct = parts[3];
-    parts[3] = ct.slice(0, -1) + (ct.slice(-1) === "a" ? "b" : "a");
+    parts[3] = (ct[0] === "a" ? "b" : "a") + ct.slice(1);
     const altered = parts.join(".");
     await expect(decryptWithPassphrase(altered, "pw")).rejects.toThrow();
   });

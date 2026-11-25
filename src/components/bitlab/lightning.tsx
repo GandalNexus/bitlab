@@ -689,6 +689,25 @@ function ChannelsView({ st, scids }: { st: LnLabStatus; scids: Record<string, st
                     <p className="font-mono text-[11px]">{scids[ch.channelId]}</p>
                   </div>
                 ) : null}
+                {bitquestMission?.kind === 'CHANNEL' && ready && (
+                  <div className="border-primary/30 bg-primary/5 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
+                    <span className="text-primary text-[10px]">
+                      {ch.scidFormatted
+                        ? t('Mission BitQuest : scid prêt à être soumis.')
+                        : t('Mission BitQuest : en attente du scid annoncé (~3 conf).')}
+                    </span>
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1 text-[10px]"
+                      onClick={() => submitToBitquest(ch)}
+                      disabled={!ch.scidFormatted}
+                      aria-label={t('Soumettre ce canal à BitQuest')}
+                    >
+                      <Zap className="h-3 w-3" />
+                      {t('Soumettre à BitQuest')}
+                    </Button>
+                  </div>
+                )}
                 <div className="mt-2 flex justify-end">
                   <Button
                     size="sm"

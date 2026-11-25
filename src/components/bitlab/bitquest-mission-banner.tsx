@@ -10,6 +10,7 @@ import {
   type BitquestKind,
 } from '@/lib/bitquest-bridge';
 import { selectCurrentProofValue, useBitquestMissionStore } from '@/lib/bitquest-mission-store';
+import { useBitquestUserStore } from '@/lib/bitquest-user-store';
 import { cn } from '@/lib/utils';
 
 /**

@@ -1,6 +1,5 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Blocks,
@@ -12,7 +11,6 @@ import {
   ExternalLink,
   Loader2,
   LogOut,
-  LogIn,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -22,7 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { BrandMark } from '@/components/bitlab/sidebar';
 import { LangToggle, ThemeToggle } from '@/components/bitlab/controls';
 import { api } from '@/lib/mempool';
 import { useLabStore } from '@/lib/store';
@@ -31,7 +28,7 @@ import { useT } from '@/lib/i18n';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import { cn } from '@/lib/utils';
 import { useBitquestUserStore } from '@/lib/bitquest-user-store';
-import { getBitquestUrl } from '@/lib/bitquest-user';
+import { getBitquestUrl, isBitquestConfigured } from '@/lib/bitquest-user';
 
 export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const net = useLabStore((s) => s.network);
@@ -62,8 +59,6 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
         >
           <Menu className="h-5 w-5" />
         </button>
-
-        <BrandMark responsive />
 
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
@@ -151,46 +146,16 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
 }
 
 /**
- * Construit l'URL SSO top-level BitQuest → BitLab.
- * BitQuest lit son cookie HttpOnly (SameSite=Lax), émet un launch_token,
- * et redirige vers BitLab avec `?launch_token=XXX`. Le hook
- * `useBitquestMission` consomme ensuite ce token côté client.
- *
- * ⚠️ Pattern SSR-safe via `useSyncExternalStore` : évite le mismatch
- * d'hydration en servant une valeur stable "/" côté serveur ET au
- * premier render client, puis bascule vers l'origine complète. On
- * n'utilise pas `useState + useEffect` (anti-pattern React moderne,
- * lint `react-hooks/set-state-in-effect`).
- */
-const EMPTY_SUBSCRIBE = () => () => {};
-
-function getClientReturnTo(): string {
-  return `${window.location.origin}${window.location.pathname}`;
-}
-
-function useSsoUrl(bitquestUrl: string): string {
-  const returnTo = useSyncExternalStore(
-    EMPTY_SUBSCRIBE,
-    getClientReturnTo,
-    () => '/', // SSR snapshot — match le premier render client (avant hydration)
-  );
-  const params = new URLSearchParams({ returnTo });
-  return `${bitquestUrl}/api/auth/bitlab-sso?${params.toString()}`;
-}
-
-/**
  * Badge d'identité GandalNexus (LOT 3 + LOT 6 + LOT 9).
  *
- * Trois états visuels (toujours visibles, y compris en mobile) :
- *   - connecté → dropdown @pseudo avec actions « Ouvrir BitQuest »
- *     et « Déconnexion locale » (clear du store BitLab uniquement ;
- *     la session BitQuest reste intacte).
+ * Deux états visuels :
+ *   - connecté → dropdown @pseudo avec actions « Ouvrir BitQuest »,
+ *     « Déconnexion locale » et « Déconnexion globale ».
  *   - identification en cours → chip avec Loader2.
- *   - non connecté → bouton « Se connecter » qui déclenche un SSO
- *     top-level vers BitQuest (cookie Lax envoyé, redirect avec
- *     launch_token consommé au retour).
  *
- * En < sm, le label texte est tronqué à l'icône pour économiser l'espace.
+ * Le bouton « Se connecter » (SSO top-level, LOT 7) a été retiré du
+ * header sur demande : plus de point d'entrée de connexion manuel,
+ * seul le SSO silencieux (silent-sso.ts) peut peupler le badge.
  */
 function GandalNexusUserBadge() {
   const { t } = useT();
@@ -198,7 +163,6 @@ function GandalNexusUserBadge() {
   const launchStatus = useBitquestUserStore((s) => s.launchStatus);
   const clearUser = useBitquestUserStore((s) => s.clearUser);
   const bitquestUrl = getBitquestUrl();
-  const ssoUrl = useSsoUrl(bitquestUrl);
 
   if (user) {
     return (
@@ -240,6 +204,12 @@ function GandalNexusUserBadge() {
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {
+              // BitQuest non configuré : pas d'endpoint logout global,
+              // on retombe sur une déconnexion locale sans navigation.
+              if (!isBitquestConfigured()) {
+                clearUser();
+                return;
+              }
               const returnTo = `${window.location.origin}${window.location.pathname}`;
               const target = `${bitquestUrl}/api/auth/bitlab-logout?returnTo=${encodeURIComponent(returnTo)}`;
               window.location.assign(target);
@@ -266,19 +236,7 @@ function GandalNexusUserBadge() {
     );
   }
 
-  // Navigation top-level (pas target=_blank) : cookie bq_session SameSite=Lax
-  // envoyé, BitQuest nous redirige automatiquement avec un launch_token.
-  return (
-    <a
-      href={ssoUrl}
-      title={t('Se connecter avec BitQuest')}
-      className={cn(
-        'border-border bg-card hover:bg-accent/60 flex items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-sm font-medium transition-colors',
-        'focus-visible:ring-primary/40 outline-none focus-visible:ring-2',
-      )}
-    >
-      <LogIn className="text-muted-foreground h-3.5 w-3.5" aria-hidden />
-      <span className="hidden sm:inline">{t('Se connecter')}</span>
-    </a>
-  );
+  // Pas d'utilisateur identifié : aucun bouton de connexion dans le
+  // header (retrait demandé) — on ne rend rien.
+  return null;
 }
