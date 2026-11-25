@@ -74,9 +74,13 @@ describe("encryptWithPassphrase / decryptWithPassphrase", () => {
   it("refuse un ciphertext altéré (tag AES-GCM invalide)", async () => {
     const blob = await encryptWithPassphrase(MNEMONIC_12, "pw");
     const parts = blob.split(".");
-    // Flip le dernier caractère du ciphertext (reste base64url valide)
+    // Flip un caractère au milieu du ciphertext. On évite la queue car les
+    // 1 ou 2 derniers bits d'un sextet base64url peuvent tomber dans le
+    // padding et ne modifient alors aucun byte décodé — l'auth tag AES-GCM
+    // ne verrait rien d'altéré et le test échouerait de façon flaky.
     const ct = parts[3];
-    parts[3] = ct.slice(0, -1) + (ct.slice(-1) === "a" ? "b" : "a");
+    const i = Math.floor(ct.length / 2);
+    parts[3] = ct.slice(0, i) + (ct[i] === "a" ? "b" : "a") + ct.slice(i + 1);
     const altered = parts.join(".");
     await expect(decryptWithPassphrase(altered, "pw")).rejects.toThrow();
   });

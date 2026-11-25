@@ -23,8 +23,16 @@ class RegtestChainController {
   private async ensureWorker(): Promise<void> {
     if (this.worker && this.readyPromise) return this.readyPromise;
 
-    this.readyPromise = new Promise<void>(async (resolve, reject) => {
-      const w = new Worker('/regtest/worker.js', { type: 'module' });
+    this.readyPromise = new Promise<void>((resolve, reject) => {
+      let w: Worker;
+      try {
+        w = new Worker('/regtest/worker.js', { type: 'module' });
+      } catch (err) {
+        this.worker = null;
+        this.readyPromise = null;
+        reject(err instanceof Error ? err : new Error(String(err)));
+        return;
+      }
       this.worker = w;
 
       w.onmessage = (ev: MessageEvent<WorkerMsg>) => {
@@ -53,19 +61,19 @@ class RegtestChainController {
       };
 
       w.onerror = (e) => {
-        reject(new Error(`regtest worker failed: ${e.message}`));
         this.worker = null;
         this.readyPromise = null;
+        reject(new Error(`regtest worker failed: ${e.message}`));
       };
 
-      // Load persisted chain state.
-      let saved: SerializedChain | null = null;
-      try {
-        saved = (await idbGet<SerializedChain>(IDB_KEY)) ?? null;
-      } catch {
-        saved = null;
-      }
-      w.postMessage({ type: 'load', kv: saved });
+      // Load persisted chain state, puis signale au worker.
+      idbGet<SerializedChain>(IDB_KEY)
+        .then((saved) => {
+          w.postMessage({ type: 'load', kv: saved ?? null });
+        })
+        .catch(() => {
+          w.postMessage({ type: 'load', kv: null });
+        });
     });
 
     return this.readyPromise;
