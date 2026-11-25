@@ -29,7 +29,7 @@ import { regtestChain } from '@/lib/regtest-chain';
 import { regtestMode } from '@/lib/regtest';
 import { fmtInt } from '@/lib/bitcoin/utils';
 import { satsToBtc } from '@/lib/bitcoin/utils';
-import type { LabWallet } from '@/lib/bitcoin/keys';
+import type { AnyWallet } from '@/lib/bitcoin/wallet-lock';
 import { useT } from '@/lib/i18n';
 
 const FAUCET_AMOUNTS = [100_000_000, 500_000_000, 1_000_000_000, 5_000_000_000];
@@ -111,7 +111,7 @@ function RegtestFaucet({ onNavigate }: { onNavigate?: (tab: string) => void }) {
     void queryClient.invalidateQueries({ queryKey: ['regtest-info'] });
   };
 
-  const runFaucet = async (wallet: LabWallet) => {
+  const runFaucet = async (wallet: AnyWallet) => {
     setBusyAddress(wallet.address);
     try {
       let blockHeight: number | undefined;
@@ -299,7 +299,7 @@ function WalletFaucetRow({
   busy,
   onReceive,
 }: {
-  wallet: LabWallet;
+  wallet: AnyWallet;
   amount: number;
   busy: boolean;
   onReceive: () => void;
