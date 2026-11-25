@@ -87,11 +87,7 @@ export function MiningModule() {
   // (minage requiert privateKeyHex pour payout). Les locked sont
   // visibles dans wallet.tsx mais pas éligibles ici.
   const netWallets = useMemo(
-    () =>
-      wallets.filter(
-        (w): w is LabWallet =>
-          (w.network ?? DEFAULT_NET) === net && !isLocked(w),
-      ),
+    () => wallets.filter((w): w is LabWallet => (w.network ?? DEFAULT_NET) === net && !isLocked(w)),
     [wallets, net],
   );
   const payout = useMemo(

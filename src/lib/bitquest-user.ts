@@ -31,8 +31,8 @@ export interface BitquestUser {
  */
 export function getBitquestUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_BITQUEST_URL?.trim();
-  if (envUrl) return envUrl.replace(/\/$/, "");
-  return "http://localhost:3000";
+  if (envUrl) return envUrl.replace(/\/$/, '');
+  return 'http://localhost:3000';
 }
 
 /**
@@ -68,12 +68,12 @@ export async function verifyLaunchTokenAgainstBitquest(
 ): Promise<LaunchTokenExchangeResult> {
   const url = `${getBitquestUrl()}/api/auth/verify-launch-token`;
   const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ token }),
     // Pas de credentials : la requête est volontairement unauth, le JWT fait foi.
-    credentials: "omit",
-    mode: "cors",
+    credentials: 'omit',
+    mode: 'cors',
   });
   if (!res.ok) {
     let msg = `BitQuest verify-launch-token ${res.status}`;
@@ -91,10 +91,10 @@ export async function verifyLaunchTokenAgainstBitquest(
     session?: { token: string; expiresAt: string; ttlSeconds: number };
   };
   if (!body.ok || !body.user?.id) {
-    throw new Error("BitQuest : réponse malformée.");
+    throw new Error('BitQuest : réponse malformée.');
   }
   if (!body.session?.token) {
-    throw new Error("BitQuest : session token absent de la réponse.");
+    throw new Error('BitQuest : session token absent de la réponse.');
   }
   return { user: body.user, session: body.session };
 }
@@ -126,20 +126,20 @@ export interface GandalNexusAttempt {
  */
 export async function fetchMyAttempts(opts: {
   sessionToken: string;
-  state?: "active" | "all";
+  state?: 'active' | 'all';
   limit?: number;
 }): Promise<GandalNexusAttempt[]> {
   const params = new URLSearchParams();
-  if (opts.state) params.set("state", opts.state);
-  if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+  if (opts.state) params.set('state', opts.state);
+  if (opts.limit !== undefined) params.set('limit', String(opts.limit));
   const url = `${getBitquestUrl()}/api/bitlab/me/attempts${
-    params.toString() ? `?${params.toString()}` : ""
+    params.toString() ? `?${params.toString()}` : ''
   }`;
   const res = await fetch(url, {
-    method: "GET",
+    method: 'GET',
     headers: { authorization: `Bearer ${opts.sessionToken}` },
-    credentials: "omit",
-    mode: "cors",
+    credentials: 'omit',
+    mode: 'cors',
   });
   if (!res.ok) {
     let msg = `BitQuest /bitlab/me/attempts ${res.status}`;

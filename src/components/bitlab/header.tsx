@@ -195,10 +195,7 @@ function GandalNexusUserBadge() {
               {t('Ouvrir BitQuest')}
             </a>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() => clearUser()}
-            className="flex items-center gap-2"
-          >
+          <DropdownMenuItem onSelect={() => clearUser()} className="flex items-center gap-2">
             <LogOut className="h-4 w-4" aria-hidden />
             {t('Déconnexion locale')}
           </DropdownMenuItem>

@@ -363,8 +363,7 @@ function FundingBridge({
   // LOT 76 : lightning channel ouvre une TX de funding → requiert
   // privateKeyHex. Filtre les wallets locked.
   const usable = wallets.filter(
-    (w): w is LabWallet =>
-      (w.network ?? DEFAULT_NET) === net && !isLocked(w),
+    (w): w is LabWallet => (w.network ?? DEFAULT_NET) === net && !isLocked(w),
   );
   const wallet = usable.find((w) => w.id === walletId) ?? usable[0] ?? null;
 

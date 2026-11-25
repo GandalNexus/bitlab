@@ -948,11 +948,7 @@ export function TxBuilder() {
 
   // LOT 76 : filtre les locked (tx-builder signe → privateKeyHex requis).
   const netWallets = useMemo(
-    () =>
-      wallets.filter(
-        (w): w is LabWallet =>
-          (w.network ?? DEFAULT_NET) === net && !isLocked(w),
-      ),
+    () => wallets.filter((w): w is LabWallet => (w.network ?? DEFAULT_NET) === net && !isLocked(w)),
     [wallets, net],
   );
   const wallet = useMemo(

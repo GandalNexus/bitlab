@@ -9,9 +9,9 @@
  * personnaliser l'expérience pour l'apprenant identifié.
  */
 
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import type { BitquestUser } from "./bitquest-user";
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import type { BitquestUser } from './bitquest-user';
 
 export interface BitquestUserState {
   user: BitquestUser | null;
@@ -19,7 +19,7 @@ export interface BitquestUserState {
    * Statut de l'échange launch token : indique si on a essayé de le
    * consommer (pour éviter de retenter en boucle au refresh).
    */
-  launchStatus: "idle" | "pending" | "success" | "error";
+  launchStatus: 'idle' | 'pending' | 'success' | 'error';
   launchError: string | null;
   /**
    * Session token émis par BitQuest à la consommation du launch_token.
@@ -30,16 +30,16 @@ export interface BitquestUserState {
   sessionToken: string | null;
   sessionExpiresAt: number | null;
   setUser: (user: BitquestUser | null) => void;
-  setLaunchStatus: (status: BitquestUserState["launchStatus"], error?: string | null) => void;
+  setLaunchStatus: (status: BitquestUserState['launchStatus'], error?: string | null) => void;
   setSession: (token: string, expiresAt: number) => void;
   clearUser: () => void;
 }
 
-export const BITQUEST_USER_STORAGE_KEY = "bitlab.bitquest-user.v1";
+export const BITQUEST_USER_STORAGE_KEY = 'bitlab.bitquest-user.v1';
 
 const INITIAL = {
   user: null as BitquestUser | null,
-  launchStatus: "idle" as const,
+  launchStatus: 'idle' as const,
   launchError: null as string | null,
   sessionToken: null as string | null,
   sessionExpiresAt: null as number | null,
@@ -59,16 +59,14 @@ export const useBitquestUserStore = create<BitquestUserState>()(
     (set) => ({
       ...INITIAL,
       setUser: (user) => set({ user }),
-      setLaunchStatus: (launchStatus, error = null) =>
-        set({ launchStatus, launchError: error }),
-      setSession: (sessionToken, sessionExpiresAt) =>
-        set({ sessionToken, sessionExpiresAt }),
+      setLaunchStatus: (launchStatus, error = null) => set({ launchStatus, launchError: error }),
+      setSession: (sessionToken, sessionExpiresAt) => set({ sessionToken, sessionExpiresAt }),
       clearUser: () => set({ ...INITIAL }),
     }),
     {
       name: BITQUEST_USER_STORAGE_KEY,
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" && typeof window.sessionStorage !== "undefined"
+        typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined'
           ? window.sessionStorage
           : noopStorage,
       ),

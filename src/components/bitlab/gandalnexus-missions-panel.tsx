@@ -33,14 +33,46 @@ import { cn } from '@/lib/utils';
 import { appendThemeToUrl, useThemeStore } from '@/lib/theme';
 
 const STATE_META: Record<string, { label: string; icon: typeof Play; classes: string }> = {
-  CREATED: { label: 'Lancée', icon: Play, classes: 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-  IN_PROGRESS: { label: 'En cours', icon: Play, classes: 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-  PROOF_PENDING: { label: 'Preuve en attente', icon: Clock, classes: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400' },
-  VERIFYING: { label: 'Vérification', icon: Clock, classes: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400' },
-  COMPLETED: { label: 'Terminée', icon: CheckCircle2, classes: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
-  FAILED: { label: 'Échouée', icon: XCircle, classes: 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400' },
-  EXPIRED: { label: 'Expirée', icon: AlertCircle, classes: 'border-muted-foreground/30 text-muted-foreground' },
-  ABANDONED: { label: 'Abandonnée', icon: AlertCircle, classes: 'border-muted-foreground/30 text-muted-foreground' },
+  CREATED: {
+    label: 'Lancée',
+    icon: Play,
+    classes: 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  },
+  IN_PROGRESS: {
+    label: 'En cours',
+    icon: Play,
+    classes: 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  },
+  PROOF_PENDING: {
+    label: 'Preuve en attente',
+    icon: Clock,
+    classes: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  },
+  VERIFYING: {
+    label: 'Vérification',
+    icon: Clock,
+    classes: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  },
+  COMPLETED: {
+    label: 'Terminée',
+    icon: CheckCircle2,
+    classes: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  },
+  FAILED: {
+    label: 'Échouée',
+    icon: XCircle,
+    classes: 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400',
+  },
+  EXPIRED: {
+    label: 'Expirée',
+    icon: AlertCircle,
+    classes: 'border-muted-foreground/30 text-muted-foreground',
+  },
+  ABANDONED: {
+    label: 'Abandonnée',
+    icon: AlertCircle,
+    classes: 'border-muted-foreground/30 text-muted-foreground',
+  },
 };
 
 function AttemptStateBadge({ state }: { state: string }) {
@@ -49,7 +81,7 @@ function AttemptStateBadge({ state }: { state: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide',
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase',
         meta.classes,
       )}
     >
@@ -89,14 +121,14 @@ export function GandalNexusMissionsPanel() {
     return () => window.clearInterval(iv);
   }, []);
   const sessionAlive =
-    sessionToken !== null &&
-    sessionExpiresAt !== null &&
-    sessionExpiresAt > now + 30_000;
+    sessionToken !== null && sessionExpiresAt !== null && sessionExpiresAt > now + 30_000;
 
   const attempts = useQuery({
     queryKey: ['gandalnexus-attempts', sessionToken?.slice(-16) ?? 'none'],
     queryFn: () =>
-      sessionToken ? fetchMyAttempts({ sessionToken, state: 'all', limit: 20 }) : Promise.resolve([]),
+      sessionToken
+        ? fetchMyAttempts({ sessionToken, state: 'all', limit: 20 })
+        : Promise.resolve([]),
     enabled: sessionAlive,
     refetchInterval: 60_000,
     staleTime: 15_000,
@@ -133,8 +165,12 @@ export function GandalNexusMissionsPanel() {
   }
 
   const list: GandalNexusAttempt[] = attempts.data ?? [];
-  const active = list.filter((a) => ['CREATED', 'IN_PROGRESS', 'PROOF_PENDING', 'VERIFYING'].includes(a.state));
-  const recent = list.filter((a) => !['CREATED', 'IN_PROGRESS', 'PROOF_PENDING', 'VERIFYING'].includes(a.state)).slice(0, 5);
+  const active = list.filter((a) =>
+    ['CREATED', 'IN_PROGRESS', 'PROOF_PENDING', 'VERIFYING'].includes(a.state),
+  );
+  const recent = list
+    .filter((a) => !['CREATED', 'IN_PROGRESS', 'PROOF_PENDING', 'VERIFYING'].includes(a.state))
+    .slice(0, 5);
 
   return (
     <section aria-label={t('Mes missions GandalNexus')}>
@@ -145,15 +181,11 @@ export function GandalNexusMissionsPanel() {
               <Target className="text-primary h-4 w-4" aria-hidden />
               {t('Mes missions GandalNexus')}
               {user && (
-                <span className="text-muted-foreground text-xs font-normal">
-                  · @{user.pseudo}
-                </span>
+                <span className="text-muted-foreground text-xs font-normal">· @{user.pseudo}</span>
               )}
             </CardTitle>
             <p className="text-muted-foreground mt-1 text-xs">
-              {t(
-                'Historique de tes tentatives et accès rapide à BitQuest pour reprendre.',
-              )}
+              {t('Historique de tes tentatives et accès rapide à BitQuest pour reprendre.')}
             </p>
           </div>
           <Button
@@ -169,7 +201,9 @@ export function GandalNexusMissionsPanel() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {attempts.isLoading && <p className="text-muted-foreground text-sm">{t('Chargement…')}</p>}
+          {attempts.isLoading && (
+            <p className="text-muted-foreground text-sm">{t('Chargement…')}</p>
+          )}
           {attempts.isError && (
             <p className="text-destructive text-sm">
               {t('Impossible de charger les missions — réessaie plus tard.')}
@@ -183,7 +217,7 @@ export function GandalNexusMissionsPanel() {
 
           {active.length > 0 && (
             <div className="space-y-2">
-              <p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">
+              <p className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                 {t('En cours')}
               </p>
               <ul className="space-y-2">
@@ -217,7 +251,7 @@ export function GandalNexusMissionsPanel() {
 
           {recent.length > 0 && (
             <div className="space-y-2">
-              <p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">
+              <p className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
                 {t('Récentes')}
               </p>
               <ul className="space-y-1.5">

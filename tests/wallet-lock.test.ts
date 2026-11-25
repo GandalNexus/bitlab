@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createWallet } from '../src/lib/bitcoin/keys';
-import {
-  isLocked,
-  lockWallet,
-  unlockWallet,
-} from '../src/lib/bitcoin/wallet-lock';
+import { isLocked, lockWallet, unlockWallet } from '../src/lib/bitcoin/wallet-lock';
 
 describe('lock / unlock wallet (LOT 72)', () => {
   it('lock + unlock roundtrip préserve les champs sensibles', async () => {

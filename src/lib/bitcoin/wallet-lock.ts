@@ -1,9 +1,5 @@
 import type { LabWallet } from './keys';
-import {
-  decryptWithPassphrase,
-  encryptWithPassphrase,
-  isEncryptedBlob,
-} from './crypto-at-rest';
+import { decryptWithPassphrase, encryptWithPassphrase, isEncryptedBlob } from './crypto-at-rest';
 
 /**
  * Lock / unlock d'un wallet (LOT 72).
@@ -52,10 +48,7 @@ export function isLocked(w: AnyWallet): w is LockedWallet {
  * Les champs sensibles sont concaténés en JSON puis chiffrés en un
  * seul blob — plus simple à gérer que 3 blobs séparés.
  */
-export async function lockWallet(
-  wallet: LabWallet,
-  passphrase: string,
-): Promise<LockedWallet> {
+export async function lockWallet(wallet: LabWallet, passphrase: string): Promise<LockedWallet> {
   if (passphrase.length < 10) {
     throw new Error('Passphrase trop courte (≥ 10 caractères).');
   }
@@ -87,10 +80,7 @@ export async function lockWallet(
  * ⚠️ Le résultat ne doit PAS être persisté dans l'IndexedDB — il
  * ne vit qu'en mémoire pour la durée d'une opération signante.
  */
-export async function unlockWallet(
-  locked: LockedWallet,
-  passphrase: string,
-): Promise<LabWallet> {
+export async function unlockWallet(locked: LockedWallet, passphrase: string): Promise<LabWallet> {
   if (!isEncryptedBlob(locked.encryptedBlob)) {
     throw new Error('Blob chiffré malformé.');
   }

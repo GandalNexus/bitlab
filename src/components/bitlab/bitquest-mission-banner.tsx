@@ -1,7 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ExternalLink, FlaskConical, Loader2, Target, Trash2, User } from 'lucide-react';
+import {
+  ChevronDown,
+  ExternalLink,
+  FlaskConical,
+  Loader2,
+  Target,
+  Trash2,
+  User,
+} from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import {
   buildReturnUrl,
@@ -60,10 +68,8 @@ export function BitquestMissionBanner() {
           className="border-primary/40 bg-primary text-primary-foreground pointer-events-auto flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold shadow-lg transition hover:brightness-110"
         >
           <Target className="h-3.5 w-3.5" aria-hidden />
-          <span className="max-w-[160px] truncate">
-            {mission.title ?? mission.questCode}
-          </span>
-          <span className="rounded-full bg-primary-foreground/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wide">
+          <span className="max-w-[160px] truncate">{mission.title ?? mission.questCode}</span>
+          <span className="bg-primary-foreground/15 rounded-full px-1.5 py-0.5 text-[9px] tracking-wide uppercase">
             {mission.kind}
           </span>
         </button>
@@ -74,7 +80,9 @@ export function BitquestMissionBanner() {
   const onAbandon = () => {
     if (submitting) return;
     const ok = window.confirm(
-      t('Abandonner cette mission BitQuest ? Tu perdras le contexte en cours. Tu pourras la relancer depuis BitQuest.'),
+      t(
+        'Abandonner cette mission BitQuest ? Tu perdras le contexte en cours. Tu pourras la relancer depuis BitQuest.',
+      ),
     );
     if (ok) clearMission();
   };
@@ -126,15 +134,14 @@ export function BitquestMissionBanner() {
             </span>
             {user && (
               <span
-                className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide"
+                className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] tracking-wide uppercase"
                 title={t('Connecté via GandalNexus — identité vérifiée par BitQuest.')}
               >
-                <User className="h-3 w-3" aria-hidden />
-                @{user.pseudo}
+                <User className="h-3 w-3" aria-hidden />@{user.pseudo}
               </span>
             )}
             {!user && launchStatus === 'pending' && (
-              <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide">
+              <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] tracking-wide uppercase">
                 <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
                 {t('identification…')}
               </span>

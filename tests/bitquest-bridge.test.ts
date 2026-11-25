@@ -50,7 +50,7 @@ describe('parseBitquestMission', () => {
     expect(m?.attemptId).toBeNull();
   });
 
-  it('rejette launch_token qui n\'a pas 3 segments JWT', () => {
+  it("rejette launch_token qui n'a pas 3 segments JWT", () => {
     const m = parseBitquestMission(params({ launch_token: 'not-a-jwt.only-two' }));
     expect(m?.launchToken).toBeNull();
   });

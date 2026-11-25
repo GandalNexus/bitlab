@@ -164,7 +164,7 @@ export function WalletLockButton({ wallet }: { wallet: AnyWallet }) {
           <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
             {locked
               ? t(
-                  'Perdre la passphrase = perdre le wallet (aucun reset serveur — c\'est l\'essence non-custodial).',
+                  "Perdre la passphrase = perdre le wallet (aucun reset serveur — c'est l'essence non-custodial).",
                 )
               : t(
                   'Perdre la passphrase = perdre le wallet. Stocke-la hors du navigateur (gestionnaire de mots de passe, papier offline).',

@@ -107,7 +107,7 @@ export function StatCard({
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 space-y-2.5">
-            <div className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">
+            <div className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
               {title}
             </div>
             <div className="font-mono text-2xl font-semibold tracking-tight tabular-nums">

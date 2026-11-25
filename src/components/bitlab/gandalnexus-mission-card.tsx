@@ -17,24 +17,11 @@
  */
 
 import { useEffect, useState } from 'react';
-import {
-  CheckCircle2,
-  Clock,
-  ExternalLink,
-  FlaskConical,
-  Loader2,
-  User,
-} from 'lucide-react';
+import { CheckCircle2, Clock, ExternalLink, FlaskConical, Loader2, User } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  RETURN_FIELD_BY_KIND,
-  type BitquestKind,
-} from '@/lib/bitquest-bridge';
-import {
-  selectCurrentProofValue,
-  useBitquestMissionStore,
-} from '@/lib/bitquest-mission-store';
+import { RETURN_FIELD_BY_KIND, type BitquestKind } from '@/lib/bitquest-bridge';
+import { selectCurrentProofValue, useBitquestMissionStore } from '@/lib/bitquest-mission-store';
 import { useBitquestUserStore } from '@/lib/bitquest-user-store';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -68,11 +55,7 @@ function formatElapsed(fromIso: number | null): string {
   return rem === 0 ? `${hours} h` : `${hours} h ${rem}`;
 }
 
-export function GandalNexusMissionCard({
-  onNavigate,
-}: {
-  onNavigate: (tab: string) => void;
-}) {
+export function GandalNexusMissionCard({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { t } = useT();
   const mission = useBitquestMissionStore((s) => s.mission);
   const proofValue = useBitquestMissionStore(selectCurrentProofValue);
@@ -102,14 +85,14 @@ export function GandalNexusMissionCard({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="border-primary/30 bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide">
+                <span className="border-primary/30 bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase">
                   <FlaskConical className="h-3 w-3" aria-hidden />
                   {t('via GandalNexus')}
                 </span>
-                <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] tracking-wide uppercase">
                   {mission.kind}
                 </span>
-                <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] tracking-wide uppercase">
                   {mission.network}
                 </span>
                 <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px]">
@@ -118,8 +101,7 @@ export function GandalNexusMissionCard({
                 </span>
                 {user && (
                   <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px]">
-                    <User className="h-3 w-3" aria-hidden />
-                    @{user.pseudo}
+                    <User className="h-3 w-3" aria-hidden />@{user.pseudo}
                   </span>
                 )}
                 {!user && launchStatus === 'pending' && (
@@ -130,9 +112,7 @@ export function GandalNexusMissionCard({
                 )}
               </div>
               <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
-                {mission.title ?? (
-                  <span className="font-mono text-base">{mission.questCode}</span>
-                )}
+                {mission.title ?? <span className="font-mono text-base">{mission.questCode}</span>}
               </h2>
               {mission.instructions && (
                 <p className="text-foreground/80 max-w-2xl text-sm leading-relaxed">
@@ -154,14 +134,14 @@ export function GandalNexusMissionCard({
         <CardContent className="pt-0">
           <div className="border-primary/15 bg-background/60 flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 space-y-0.5">
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 {t('Prochaine étape')}
               </p>
               <p className="text-sm">{t(HINT_BY_KIND[mission.kind])}</p>
             </div>
             <div
               className={cn(
-                'inline-flex items-center gap-1.5 shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium',
                 captured
                   ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                   : 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400',

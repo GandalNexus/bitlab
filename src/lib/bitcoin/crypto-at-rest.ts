@@ -25,21 +25,21 @@
 
 const VERSION = 1;
 const PBKDF2_ITERATIONS = 310_000;
-const PBKDF2_HASH = "SHA-256";
+const PBKDF2_HASH = 'SHA-256';
 const KEY_LENGTH_BITS = 256;
 const SALT_BYTES = 16;
 const IV_BYTES = 12;
 
 /** Base64url (sans padding) encode/decode. */
 function b64urlEncode(bytes: Uint8Array): string {
-  let bin = "";
+  let bin = '';
   for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function b64urlDecode(str: string): Uint8Array {
-  const pad = "=".repeat((4 - (str.length % 4)) % 4);
-  const bin = atob(str.replace(/-/g, "+").replace(/_/g, "/") + pad);
+  const pad = '='.repeat((4 - (str.length % 4)) % 4);
+  const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/') + pad);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
@@ -50,10 +50,9 @@ async function getSubtle(): Promise<SubtleCrypto> {
   // ainsi qu'en Node 16+ (via `node:crypto` ou globalThis.crypto). Si
   // l'env en est dépourvu, on refuse de chiffrer plutôt que de produire
   // un ciphertext faible — sécurité fail-closed.
-  const subtle = (globalThis.crypto ?? (await import("node:crypto")).webcrypto)
-    .subtle;
+  const subtle = (globalThis.crypto ?? (await import('node:crypto')).webcrypto).subtle;
   if (!subtle) {
-    throw new Error("Web Crypto API indisponible — chiffrement impossible.");
+    throw new Error('Web Crypto API indisponible — chiffrement impossible.');
   }
   return subtle;
 }
@@ -64,24 +63,20 @@ async function deriveKey(
   salt: Uint8Array,
 ): Promise<CryptoKey> {
   const encoder = new TextEncoder();
-  const keyMaterial = await subtle.importKey(
-    "raw",
-    encoder.encode(passphrase),
-    "PBKDF2",
-    false,
-    ["deriveKey"],
-  );
+  const keyMaterial = await subtle.importKey('raw', encoder.encode(passphrase), 'PBKDF2', false, [
+    'deriveKey',
+  ]);
   return subtle.deriveKey(
     {
-      name: "PBKDF2",
+      name: 'PBKDF2',
       salt: salt as unknown as BufferSource,
       iterations: PBKDF2_ITERATIONS,
       hash: PBKDF2_HASH,
     },
     keyMaterial,
-    { name: "AES-GCM", length: KEY_LENGTH_BITS },
+    { name: 'AES-GCM', length: KEY_LENGTH_BITS },
     false,
-    ["encrypt", "decrypt"],
+    ['encrypt', 'decrypt'],
   );
 }
 
@@ -95,7 +90,7 @@ export async function encryptWithPassphrase(
   passphrase: string,
 ): Promise<string> {
   if (passphrase.length === 0) {
-    throw new Error("Passphrase vide — refus de chiffrer.");
+    throw new Error('Passphrase vide — refus de chiffrer.');
   }
   const subtle = await getSubtle();
   const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
@@ -103,17 +98,12 @@ export async function encryptWithPassphrase(
   const key = await deriveKey(subtle, passphrase, salt);
   const ct = new Uint8Array(
     await subtle.encrypt(
-      { name: "AES-GCM", iv: iv as unknown as BufferSource },
+      { name: 'AES-GCM', iv: iv as unknown as BufferSource },
       key,
       new TextEncoder().encode(plaintext),
     ),
   );
-  return [
-    VERSION.toString(),
-    b64urlEncode(salt),
-    b64urlEncode(iv),
-    b64urlEncode(ct),
-  ].join(".");
+  return [VERSION.toString(), b64urlEncode(salt), b64urlEncode(iv), b64urlEncode(ct)].join('.');
 }
 
 /**
@@ -121,16 +111,13 @@ export async function encryptWithPassphrase(
  * Jette si la passphrase est incorrecte, le blob est corrompu, ou la
  * version n'est pas supportée.
  */
-export async function decryptWithPassphrase(
-  blob: string,
-  passphrase: string,
-): Promise<string> {
+export async function decryptWithPassphrase(blob: string, passphrase: string): Promise<string> {
   if (passphrase.length === 0) {
-    throw new Error("Passphrase vide — refus de déchiffrer.");
+    throw new Error('Passphrase vide — refus de déchiffrer.');
   }
-  const parts = blob.split(".");
+  const parts = blob.split('.');
   if (parts.length !== 4) {
-    throw new Error("Blob chiffré malformé (version.salt.iv.ciphertext).");
+    throw new Error('Blob chiffré malformé (version.salt.iv.ciphertext).');
   }
   const version = Number.parseInt(parts[0], 10);
   if (!Number.isFinite(version) || version !== VERSION) {
@@ -144,7 +131,7 @@ export async function decryptWithPassphrase(
   try {
     const pt = new Uint8Array(
       await subtle.decrypt(
-        { name: "AES-GCM", iv: iv as unknown as BufferSource },
+        { name: 'AES-GCM', iv: iv as unknown as BufferSource },
         key,
         ct as unknown as BufferSource,
       ),
@@ -153,7 +140,7 @@ export async function decryptWithPassphrase(
   } catch {
     // AES-GCM invalide le tag si clé incorrecte ou ciphertext altéré.
     // On relance une erreur stable pour l'UI (évite de leak de détails).
-    throw new Error("Déchiffrement échoué — passphrase incorrecte ou blob altéré.");
+    throw new Error('Déchiffrement échoué — passphrase incorrecte ou blob altéré.');
   }
 }
 
@@ -162,8 +149,8 @@ export async function decryptWithPassphrase(
  * de déchiffrer). Utile pour migrer les wallets historiques en clair.
  */
 export function isEncryptedBlob(value: unknown): value is string {
-  if (typeof value !== "string") return false;
+  if (typeof value !== 'string') return false;
   if (!value.startsWith(`${VERSION}.`)) return false;
-  const parts = value.split(".");
+  const parts = value.split('.');
   return parts.length === 4 && parts.every((p) => p.length > 0);
 }

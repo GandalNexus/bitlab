@@ -132,9 +132,7 @@ export function EncryptedBackupButton({ wallet }: { wallet: LabWallet }) {
       const payload = buildPayload(wallet);
       const blob = await encryptWithPassphrase(JSON.stringify(payload), passphrase);
       const stamp = new Date().toISOString().slice(0, 10);
-      const safeLabel = (wallet.label || 'wallet')
-        .replace(/[^a-z0-9-_]/gi, '-')
-        .slice(0, 24);
+      const safeLabel = (wallet.label || 'wallet').replace(/[^a-z0-9-_]/gi, '-').slice(0, 24);
       downloadTextFile(`bitlab-backup-${safeLabel}-${stamp}.enc`, blob);
       toast({
         title: t('Backup chiffré généré'),

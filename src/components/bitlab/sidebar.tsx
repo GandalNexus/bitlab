@@ -246,19 +246,17 @@ function GandalNexusSection({ collapsed }: { collapsed: boolean }) {
 
   return (
     <div className="border-border/60 space-y-0.5 border-t pt-4">
-      <div className="nav-section-label text-muted-foreground/70 px-3 pb-1.5">
-        GandalNexus
-      </div>
+      <div className="nav-section-label text-muted-foreground/70 px-3 pb-1.5">GandalNexus</div>
       {mission && (
         <div className="border-primary/30 bg-primary/5 mx-1 rounded-[6px] border px-3 py-2">
-          <div className="text-primary flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+          <div className="text-primary flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase">
             <Target className="h-3 w-3" aria-hidden />
             {t('Mission active')}
           </div>
           <div className="text-foreground mt-0.5 truncate text-sm font-medium">
             {mission.title ?? mission.questCode}
           </div>
-          <div className="text-muted-foreground mt-0.5 text-[10px] uppercase tracking-wide">
+          <div className="text-muted-foreground mt-0.5 text-[10px] tracking-wide uppercase">
             {mission.kind} · {mission.network}
           </div>
         </div>
