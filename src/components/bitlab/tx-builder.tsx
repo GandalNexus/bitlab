@@ -994,7 +994,38 @@ export function TxBuilder() {
     setLastTxid(null);
   };
 
-  const canNext = step === 1 ? selected.length > 0 : step === 3 ? signedValid : true;
+  // Un output est « utilisable » s'il a une adresse non vide ET un montant > 0.
+  // Garde minimale pour éviter de passer en Signer / Diffuser avec un formulaire
+  // vide — sans quoi un apprenant pouvait sauter Sélectionner → Signer en un clic.
+  const hasValidOutput = outputs.some(
+    (o) => o.address.trim().length > 0 && Number(o.amount) > 0,
+  );
+
+  const canNext =
+    step === 1
+      ? selected.length > 0
+      : step === 2
+        ? hasValidOutput
+        : step === 3
+          ? signedValid
+          : true;
+
+  /**
+   * Autorise le saut direct vers une étape via les pastilles du stepper.
+   * Règle : retour en arrière toujours libre (l'apprenant doit pouvoir
+   * éditer), progression en avant uniquement si TOUS les prérequis des
+   * étapes intermédiaires sont remplis — sinon un clic sur « Diffuser »
+   * depuis « Sélectionner » amenait à un écran cassé.
+   */
+  const canJumpTo = (target: number) => {
+    if (lastTxid) return false;
+    if (target === step) return true;
+    if (target < step) return true;
+    if (target >= 2 && selected.length === 0) return false;
+    if (target >= 3 && !hasValidOutput) return false;
+    if (target >= 4 && !signedValid) return false;
+    return true;
+  };
 
   return (
     <div className="space-y-4">
@@ -1017,19 +1048,31 @@ export function TxBuilder() {
               const Icon = s.icon;
               const done = lastTxid ? true : step > s.id;
               const current = !lastTxid && step === s.id;
+              const reachable = canJumpTo(s.id);
+              const blocked = !reachable && !current && !done;
+              const blockReason = blocked
+                ? s.id >= 4
+                  ? t('Signez d’abord la transaction pour la diffuser.')
+                  : s.id >= 3
+                    ? t('Renseignez au moins une sortie valide (adresse + montant).')
+                    : t('Sélectionnez au moins un UTXO pour continuer.')
+                : undefined;
               return (
                 <div key={s.id} className="flex items-center">
                   <button
-                    onClick={() => !lastTxid && setStep(s.id)}
-                    disabled={Boolean(lastTxid)}
+                    onClick={() => reachable && setStep(s.id)}
+                    disabled={!reachable}
                     aria-current={current ? 'step' : undefined}
+                    aria-disabled={!reachable}
+                    title={blockReason}
                     className={cn(
                       'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
                       current && 'border-primary bg-primary text-primary-foreground',
                       done &&
                         !current &&
                         'border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-                      !done && !current && 'border-border text-muted-foreground',
+                      !done && !current && reachable && 'border-border text-muted-foreground',
+                      blocked && 'border-border/50 text-muted-foreground/50 cursor-not-allowed',
                     )}
                   >
                     {done && !current ? (
