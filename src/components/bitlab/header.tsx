@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { BrandMark } from '@/components/bitlab/sidebar';
 import { LangToggle, ThemeToggle } from '@/components/bitlab/controls';
 import { api } from '@/lib/mempool';
 import { useLabStore } from '@/lib/store';
@@ -59,6 +60,10 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
         >
           <Menu className="h-5 w-5" />
         </button>
+
+        {/* Logo + pillule restaurés (ff4f8b3 les avait retirés avec le
+            wordmark) — BrandMark n'affiche plus le wordmark « BITLAB ». */}
+        <BrandMark responsive />
 
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>

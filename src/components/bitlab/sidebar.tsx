@@ -415,16 +415,10 @@ export function BrandMark({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <OrbitMark className="text-foreground h-8 w-8 shrink-0" />
-      <span
-        className={cn(
-          'font-[family-name:var(--font-display)] text-[15px] font-bold tracking-wide',
-          responsive && 'hidden min-[480px]:inline-block',
-        )}
-        aria-label="BitLab"
-      >
-        <span className="text-primary">BIT</span>
-        <span className="text-foreground">LAB</span>
+      {/* Wordmark « BITLAB » retiré sur demande (v0.4.8) : le logo et la
+          pillule suffisent ; l'aria-label migre sur le logo. */}
+      <span role="img" aria-label="BitLab">
+        <OrbitMark className="text-foreground h-8 w-8 shrink-0" />
       </span>
       {pill ? (
         <span
