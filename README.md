@@ -11,7 +11,7 @@
       <img alt="CI" src="https://github.com/GandalNexus/bitlab/actions/workflows/ci.yml/badge.svg" />
     </a>
     <a href="./LICENSE">
-      <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" />
+      <img alt="License: AGPL-3.0" src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" />
     </a>
   </p>
 </div>
@@ -188,4 +188,4 @@ Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for the w
 
 ## License
 
-[MIT](./LICENSE) © GandalNexus
+[AGPL-3.0](./LICENSE) © GandalNexus
