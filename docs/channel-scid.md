@@ -1,118 +1,118 @@
-# channel_scid — capture auto Lightning pour BitQuest (LOT 11)
+# channel_scid — automatic Lightning capture for BitQuest (LOT 11)
 
-## Problème
+## Problem
 
-Le protocole BitQuest ↔ BitLab accepte des preuves de type `CHANNEL` qui
-prennent un `scid` (short channel ID) au format `block × tx × vout`
-(ex : `840000x5x0`). Jusqu'ici, l'apprenant devait copier/coller
-manuellement ce scid après avoir ouvert un canal Lightning dans le
-labo. Friction forte et source d'erreurs.
+The BitQuest ↔ BitLab protocol accepts `CHANNEL` type proofs which
+take a `scid` (short channel ID) in `block × tx × vout` format
+(e.g.: `840000x5x0`). Until now, the learner had to manually
+copy/paste this scid after opening a Lightning channel in the lab.
+High friction and a source of errors.
 
-## Changement livré
+## Delivered change
 
-**Côté Rust / WASM** (`rust/lnlab/src/lib.rs`, `channels_of`) :
+**Rust / WASM side** (`rust/lnlab/src/lib.rs`, `channels_of`):
 
-L'objet JS exposé pour chaque canal inclut désormais 5 nouveaux champs
-quand un scid est disponible :
+The JS object exposed for each channel now includes 5 new fields
+when a scid is available:
 
-- `shortChannelId` : scid brut (u64 → string, >= 2^53 possible).
-- `scidBlock` : hauteur de bloc où la tx de funding est confirmée.
-- `scidTxIndex` : index de la tx dans le bloc.
-- `scidVout` : index de l'output funding dans la tx.
-- `scidFormatted` : `"{block}x{tx}x{vout}"` — forme directement
-  utilisable dans BitQuest.
+- `shortChannelId`: raw scid (u64 → string, >= 2^53 possible).
+- `scidBlock`: block height where the funding tx is confirmed.
+- `scidTxIndex`: index of the tx within the block.
+- `scidVout`: index of the funding output in the tx.
+- `scidFormatted`: `"{block}x{tx}x{vout}"` — form directly
+  usable in BitQuest.
 
-Priorité de résolution (identique à `node.rs::channel_scid`) :
+Resolution priority (identical to `node.rs::channel_scid`):
 
-1. `short_channel_id` (annoncé officiel après 3 confirmations)
-2. `outbound_scid_alias` (alias émis par ce nœud)
-3. `inbound_scid_alias` (alias reçu de la contre-partie)
+1. `short_channel_id` (officially announced after 3 confirmations)
+2. `outbound_scid_alias` (alias emitted by this node)
+3. `inbound_scid_alias` (alias received from the counterparty)
 
-Si aucun des trois n'existe (canal privé juste ouvert), les 5 champs
-sont **absents de l'objet** — le code TS doit utiliser `?.` pour y
-accéder.
+If none of the three exists (private channel just opened), the 5 fields
+are **absent from the object** — the TS code must use `?.` to access
+them.
 
-**Côté TypeScript** (`src/lib/lightning.ts`) :
+**TypeScript side** (`src/lib/lightning.ts`):
 
-L'interface `LnChannelView` étend avec les 5 champs optionnels. Tout
-le reste de l'UI (listing, debug, module lightning) continue de
-fonctionner sans modification — les champs sont simplement rendus
-disponibles aux consommateurs qui en ont besoin.
+The `LnChannelView` interface is extended with the 5 optional fields. All
+the rest of the UI (listing, debug, lightning module) continues to
+work without modification — the fields are simply made
+available to consumers that need them.
 
-## Prochaine étape — UX capture auto
+## Next step — auto capture UX
 
-Pour fermer la boucle avec BitQuest, le module lightning doit afficher
-un CTA « Soumettre ce canal à BitQuest » dès qu'un canal est prêt.
+To close the loop with BitQuest, the lightning module must display
+a "Submit this channel to BitQuest" CTA as soon as a channel is ready.
 
-### Pré-requis déjà en place
+### Prerequisites already in place
 
-| Pièce | Fichier | État |
+| Piece | File | Status |
 |---|---|---|
-| Mission courante (store Zustand) | `src/lib/bitquest-mission-store.ts` | ✅ |
-| Hook de lecture mission + tab | `src/lib/use-bitquest-mission.ts` | ✅ |
-| `LnChannelView.scidFormatted` | `src/lib/lightning.ts` (ligne 40) | ✅ |
-| `buildReturnUrl(mission, value)` | `src/lib/bitquest-bridge.ts` (ligne 187) | ✅ |
-| Validation CHANNEL scid | `isValidReturnValue('CHANNEL', ...)` (ligne 167) | ✅ |
+| Current mission (Zustand store) | `src/lib/bitquest-mission-store.ts` | ✅ |
+| Mission + tab reading hook | `src/lib/use-bitquest-mission.ts` | ✅ |
+| `LnChannelView.scidFormatted` | `src/lib/lightning.ts` (line 40) | ✅ |
+| `buildReturnUrl(mission, value)` | `src/lib/bitquest-bridge.ts` (line 187) | ✅ |
+| CHANNEL scid validation | `isValidReturnValue('CHANNEL', ...)` (line 167) | ✅ |
 
-### Intégration à faire dans `src/components/bitlab/lightning.tsx`
+### Integration to do in `src/components/bitlab/lightning.tsx`
 
-1. `const mission = useBitquestMissionStore((s) => s.mission)` — lire
-   la mission courante.
-2. Garder le CTA conditionnel : `mission?.kind === 'CHANNEL'` **et**
-   `channel.isReady === true` **et** `channel.scidFormatted` non
-   `undefined` (filtrer les canaux sans scid annoncé ni alias).
-3. Au clic, appeler :
+1. `const mission = useBitquestMissionStore((s) => s.mission)` — read
+   the current mission.
+2. Keep the conditional CTA: `mission?.kind === 'CHANNEL'` **and**
+   `channel.isReady === true` **and** `channel.scidFormatted` not
+   `undefined` (filter out channels without announced scid or alias).
+3. On click, call:
    ```ts
    const url = buildReturnUrl(mission, channel.scidFormatted!);
    window.location.href = url;
    ```
-   Pas d'ouverture d'onglet : la navigation **top-level** est
-   indispensable pour conserver la session BitQuest (cookies
-   SameSite=Lax).
+   No tab opening: **top-level** navigation is
+   essential to preserve the BitQuest session (SameSite=Lax
+   cookies).
 
-### Bords à surveiller
+### Edge cases to watch
 
-- Canal `isReady` mais **privé/non annoncé** sans alias : `scidFormatted`
-  reste `undefined`. L'UI doit alors afficher un hint « Attends ~3
-  confirmations » plutôt que de masquer le canal.
-- Plusieurs canaux prêts simultanément : le CTA doit être **par ligne**
-  (pas un bouton global) pour permettre à l'apprenant de choisir lequel
-  déclarer.
-- Après le clic, pas besoin de confirmation locale : BitQuest renvoie
-  l'apprenant avec `bitlab_result=1` et affichera le statut officiel.
+- Channel `isReady` but **private/unannounced** without alias: `scidFormatted`
+  stays `undefined`. The UI must then show a hint "Wait ~3
+  confirmations" rather than hide the channel.
+- Multiple channels ready simultaneously: the CTA must be **per row**
+  (not a global button) to allow the learner to choose which one to
+  declare.
+- After the click, no need for local confirmation: BitQuest returns
+  the learner with `bitlab_result=1` and will display the official status.
 
-### Pas de HMAC côté BitLab
+### No HMAC on the BitLab side
 
-C'est BitQuest qui vérifie à la réception via
-`POST /api/bitlab/deep-link/verify-return`. `ts` et `sig` (s'ils
-existaient dans l'URL entrante) sont échoés tels quels par
+BitQuest is the one that verifies on reception via
+`POST /api/bitlab/deep-link/verify-return`. `ts` and `sig` (if they
+existed in the incoming URL) are echoed as-is by
 `buildReturnUrl`.
 
-## Build WASM
+## WASM Build
 
-La chaîne d'outillage est `cargo build --target wasm32-unknown-unknown`
-+ `wasm-bindgen --target no-modules` (pas `wasm-pack`). Le script
-`scripts/build-lnlab.sh` fait l'orchestration et pose les artefacts
-dans `public/lnlab/` avec un hash de busting cache.
+The toolchain is `cargo build --target wasm32-unknown-unknown`
++ `wasm-bindgen --target no-modules` (not `wasm-pack`). The
+`scripts/build-lnlab.sh` script handles the orchestration and places the artifacts
+in `public/lnlab/` with a cache-busting hash.
 
 ```bash
-# Depuis la racine bitlab/
+# From the bitlab/ root
 ./scripts/build-lnlab.sh
 ```
 
-Pré-requis locaux :
+Local prerequisites:
 - `rustup target add wasm32-unknown-unknown`
 - `cargo install wasm-bindgen-cli --version 0.2.100 --locked`
 
-Les clients BitLab verront les nouveaux champs au prochain reload
-(service-worker + hash WASM dans l'URL = pas de cache stale).
+BitLab clients will see the new fields on the next reload
+(service-worker + WASM hash in the URL = no stale cache).
 
-## Limites
+## Limitations
 
-- Canal **privé non annoncé** sans alias scid : `shortChannelId` restera
-  absent jusqu'à ce que LDK émette un alias. Les tests en regtest
-  peuvent l'observer immédiatement, les tests signet/testnet attendent
-  généralement les 3 confirmations.
-- Le u64 brut dépasse la précision de `Number` JS → utilise toujours
-  `scidFormatted` ou les 3 composantes décomposées pour construire des
-  requêtes, **jamais** `Number(shortChannelId)`.
+- **Private unannounced channel** without scid alias: `shortChannelId` will
+  remain absent until LDK emits an alias. Regtest tests
+  can observe it immediately, signet/testnet tests generally wait
+  for the 3 confirmations.
+- The raw u64 exceeds JS `Number` precision → always use
+  `scidFormatted` or the 3 decomposed components to build
+  requests, **never** `Number(shortChannelId)`.
