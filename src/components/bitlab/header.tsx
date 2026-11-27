@@ -33,6 +33,7 @@ import { fmtInt } from '@/lib/bitcoin/utils';
 import { cn } from '@/lib/utils';
 import { useBitquestUserStore } from '@/lib/bitquest-user-store';
 import { getBitquestUrl } from '@/lib/bitquest-user';
+import { useLandingUrl } from '@/lib/use-landing-url';
 
 export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const net = useLabStore((s) => s.network);
@@ -40,6 +41,7 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
   const qc = useQueryClient();
   const { t } = useT();
   const cfg = NETWORKS[net];
+  const landingUrl = useLandingUrl();
   const tip = useQuery({
     queryKey: ['tip', net],
     queryFn: api.tipHeight,
@@ -147,9 +149,7 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
               utilisateurs arrivés depuis gandalnexus.com qui veulent
               revenir au hub, séparé du login BitQuest ci-dessus. */}
           <a
-            href={
-              process.env.NEXT_PUBLIC_LANDING_URL ?? 'https://gandalnexus.com'
-            }
+            href={landingUrl}
             rel="noopener"
             title={t('Retour à GandalNexus')}
             aria-label={t('Retour à GandalNexus')}
