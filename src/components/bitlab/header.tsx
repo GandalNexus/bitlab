@@ -146,7 +146,7 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
           <GandalNexusUserBadge />
 
           {/* Retour à la landing publique GandalNexus (hub). Pour les
-              utilisateurs arrivés depuis gandalnexus.com qui veulent
+              utilisateurs arrivés depuis www.gandalnexus.xyz qui veulent
               revenir au hub, séparé du login BitQuest ci-dessus. */}
           <a
             href={landingUrl}

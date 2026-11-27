@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getBitquestUrl } from './bitquest-user';
 
-const FALLBACK = 'https://gandalnexus.com';
+const FALLBACK = 'https://www.gandalnexus.xyz';
 const CACHE_KEY = 'bl-landing-url-v1';
 const TTL_MS = 10 * 60 * 1000;
 
