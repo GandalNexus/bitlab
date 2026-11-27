@@ -13,6 +13,7 @@ import {
   Loader2,
   LogOut,
   LogIn,
+  Sparkles,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -141,6 +142,22 @@ export function LabHeader({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
           </div>
 
           <GandalNexusUserBadge />
+
+          {/* Retour à la landing publique GandalNexus (hub). Pour les
+              utilisateurs arrivés depuis gandalnexus.com qui veulent
+              revenir au hub, séparé du login BitQuest ci-dessus. */}
+          <a
+            href={
+              process.env.NEXT_PUBLIC_LANDING_URL ?? 'https://gandalnexus.com'
+            }
+            rel="noopener"
+            title={t('Retour à GandalNexus')}
+            aria-label={t('Retour à GandalNexus')}
+            className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-primary/40 inline-flex h-9 items-center gap-1.5 rounded-[6px] px-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          >
+            <Sparkles className="text-primary h-4 w-4" aria-hidden />
+            <span className="hidden sm:inline">Nexus</span>
+          </a>
 
           <LangToggle />
           <ThemeToggle />
