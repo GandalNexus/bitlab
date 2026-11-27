@@ -1,6 +1,9 @@
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  return value;
+};
 
 // node_modules/@scure/base/index.js
 var freeze = (fn) => Object.freeze(fn());
@@ -1435,7 +1438,7 @@ function sqrt9mod16(P) {
   const c2 = tn(Fp_, c1);
   const c3 = tn(Fp_, Fp_.neg(c1));
   const c4 = (P + _7n) / _16n;
-  return ((Fp, n) => {
+  return (Fp, n) => {
     const F = Fp;
     let tv1 = F.pow(n, c4);
     let tv2 = F.mul(tv1, c1);
@@ -1449,7 +1452,7 @@ function sqrt9mod16(P) {
     const root = F.cmov(tv1, tv2, e3);
     assertIsSquare(F, root, n);
     return root;
-  });
+  };
 }
 function tonelliShanks(P) {
   if (P < _3n)
@@ -2215,7 +2218,7 @@ var _HMAC = class {
   }
 };
 var hmac = /* @__PURE__ */ (() => {
-  const hmac_ = ((hash, key, message) => new _HMAC(hash, key).update(message).digest());
+  const hmac_ = (hash, key, message) => new _HMAC(hash, key).update(message).digest();
   hmac_.create = (hash, key) => new _HMAC(hash, key);
   return hmac_;
 })();
@@ -7905,7 +7908,8 @@ function compactBitsToTarget(bits) {
   for (let k = 0; k < 3; k++) {
     const byte = mantissa >> 8 * (2 - k) & 255;
     const pos = bytePos + (2 - k);
-    if (pos >= 0 && pos < 32) target[31 - pos] = byte;
+    if (pos >= 0 && pos < 32)
+      target[31 - pos] = byte;
   }
   return target;
 }
@@ -7945,9 +7949,11 @@ var FAUCET_PREMINE_BLOCKS = 101;
 var FAUCET_MAX_SATS = 5e9;
 var FAUCET_DEFAULT_SATS = 1e8;
 function blockSubsidy(height) {
-  if (height <= 0) return 0;
+  if (height <= 0)
+    return 0;
   const halvings = Math.floor(height / HALVING_INTERVAL);
-  if (halvings >= 64) return 0;
+  if (halvings >= 64)
+    return 0;
   return Math.floor(BASE_SUBSIDY_SATS / 2 ** halvings);
 }
 function minRelayFee(weight) {
@@ -7970,7 +7976,8 @@ var Reader = class {
     this.pos = 0;
   }
   need(n) {
-    if (n < 0 || this.pos + n > this.buf.length) throw new TxParseError("transaction tronqu\xE9e");
+    if (n < 0 || this.pos + n > this.buf.length)
+      throw new TxParseError("transaction tronqu\xE9e");
   }
   u8() {
     this.need(1);
@@ -7985,7 +7992,8 @@ var Reader = class {
   u64le() {
     this.need(8);
     let v = 0;
-    for (let i = 7; i >= 0; i--) v = v * 256 + this.buf[this.pos + i];
+    for (let i = 7; i >= 0; i--)
+      v = v * 256 + this.buf[this.pos + i];
     this.pos += 8;
     return v;
   }
@@ -7997,9 +8005,11 @@ var Reader = class {
   }
   varint(max = 1e5) {
     const first = this.u8();
-    if (first < 253) return first;
+    if (first < 253)
+      return first;
     const n = first === 253 ? this.u16le() : first === 254 ? this.u32le() : Number(this.u64le());
-    if (!Number.isSafeInteger(n) || n > max) throw new TxParseError(`varint hors bornes (${n})`);
+    if (!Number.isSafeInteger(n) || n > max)
+      throw new TxParseError(`varint hors bornes (${n})`);
     return n;
   }
   u16le() {
@@ -8010,8 +8020,10 @@ var Reader = class {
   }
 };
 function writeVarint(n) {
-  if (n < 253) return [n];
-  if (n <= 65535) return [253, n & 255, n >>> 8 & 255];
+  if (n < 253)
+    return [n];
+  if (n <= 65535)
+    return [253, n & 255, n >>> 8 & 255];
   if (n <= 4294967295)
     return [254, n & 255, n >>> 8 & 255, n >>> 16 & 255, n >>> 24 & 255];
   throw new TxParseError("varint 8 octets non pris en charge");
@@ -8020,7 +8032,8 @@ function u32leBytes(n) {
   return [n & 255, n >>> 8 & 255, n >>> 16 & 255, n >>> 24 & 255];
 }
 function u64leBytes(n) {
-  if (n < 0 || !Number.isSafeInteger(n)) throw new TxParseError(`valeur invalide : ${n}`);
+  if (n < 0 || !Number.isSafeInteger(n))
+    throw new TxParseError(`valeur invalide : ${n}`);
   const out = [];
   let v = n;
   for (let i = 0; i < 8; i++) {
@@ -8032,7 +8045,8 @@ function u64leBytes(n) {
 var MAX_TX_BYTES = 1e6;
 function parseTx(raw) {
   const { tx, end } = parseTxSlice(raw, 0);
-  if (end !== raw.length) throw new TxParseError(`${raw.length - end} octets surnum\xE9raires`);
+  if (end !== raw.length)
+    throw new TxParseError(`${raw.length - end} octets surnum\xE9raires`);
   return tx;
 }
 function parseTxSlice(buf, offset) {
@@ -8045,13 +8059,15 @@ function parseTxSlice(buf, offset) {
   const save = r.pos;
   if (r.varint(1) === 0) {
     const flag2 = r.u8();
-    if (flag2 !== 1) throw new TxParseError(`drapeau SegWit invalide (${flag2})`);
+    if (flag2 !== 1)
+      throw new TxParseError(`drapeau SegWit invalide (${flag2})`);
     isSegwit = true;
   } else {
     r.pos = save;
   }
   const nIn = r.varint();
-  if (nIn === 0) throw new TxParseError("aucune entr\xE9e");
+  if (nIn === 0)
+    throw new TxParseError("aucune entr\xE9e");
   const inputs = [];
   for (let i = 0; i < nIn; i++) {
     const ref = r.bytes(32);
@@ -8115,11 +8131,13 @@ function serializeLegacy(parts) {
   chunks.push(...writeVarint(parts.inputs.length));
   parts.inputs.forEach((inp, i) => {
     const ref = hex.decode(inp.txid).reverse();
-    for (const b of ref) chunks.push(b);
+    for (const b of ref)
+      chunks.push(b);
     chunks.push(...u32leBytes(inp.vout >>> 0));
     const script = parts.scriptSigOverrides?.get(i) ?? inp.scriptSig;
     chunks.push(...writeVarint(script.length));
-    for (const b of script) chunks.push(b);
+    for (const b of script)
+      chunks.push(b);
     const seq = parts.sequenceOverrides?.get(i) ?? inp.sequence;
     chunks.push(...u32leBytes(seq >>> 0));
   });
@@ -8127,14 +8145,17 @@ function serializeLegacy(parts) {
   for (const out of parts.outputs) {
     chunks.push(...u64leBytes(out.valueSats));
     chunks.push(...writeVarint(out.script.length));
-    for (const b of out.script) chunks.push(b);
+    for (const b of out.script)
+      chunks.push(b);
   }
   chunks.push(...u32leBytes(parts.locktime >>> 0));
-  if (parts.appendHashType !== void 0) chunks.push(...u32leBytes(parts.appendHashType >>> 0));
+  if (parts.appendHashType !== void 0)
+    chunks.push(...u32leBytes(parts.appendHashType >>> 0));
   return new Uint8Array(chunks);
 }
 function merkleRoot(txids) {
-  if (txids.length === 0) throw new TxParseError("merkle vide");
+  if (txids.length === 0)
+    throw new TxParseError("merkle vide");
   let level = txids.map((id) => hex.decode(id).reverse());
   while (level.length > 1) {
     const next = [];
@@ -8153,17 +8174,21 @@ function merkleRoot(txids) {
 
 // src/lib/regtest-engine/verify.ts
 function classifyScript(script) {
-  if (script.length === 22 && script[0] === 0 && script[1] === 20) return "p2wpkh";
-  if (script.length === 34 && script[0] === 81 && script[1] === 32) return "p2tr";
+  if (script.length === 22 && script[0] === 0 && script[1] === 20)
+    return "p2wpkh";
+  if (script.length === 34 && script[0] === 81 && script[1] === 32)
+    return "p2tr";
   if (script.length === 25 && script[0] === 118 && script[1] === 169 && script[22] === 136 && script[24] === 172)
     return "p2pkh";
   return "other";
 }
 var SIGHASH_ALL = 1;
 function splitHashType(sig) {
-  if (sig.length < 7) return null;
+  if (sig.length < 7)
+    return null;
   const hashType = sig[sig.length - 1];
-  if (hashType !== SIGHASH_ALL) return null;
+  if (hashType !== SIGHASH_ALL)
+    return null;
   return { der: sig.slice(0, -1), hashType };
 }
 function sha256d(data) {
@@ -8190,8 +8215,10 @@ function bip143Sighash(tx, inputIndex, prevAmountSats, scriptCode) {
           v = Math.floor(v / 256);
         }
         const len = compactSizeBytes(o.script.length);
-        for (const b of len) out.push(b);
-        for (const b of o.script) out.push(b);
+        for (const b of len)
+          out.push(b);
+        for (const b of o.script)
+          out.push(b);
         return new Uint8Array(out);
       })
     )
@@ -8235,8 +8262,10 @@ function derToCompact(der) {
   return secp256k1.Signature.fromBytes(der, "der").toBytes("compact");
 }
 function compactSizeBytes(n) {
-  if (n < 253) return new Uint8Array([n]);
-  if (n <= 65535) return new Uint8Array([253, n & 255, n >>> 8 & 255]);
+  if (n < 253)
+    return new Uint8Array([n]);
+  if (n <= 65535)
+    return new Uint8Array([253, n & 255, n >>> 8 & 255]);
   if (n <= 4294967295) {
     return new Uint8Array([254, n & 255, n >>> 8 & 255, n >>> 16 & 255, n >>> 24 & 255]);
   }
@@ -8279,8 +8308,10 @@ function bip341Sighash(tx, inputIndex, prevAmounts, prevScripts) {
           v = Math.floor(v / 256);
         }
         const len = compactSizeBytes(o.script.length);
-        for (const b of len) out.push(b);
-        for (const b of o.script) out.push(b);
+        for (const b of len)
+          out.push(b);
+        for (const b of o.script)
+          out.push(b);
         return new Uint8Array(out);
       })
     )
@@ -8316,15 +8347,19 @@ function legacySighash(tx, inputIndex, prevScript) {
 }
 function verifyInput(tx, inputIndex, prevouts) {
   const prevout = prevouts[inputIndex];
-  if (!prevout) return { ok: false, kind: "other", reason: "prevout manquant" };
+  if (!prevout)
+    return { ok: false, kind: "other", reason: "prevout manquant" };
   const kind = classifyScript(prevout.script);
-  if (kind === "other") return { ok: true, kind };
+  if (kind === "other")
+    return { ok: true, kind };
   try {
     if (kind === "p2wpkh") {
       const witness = tx.witness[inputIndex] ?? [];
-      if (witness.length !== 2) return { ok: false, kind, reason: "t\xE9moin P2WPKH incomplet" };
+      if (witness.length !== 2)
+        return { ok: false, kind, reason: "t\xE9moin P2WPKH incomplet" };
       const htype = splitHashType(witness[0]);
-      if (!htype) return { ok: false, kind, reason: "sighash non pris en charge ou DER invalide" };
+      if (!htype)
+        return { ok: false, kind, reason: "sighash non pris en charge ou DER invalide" };
       const pubkey = witness[1];
       if (pubkey.length !== 33 || pubkey[0] !== 2 && pubkey[0] !== 3) {
         return { ok: false, kind, reason: "cl\xE9 publique comprim\xE9e attendue" };
@@ -8358,7 +8393,8 @@ function verifyInput(tx, inputIndex, prevouts) {
     }
     const scriptSig = tx.inputs[inputIndex].scriptSig;
     const parsed = parseP2pkhScriptSig(scriptSig);
-    if (!parsed) return { ok: false, kind, reason: "scriptSig P2PKH illisible" };
+    if (!parsed)
+      return { ok: false, kind, reason: "scriptSig P2PKH illisible" };
     if (hex.encode(hash1602(parsed.pubkey)) !== hex.encode(prevout.script.slice(3, 23))) {
       return { ok: false, kind, reason: "hash160(pubkey) \u2260 hash du script" };
     }
@@ -8373,16 +8409,20 @@ function verifyInput(tx, inputIndex, prevouts) {
 }
 function parseP2pkhScriptSig(scriptSig) {
   try {
-    if (scriptSig.length < 40 || scriptSig[0] < 9 || scriptSig[0] > 74) return null;
+    if (scriptSig.length < 40 || scriptSig[0] < 9 || scriptSig[0] > 74)
+      return null;
     const sigLen = scriptSig[0];
     const sigFull = scriptSig.slice(1, 1 + sigLen);
     const pubStart = 1 + sigLen;
-    if (pubStart >= scriptSig.length) return null;
+    if (pubStart >= scriptSig.length)
+      return null;
     const pubLen = scriptSig[pubStart];
     const pubkey = scriptSig.slice(pubStart + 1, pubStart + 1 + pubLen);
-    if (pubkey.length !== pubLen || pubLen !== 33) return null;
+    if (pubkey.length !== pubLen || pubLen !== 33)
+      return null;
     const htype = splitHashType(sigFull);
-    if (!htype) return null;
+    if (!htype)
+      return null;
     return { sigDer: htype.der, pubkey };
   } catch {
     return null;
@@ -8399,7 +8439,8 @@ function addressToScriptBcrt(address) {
 function scriptToAddressBcrt(script) {
   try {
     const decoded = OutScript.decode(script);
-    if (decoded.type === "unknown") return void 0;
+    if (decoded.type === "unknown")
+      return void 0;
     return Address(REGTEST_NETWORK).encode(decoded);
   } catch {
     return void 0;
@@ -8415,8 +8456,10 @@ function sha256d2(data) {
 }
 function meetsTarget(digest, target) {
   for (let i = 0; i < 32; i++) {
-    if (digest[i] < target[i]) return true;
-    if (digest[i] > target[i]) return false;
+    if (digest[i] < target[i])
+      return true;
+    if (digest[i] > target[i])
+      return false;
   }
   return true;
 }
@@ -8438,15 +8481,18 @@ function buildCoinbaseTx(height, scriptSig, valueSats, payoutScript) {
   const chunks = [];
   chunks.push(...u32leBytes(2));
   chunks.push(1);
-  for (let i = 0; i < 32; i++) chunks.push(0);
+  for (let i = 0; i < 32; i++)
+    chunks.push(0);
   chunks.push(...u32leBytes(4294967295));
   chunks.push(...writeVarint(scriptSig.length));
-  for (const b of scriptSig) chunks.push(b);
+  for (const b of scriptSig)
+    chunks.push(b);
   chunks.push(...u32leBytes(4294967295));
   chunks.push(1);
   chunks.push(...u64leBytes(valueSats));
   chunks.push(...writeVarint(payoutScript.length));
-  for (const b of payoutScript) chunks.push(b);
+  for (const b of payoutScript)
+    chunks.push(b);
   chunks.push(...u32leBytes(0));
   return hex.encode(new Uint8Array(chunks));
 }
@@ -8507,7 +8553,8 @@ var RegtestChain = class {
   }
   tipTime() {
     const tip = this.blocks.get(this.tipHash());
-    if (!tip) throw new ChainError("\xE9tat interne incoh\xE9rent : tip absent");
+    if (!tip)
+      throw new ChainError("\xE9tat interne incoh\xE9rent : tip absent");
     return tip.time;
   }
   blockAt(height) {
@@ -8528,9 +8575,11 @@ var RegtestChain = class {
   }
   consensusBlockByHash(hash) {
     const rec = this.blocks.get(hash.toLowerCase());
-    if (!rec || rec.raw === null) return null;
+    if (!rec || rec.raw === null)
+      return null;
     const bytes = hex.decode(rec.raw);
-    if (bytes.length < 80) return null;
+    if (bytes.length < 80)
+      return null;
     let count = 0;
     let off = 80;
     while (off < bytes.length) {
@@ -8546,9 +8595,11 @@ var RegtestChain = class {
     const out = [];
     for (let h = this.tipHeight(); h >= 1 && out.length < n; h--) {
       const b = this.blockAt(h);
-      if (!b) continue;
+      if (!b)
+        continue;
       let size = 80;
-      for (const id of b.txids) size += this.txs.get(id)?.size ?? 0;
+      for (const id of b.txids)
+        size += this.txs.get(id)?.size ?? 0;
       out.push({ id: b.hash, height: b.height, timestamp: b.time, tx_count: b.txids.length, size });
     }
     return out;
@@ -8571,7 +8622,8 @@ var RegtestChain = class {
     }));
   }
   txValue(rec) {
-    if (!rec.hex) return 0;
+    if (!rec.hex)
+      return 0;
     try {
       return parseTx(hex.decode(rec.hex)).outputs.reduce((s, o) => s + o.valueSats, 0);
     } catch {
@@ -8588,7 +8640,8 @@ var RegtestChain = class {
   }
   txInfo(txid) {
     const rec = this.txByTxid(txid);
-    if (!rec || !rec.hex) return null;
+    if (!rec || !rec.hex)
+      return null;
     let parsed;
     try {
       parsed = parseTx(hex.decode(rec.hex));
@@ -8637,13 +8690,16 @@ var RegtestChain = class {
   }
   outputOf(txid, vout) {
     const utxo = this.utxos.get(`${txid}:${vout}`);
-    if (utxo) return { script: utxo.script, valueSats: utxo.valueSats };
+    if (utxo)
+      return { script: utxo.script, valueSats: utxo.valueSats };
     const rec = this.txs.get(txid);
-    if (!rec?.hex) return null;
+    if (!rec?.hex)
+      return null;
     try {
       const tx = parseTx(hex.decode(rec.hex));
       const out = tx.outputs[vout];
-      if (!out) return null;
+      if (!out)
+        return null;
       return { script: hex.encode(out.script), valueSats: out.valueSats };
     } catch {
       return null;
@@ -8656,24 +8712,30 @@ var RegtestChain = class {
     let spent = 0;
     for (const txid of txids) {
       const rec = this.txs.get(txid);
-      if (!rec?.hex) continue;
+      if (!rec?.hex)
+        continue;
       let parsed;
       try {
         parsed = parseTx(hex.decode(rec.hex));
       } catch {
         continue;
       }
-      if (rec.height === null) continue;
+      if (rec.height === null)
+        continue;
       for (const out of parsed.outputs) {
-        if (hex.encode(out.script) === scriptHex) funded += out.valueSats;
+        if (hex.encode(out.script) === scriptHex)
+          funded += out.valueSats;
       }
       for (const inp of parsed.inputs) {
         const prev = this.outputOf(inp.txid, inp.vout);
-        if (prev?.script === scriptHex) spent += prev.valueSats;
+        if (prev?.script === scriptHex)
+          spent += prev.valueSats;
       }
     }
     let mempoolCount = 0;
-    for (const id of txids) if (this.mempool.has(id) && !this.txs.has(id)) mempoolCount += 1;
+    for (const id of txids)
+      if (this.mempool.has(id) && !this.txs.has(id))
+        mempoolCount += 1;
     return {
       address,
       chain_stats: { funded_txo_sum: funded, spent_txo_sum: spent, tx_count: txids.length },
@@ -8685,8 +8747,10 @@ var RegtestChain = class {
     const out = [];
     for (const op of this.scriptUtxos.get(scriptHex) ?? []) {
       const u = this.utxos.get(op);
-      if (!u) continue;
-      if (this.mempoolSpends.has(op)) continue;
+      if (!u)
+        continue;
+      if (this.mempoolSpends.has(op))
+        continue;
       const sep = op.lastIndexOf(":");
       const txid = op.slice(0, sep);
       const vout = Number(op.slice(sep + 1));
@@ -8706,7 +8770,8 @@ var RegtestChain = class {
     const out = [];
     for (const id of txids) {
       const info = this.txInfo(id);
-      if (info) out.push(info);
+      if (info)
+        out.push(info);
     }
     return out.reverse();
   }
@@ -8716,15 +8781,19 @@ var RegtestChain = class {
     const spendHeight = this.tipHeight() + 1;
     for (const op of this.scriptUtxos.get(this.faucetScriptHex) ?? []) {
       const u = this.utxos.get(op);
-      if (!u) continue;
-      if (u.isCoinbase && spendHeight - u.height < COINBASE_MATURITY) immature += u.valueSats;
-      else mature += u.valueSats;
+      if (!u)
+        continue;
+      if (u.isCoinbase && spendHeight - u.height < COINBASE_MATURITY)
+        immature += u.valueSats;
+      else
+        mature += u.valueSats;
     }
     return { matureSats: mature, immatureSats: immature };
   }
   faucetSend(address, sats = FAUCET_DEFAULT_SATS) {
     const amount = Math.floor(sats);
-    if (!Number.isInteger(amount) || amount <= 0) throw new ChainError("montant invalide");
+    if (!Number.isInteger(amount) || amount <= 0)
+      throw new ChainError("montant invalide");
     if (amount > FAUCET_MAX_SATS) {
       throw new ChainError(
         `montant plafonn\xE9 \xE0 ${Math.floor(FAUCET_MAX_SATS / 1e8)} BTC de test par distribution`
@@ -8735,8 +8804,10 @@ var RegtestChain = class {
     const candidates = [];
     for (const op of this.scriptUtxos.get(this.faucetScriptHex) ?? []) {
       const u = this.utxos.get(op);
-      if (!u) continue;
-      if (u.isCoinbase && spendHeight - u.height < COINBASE_MATURITY) continue;
+      if (!u)
+        continue;
+      if (u.isCoinbase && spendHeight - u.height < COINBASE_MATURITY)
+        continue;
       candidates.push({ key: op, value: u.valueSats });
     }
     candidates.sort((a, b) => b.value - a.value);
@@ -8744,7 +8815,8 @@ var RegtestChain = class {
     const picked = [];
     let totalIn = 0;
     for (const c of candidates) {
-      if (totalIn >= amount + feeEstimate) break;
+      if (totalIn >= amount + feeEstimate)
+        break;
       picked.push(c);
       totalIn += c.value;
     }
@@ -8765,7 +8837,8 @@ var RegtestChain = class {
     }
     tx.addOutput({ script: destScript, amount: BigInt(amount) });
     const change = totalIn - amount - feeEstimate;
-    if (change > 546) tx.addOutput({ script: faucetScript, amount: BigInt(change) });
+    if (change > 546)
+      tx.addOutput({ script: faucetScript, amount: BigInt(change) });
     tx.sign(hex.decode(this.faucetPrivHex));
     tx.finalize();
     const { txid } = this.acceptTx(tx.hex);
@@ -8812,7 +8885,8 @@ var RegtestChain = class {
     for (const inp of parsed.inputs) {
       this.mempoolSpends.set(`${inp.txid}:${inp.vout}`, parsed.txid);
     }
-    for (const out of parsed.outputs) this.indexAddr(hex.encode(out.script), parsed.txid);
+    for (const out of parsed.outputs)
+      this.indexAddr(hex.encode(out.script), parsed.txid);
     this.evictMempool();
     return { txid: parsed.txid, feeSats, vsize: parsed.vsize };
   }
@@ -8827,19 +8901,22 @@ var RegtestChain = class {
           lowest = id;
         }
       }
-      if (lowest === null) break;
+      if (lowest === null)
+        break;
       this.dropMempoolTx(lowest);
     }
   }
   dropMempoolTx(txid) {
     const rec = this.mempool.get(txid);
-    if (!rec) return;
+    if (!rec)
+      return;
     this.mempool.delete(txid);
     try {
       const parsed = parseTx(hex.decode(rec.hex));
       for (const inp of parsed.inputs) {
         const op = `${inp.txid}:${inp.vout}`;
-        if (this.mempoolSpends.get(op) === txid) this.mempoolSpends.delete(op);
+        if (this.mempoolSpends.get(op) === txid)
+          this.mempoolSpends.delete(op);
       }
     } catch {
     }
@@ -8852,15 +8929,18 @@ var RegtestChain = class {
       const op = `${inp.txid}:${inp.vout}`;
       const utxo = this.utxos.get(op);
       if (!utxo) {
-        if (spentInBlock?.has(op)) throw new ChainError(`double-d\xE9pense intra-bloc (entr\xE9e ${i})`);
+        if (spentInBlock?.has(op))
+          throw new ChainError(`double-d\xE9pense intra-bloc (entr\xE9e ${i})`);
         throw new ChainError(`entr\xE9e ${i} (${inp.txid.slice(0, 10)}\u2026) inconnue ou d\xE9j\xE0 d\xE9pens\xE9e`);
       }
       const mempoolOwner = this.mempoolSpends.get(op);
       if (mempoolOwner !== void 0 && mempoolOwner !== tx.txid) {
-        if (mode === "mempool") throw new ChainError(`double-d\xE9pense mempool (entr\xE9e ${i})`);
+        if (mode === "mempool")
+          throw new ChainError(`double-d\xE9pense mempool (entr\xE9e ${i})`);
         evict?.add(mempoolOwner);
       }
-      if (spentInBlock?.has(op)) throw new ChainError(`double-d\xE9pense intra-bloc (entr\xE9e ${i})`);
+      if (spentInBlock?.has(op))
+        throw new ChainError(`double-d\xE9pense intra-bloc (entr\xE9e ${i})`);
       if (utxo.isCoinbase && spendHeight - utxo.height < COINBASE_MATURITY) {
         const wait = COINBASE_MATURITY - (spendHeight - utxo.height);
         throw new ChainError(
@@ -8903,7 +8983,8 @@ var RegtestChain = class {
     let packedWeight = 0;
     let packedFee = 0;
     for (const rec of byRate) {
-      if (packedWeight + rec.weight > MAX_BLOCK_WEIGHT - 4e3) break;
+      if (packedWeight + rec.weight > MAX_BLOCK_WEIGHT - 4e3)
+        break;
       packed.push(rec);
       packedWeight += rec.weight;
       packedFee += rec.feeSats ?? 0;
@@ -8933,7 +9014,8 @@ var RegtestChain = class {
     let nonce = 0;
     for (; nonce < 4294967295; nonce++) {
       view2.setUint32(76, nonce, true);
-      if (meetsTarget(sha256d2(header), target)) break;
+      if (meetsTarget(sha256d2(header), target))
+        break;
     }
     if (nonce >= 4294967295)
       throw new ChainError("aucun nonce trouv\xE9 (impossible \xE0 difficult\xE9 1)");
@@ -8945,7 +9027,8 @@ var RegtestChain = class {
     const bytes = hex.decode(blockHex.trim().toLowerCase());
     if (bytes.length < 80 + 60)
       throw new ChainError("bloc trop court (en-t\xEAte + coinbase attendus)");
-    if (bytes.length > 4e6) throw new ChainError("bloc trop volumineux");
+    if (bytes.length > 4e6)
+      throw new ChainError("bloc trop volumineux");
     const txHexes = [];
     let off = 80;
     while (off < bytes.length) {
@@ -8965,7 +9048,8 @@ var RegtestChain = class {
     return this.connectValidatedBlock(hex.encode(header), hash, txHexes);
   }
   connectValidatedBlock(headerHex, hash, txHexes) {
-    if (this.blocks.has(hash)) throw new ChainError("bloc d\xE9j\xE0 connu");
+    if (this.blocks.has(hash))
+      throw new ChainError("bloc d\xE9j\xE0 connu");
     const header = hex.decode(headerHex);
     const view2 = new DataView(header.buffer, header.byteOffset, header.byteLength);
     const height = this.tipHeight() + 1;
@@ -8986,12 +9070,14 @@ var RegtestChain = class {
     const lastTimes = [];
     for (let h = Math.max(0, this.tipHeight() - 10); h <= this.tipHeight(); h++) {
       const prev = this.blockAt(h);
-      if (!prev) throw new ChainError("\xE9tat interne incoh\xE9rent : historique de blocs trou\xE9");
+      if (!prev)
+        throw new ChainError("\xE9tat interne incoh\xE9rent : historique de blocs trou\xE9");
       lastTimes.push(prev.time);
     }
     if (time <= median(lastTimes))
       throw new ChainError("horodatage \u2264 m\xE9diane MTP des 11 derniers blocs");
-    if (txHexes.length === 0) throw new ChainError("bloc sans transaction");
+    if (txHexes.length === 0)
+      throw new ChainError("bloc sans transaction");
     const parsedTxs = txHexes.map((h) => {
       try {
         return parseTx(hex.decode(h));
@@ -9001,9 +9087,11 @@ var RegtestChain = class {
         throw err;
       }
     });
-    if (!parsedTxs[0].isCoinbase) throw new ChainError("premi\xE8re transaction \u2260 coinbase");
+    if (!parsedTxs[0].isCoinbase)
+      throw new ChainError("premi\xE8re transaction \u2260 coinbase");
     for (let i = 1; i < parsedTxs.length; i++) {
-      if (parsedTxs[i].isCoinbase) throw new ChainError(`coinbase suppl\xE9mentaire en position ${i}`);
+      if (parsedTxs[i].isCoinbase)
+        throw new ChainError(`coinbase suppl\xE9mentaire en position ${i}`);
     }
     if (hex.encode(merkleRoot(parsedTxs.map((t) => t.txid))) !== hex.encode(header.slice(36, 68))) {
       throw new ChainError("racine de Merkle \u2260 champ de l\u2019en-t\xEAte");
@@ -9025,9 +9113,11 @@ var RegtestChain = class {
       fees.push(this.validateTxInputs(parsedTxs[i], height, spentInBlock, "block", evict));
     }
     let feesTotal = 0;
-    for (let i = 1; i < fees.length; i++) feesTotal += fees[i];
+    for (let i = 1; i < fees.length; i++)
+      feesTotal += fees[i];
     let payout = 0;
-    for (const out of parsedTxs[0].outputs) payout += out.valueSats;
+    for (const out of parsedTxs[0].outputs)
+      payout += out.valueSats;
     const subsidy = blockSubsidy(height);
     if (payout > subsidy + feesTotal) {
       throw new ChainError(
@@ -9086,34 +9176,42 @@ var RegtestChain = class {
         isCoinbase: i === 0
       });
     }
-    for (const tx of parsedTxs.slice(1)) this.dropMempoolTx(tx.txid);
-    for (const id of evict) this.dropMempoolTx(id);
+    for (const tx of parsedTxs.slice(1))
+      this.dropMempoolTx(tx.txid);
+    for (const id of evict)
+      this.dropMempoolTx(id);
     this.prune();
     return { hash, height, txCount: parsedTxs.length, subsidySats: subsidy, feeSats: feesTotal };
   }
   indexAddr(scriptHex, txid) {
     let list = this.addrTxs.get(scriptHex);
     if (!list) {
-      if (this.addrTxs.size >= MAX_INDEXED_ADDRESSES) return;
+      if (this.addrTxs.size >= MAX_INDEXED_ADDRESSES)
+        return;
       list = [];
       this.addrTxs.set(scriptHex, list);
     }
-    if (!list.includes(txid)) list.push(txid);
+    if (!list.includes(txid))
+      list.push(txid);
   }
   prune() {
     const floorHeight = this.tipHeight() - MAX_RETAINED_BLOCKS;
-    if (floorHeight <= 0) return;
+    if (floorHeight <= 0)
+      return;
     for (let h = 1; h <= floorHeight; h++) {
       const rec = this.blockAt(h);
-      if (!rec || rec.raw === null) continue;
+      if (!rec || rec.raw === null)
+        continue;
       rec.raw = null;
       for (const txid of rec.txids) {
         const t = this.txs.get(txid);
-        if (!t?.hex) continue;
+        if (!t?.hex)
+          continue;
         try {
           const parsed = parseTx(hex.decode(t.hex));
           const stillUnspent = parsed.outputs.some((_, v) => this.utxos.has(`${txid}:${v}`));
-          if (!stillUnspent) t.hex = "";
+          if (!stillUnspent)
+            t.hex = "";
         } catch {
           t.hex = "";
         }
@@ -9153,9 +9251,11 @@ var RegtestChain = class {
       throw new Error(`s\xE9rialisation inconnue v${String(data.version)}`);
     this.faucetPrivHex = data.faucet.privHex;
     this.faucetScriptHex = data.faucet.scriptHex;
-    for (const b of data.blocks) this.blocks.set(b.hash, b);
+    for (const b of data.blocks)
+      this.blocks.set(b.hash, b);
     this.heightHash = data.blocks.map((b) => b.hash);
-    for (const t of data.txs) this.txs.set(t.txid, t);
+    for (const t of data.txs)
+      this.txs.set(t.txid, t);
     for (const u of data.utxos) {
       this.utxos.set(u.key, {
         valueSats: u.valueSats,
@@ -9171,7 +9271,8 @@ var RegtestChain = class {
       set.add(u.key);
     }
     for (const t of data.txs) {
-      if (t.height === null || !t.hex) continue;
+      if (t.height === null || !t.hex)
+        continue;
       try {
         const parsed = parseTx(hex.decode(t.hex));
         for (const out of parsed.outputs) {
@@ -9181,9 +9282,11 @@ var RegtestChain = class {
           for (const inp of parsed.inputs) {
             const spentScript = this.utxos.get(`${inp.txid}:${inp.vout}`)?.script;
             const fallback = (() => {
-              if (spentScript) return spentScript;
+              if (spentScript)
+                return spentScript;
               const prev = this.txs.get(inp.txid);
-              if (!prev?.hex) return null;
+              if (!prev?.hex)
+                return null;
               try {
                 return hex.encode(
                   parseTx(hex.decode(prev.hex)).outputs[inp.vout]?.script ?? new Uint8Array()
@@ -9192,7 +9295,8 @@ var RegtestChain = class {
                 return null;
               }
             })();
-            if (fallback) this.indexAddr(fallback, t.txid);
+            if (fallback)
+              this.indexAddr(fallback, t.txid);
           }
         }
       } catch {
@@ -9202,8 +9306,10 @@ var RegtestChain = class {
       this.mempool.set(m.txid, m);
       try {
         const parsed = parseTx(hex.decode(m.hex));
-        for (const inp of parsed.inputs) this.mempoolSpends.set(`${inp.txid}:${inp.vout}`, m.txid);
-        for (const out of parsed.outputs) this.indexAddr(hex.encode(out.script), m.txid);
+        for (const inp of parsed.inputs)
+          this.mempoolSpends.set(`${inp.txid}:${inp.vout}`, m.txid);
+        for (const out of parsed.outputs)
+          this.indexAddr(hex.encode(out.script), m.txid);
       } catch {
       }
     }
@@ -9216,9 +9322,12 @@ function txIdOfHex(txHex) {
 // src/lib/regtest-engine/esplora-router.ts
 var REGTEST_FEES = { fastestFee: 1, halfHourFee: 1, hourFee: 1, economyFee: 1, minimumFee: 1 };
 function handleEsploraPath(chain2, path) {
-  if (path === "v1/fees/recommended") return json(200, REGTEST_FEES);
-  if (path === "blocks/tip/height") return text(200, String(chain2.tipHeight()));
-  if (path === "blocks/tip/hash") return text(200, chain2.tipHash());
+  if (path === "v1/fees/recommended")
+    return json(200, REGTEST_FEES);
+  if (path === "blocks/tip/height")
+    return text(200, String(chain2.tipHeight()));
+  if (path === "blocks/tip/hash")
+    return text(200, chain2.tipHash());
   const utxoMatch = path.match(/^address\/([a-zA-Z0-9]{6,90})\/utxo$/i);
   if (utxoMatch) {
     try {
@@ -9266,7 +9375,8 @@ function handleEsploraPath(chain2, path) {
   const blockMatch = path.match(/^block\/([0-9a-f]{64})$/i);
   if (blockMatch) {
     const rec = chain2.blockByHash(blockMatch[1]);
-    if (!rec) return notFound("bloc inconnu");
+    if (!rec)
+      return notFound("bloc inconnu");
     return json(200, blockDetail(chain2, rec.hash));
   }
   const heightMatch = path.match(/^block-height\/(\d{1,7})$/);
@@ -9282,16 +9392,19 @@ function handleEsploraPath(chain2, path) {
     const s = chain2.mempoolStats();
     return json(200, { ...s, fee_histogram: [] });
   }
-  if (path === "mempool/recent") return json(200, chain2.mempoolRecent());
+  if (path === "mempool/recent")
+    return json(200, chain2.mempoolRecent());
   return json(400, { erreur: "Chemin API non autoris\xE9." });
 }
 function blockDetail(chain2, hash) {
   const rec = chain2.blockByHash(hash);
   const header = chain2.headerHexByHash(hash);
-  if (!rec || !header) return { id: hash, erreur: "bloc inconnu" };
+  if (!rec || !header)
+    return { id: hash, erreur: "bloc inconnu" };
   const prev = chain2.blockAt(rec.height - 1);
   const bytes = new Uint8Array(80);
-  for (let i = 0; i < 80; i++) bytes[i] = parseInt(header.slice(i * 2, i * 2 + 2), 16);
+  for (let i = 0; i < 80; i++)
+    bytes[i] = parseInt(header.slice(i * 2, i * 2 + 2), 16);
   return {
     id: rec.hash,
     height: rec.height,
@@ -9328,10 +9441,20 @@ export {
   (*! scure-base - MIT License (c) 2022 Paul Miller (paulmillr.com) *)
 
 @noble/curves/utils.js:
+  (*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) *)
+
 @noble/curves/abstract/modular.js:
+  (*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) *)
+
 @noble/curves/abstract/curve.js:
+  (*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) *)
+
 @noble/curves/abstract/der.js:
+  (*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) *)
+
 @noble/curves/abstract/weierstrass.js:
+  (*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) *)
+
 @noble/curves/secp256k1.js:
   (*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) *)
 */
